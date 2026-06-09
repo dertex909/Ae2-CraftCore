@@ -1,4 +1,5 @@
 {
   "block.ae2craftcore.helium_4": "Helium-4",
-  "item.ae2craftcore.helium_4": "Helium-4"
+  "item.ae2craftcore.helium_4": "Helium-4",
+  "itemGroup.ae2craftcore": "Ae2 CraftCore"
 }

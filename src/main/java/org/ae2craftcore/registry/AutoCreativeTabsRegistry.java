@@ -17,8 +17,8 @@ public class AutoCreativeTabsRegistry {
     @SuppressWarnings("unused")
     public static final DeferredHolder<CreativeModeTab, CreativeModeTab> CELESTIAL_MECHANICS_TAB =
             CREATIVE_MODE_TABS.register("celestial_mechanics_tab", () -> CreativeModeTab.builder()
-                    //.icon(() -> new ItemStack(SchemeItem.HOLDER.get()))
-                    .title(Component.translatable("itemGroup.celestialmechanics"))
+                    //.icon()
+                    .title(Component.translatable("itemGroup.ae2craftcore"))
                     .displayItems((parameters, output) ->
                             AutoItemRegistry.ITEMS.getEntries().forEach(item -> output.accept(item.get())))
                     .build()
