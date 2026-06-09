@@ -29,24 +29,7 @@ public class Helium4Block extends Block {
         if (!level.isClientSide) {
             level.removeBlock(pos, false);
             this.explode(level, pos);
-
-            var random = new Random();
-            int radius = 5;
-            for (int x = -radius; x <= radius; x++) {
-                for (int y = -radius; y <= radius; y++) {
-                    for (int z = -radius; z <= radius; z++) {
-                        if (x * x + y * y + z * z <= radius * radius) {
-                            if (random.nextFloat() < 0.7f) {
-                                var spawnPos = pos.offset(x, y, z);
-                                var belowState = level.getBlockState(spawnPos.below());
-                                if (level.getBlockState(spawnPos).isAir() && !belowState.isAir() && belowState.isFaceSturdy(level, spawnPos.below(), UP)) {
-                                    level.setBlockAndUpdate(spawnPos, SNOW.defaultBlockState());
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+            this.spawnSnow(level, pos);
         }
         super.playerWillDestroy(level, pos, state, player);
         return state;
@@ -68,5 +51,23 @@ public class Helium4Block extends Block {
 
         level.explode(null, level.damageSources().badRespawnPointExplosion(vec3), explosionDamageCalculator,
                 vec3, 4.0F, false, Level.ExplosionInteraction.BLOCK);
+    }
+
+    private void spawnSnow(Level level, BlockPos pos) {
+        var random = new Random();
+        int radius = 5;
+        for (int x = -radius; x <= radius; x++) {
+            for (int y = -radius; y <= radius; y++) {
+                for (int z = -radius; z <= radius; z++) {
+                    if (x * x + y * y + z * z <= radius * radius) if (random.nextFloat() < 0.7f) {
+                        var spawnPos = pos.offset(x, y, z);
+                        var belowState = level.getBlockState(spawnPos.below());
+                        if (level.getBlockState(spawnPos).isAir() && !belowState.isAir() && belowState.isFaceSturdy(level, spawnPos.below(), UP)) {
+                            level.setBlockAndUpdate(spawnPos, SNOW.defaultBlockState());
+                        }
+                    }
+                }
+            }
+        }
     }
 }
