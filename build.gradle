@@ -10,6 +10,20 @@ group = mod_group_id
 
 repositories {
     mavenLocal()
+    mavenCentral()
+    maven {
+        name = "Jared's maven"
+        url = "https://maven.blamejared.com/"
+    }
+    maven {
+        name = "ModMaven"
+        url = "https://modmaven.dev"
+    }
+    maven {
+        name = "TerraformersMC"
+        url = "https://maven.terraformersmc.com/"
+    }
+
 }
 
 base {
@@ -24,7 +38,6 @@ neoForge {
     runs {
         client {
             client()
-
             systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
         }
 
@@ -45,9 +58,9 @@ neoForge {
         }
 
         configureEach {
-            systemProperty 'forge.logging.markers', 'REGISTRIES'
-
+            systemProperty('forge.logging.markers', 'REGISTRIES')
             logLevel = org.slf4j.event.Level.DEBUG
+            additionalRuntimeClasspathConfiguration.extendsFrom(project.configurations.implementation)
         }
     }
 
@@ -60,8 +73,12 @@ neoForge {
 
 sourceSets.main.resources { srcDir 'src/generated/resources' }
 
+def jei = "mezz.jei:jei-${minecraft_version}-neoforge:19.25.0.325"
+def ae2 = "mezz.jei:jei-${minecraft_version}-neoforge:19.25.0.325"
 
 dependencies {
+    runtimeOnly(jei)
+    compileOnly "org.appliedenergistics:appliedenergistics2:VERSION:api"
 }
 
 var generateModMetadata = tasks.register("generateModMetadata", ProcessResources) {
