@@ -3,8 +3,8 @@ package org.ae2craftcore;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
-import net.neoforged.fml.config.ModConfig;
-import org.complexityanalyzer.config.ComplexityConfig;
+import net.neoforged.neoforge.common.NeoForge;
+import org.ae2craftcore.registry.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,6 +16,14 @@ public class Ae2craftcore {
 
     public Ae2craftcore(IEventBus modEventBus, ModContainer modContainer) {
         LOGGER.info("=== {} v{} ===", MOD_NAME, modContainer.getModInfo().getVersion());
-        modContainer.registerConfig(ModConfig.Type.COMMON, ComplexityConfig.SPEC);
+
+        AutoBlockRegistry.register(modEventBus);
+        AutoItemRegistry.register(modEventBus);
+        ModSounds.register(modEventBus);
+        AutoCreativeTabsRegistry.register(modEventBus);
+        ModMenuTypes.register(modEventBus);
+        AutoBlockEntityRegistry.register(modEventBus);
+        modEventBus.addListener(AutoNetworkRegistry::registerPayloads);
+        NeoForge.EVENT_BUS.register(this);
     }
 }
