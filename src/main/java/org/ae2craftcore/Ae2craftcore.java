@@ -3,7 +3,6 @@ package org.ae2craftcore;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
-import net.neoforged.neoforge.common.NeoForge;
 import org.ae2craftcore.registry.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,6 +23,5 @@ public class Ae2craftcore {
         ModMenuTypes.register(modEventBus);
         AutoBlockEntityRegistry.register(modEventBus);
         modEventBus.addListener(AutoNetworkRegistry::registerPayloads);
-        NeoForge.EVENT_BUS.register(this);
     }
 }
