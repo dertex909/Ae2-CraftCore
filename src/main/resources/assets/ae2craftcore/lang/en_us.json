@@ -1,5 +1,4 @@
 {
-  "itemGroup.ae2craftcore": "Example Mod Tab",
-  "block.ae2craftcore.example_block": "Example Block",
-  "item.ae2craftcore.example_item": "Example Item"
+  "block.ae2craftcore.helium_4": "Helium-4",
+  "item.ae2craftcore.helium_4": "Helium-4"
 }
