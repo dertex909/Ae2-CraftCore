@@ -6,10 +6,10 @@
       "item": "ae2craftcore:quantum_processor_press"
     },
     "middle": {
-      "item": "minecraft:diamond"
+      "item": "minecraft:end_stone"
     }
   },
   "result": {
-    "id": "ae2craftcore:dewar_vessel"
+    "id": "ae2craftcore:end_stone_plate"
   }
 }

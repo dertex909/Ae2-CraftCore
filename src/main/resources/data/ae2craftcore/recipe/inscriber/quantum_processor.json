@@ -1,0 +1,18 @@
+{
+  "type": "ae2:inscriber",
+  "mode": "press",
+  "ingredients": {
+    "top": {
+      "item": "ae2:engineering_processor"
+    },
+    "middle": {
+      "item": "ae2:logic_processor"
+    },
+    "bottom": {
+      "item": "ae2:calculation_processor"
+    }
+  },
+  "result": {
+    "id": "ae2craftcore:quantum_processor"
+  }
+}

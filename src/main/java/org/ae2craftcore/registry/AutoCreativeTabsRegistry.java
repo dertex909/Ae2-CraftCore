@@ -8,6 +8,7 @@ import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import org.ae2craftcore.Ae2craftcore;
+import org.ae2craftcore.items.QuantumProcessor;
 
 public class AutoCreativeTabsRegistry {
 
@@ -17,7 +18,7 @@ public class AutoCreativeTabsRegistry {
     @SuppressWarnings("unused")
     public static final DeferredHolder<CreativeModeTab, CreativeModeTab> CELESTIAL_MECHANICS_TAB =
             CREATIVE_MODE_TABS.register("celestial_mechanics_tab", () -> CreativeModeTab.builder()
-                    //.icon()
+                    .icon(() -> new ItemStack(QuantumProcessor.QUANTUM_PROCESSOR.get()))
                     .title(Component.translatable("itemGroup.ae2craftcore"))
                     .displayItems((parameters, output) ->
                             AutoItemRegistry.ITEMS.getEntries().forEach(item -> output.accept(item.get())))

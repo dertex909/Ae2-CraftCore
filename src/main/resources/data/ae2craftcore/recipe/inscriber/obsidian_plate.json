@@ -1,0 +1,15 @@
+{
+  "type": "ae2:inscriber",
+  "mode": "inscribe",
+  "ingredients": {
+    "top": {
+      "item": "ae2craftcore:quantum_processor_press"
+    },
+    "middle": {
+      "item": "minecraft:obsidian"
+    }
+  },
+  "result": {
+    "id": "ae2craftcore:obsidian_plate"
+  }
+}

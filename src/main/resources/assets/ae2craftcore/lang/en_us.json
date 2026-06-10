@@ -3,5 +3,9 @@
   "item.ae2craftcore.helium_4": "Helium-4",
   "item.ae2craftcore.dewar_vessel": "Dewar Vessel",
   "item.ae2craftcore.quantum_processor_press": "Inscriber Quantum Press",
+  "item.ae2craftcore.quantum_processor": "Quantum Processor",
+  "item.ae2craftcore.obsidian_plate": "Obsidian plate",
+  "item.ae2craftcore.quartz_plate": "Quartz plate",
+  "item.ae2craftcore.end_stone_plate": "End stone plate",
   "itemGroup.ae2craftcore": "Ae2 CraftCore"
 }
