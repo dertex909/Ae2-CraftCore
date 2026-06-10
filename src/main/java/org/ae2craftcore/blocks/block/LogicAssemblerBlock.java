@@ -24,7 +24,7 @@ import org.ae2craftcore.registry.annotations.RegisterBlock;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-@RegisterBlock(name = "logic_assembler", strength = 3.0f, resistance = 3.0f, sound = "metal", requiresCorrectTool = true)
+@RegisterBlock(name = "logic_assembler", strength = 3.0f, resistance = 3.0f, requiresCorrectTool = true)
 public class LogicAssemblerBlock extends BaseEntityBlock {
     public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
     public static final MapCodec<LogicAssemblerBlock> CODEC = simpleCodec(LogicAssemblerBlock::new);
