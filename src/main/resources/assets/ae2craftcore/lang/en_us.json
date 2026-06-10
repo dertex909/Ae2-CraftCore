@@ -2,5 +2,6 @@
   "block.ae2craftcore.helium_4": "Helium-4",
   "item.ae2craftcore.helium_4": "Helium-4",
   "item.ae2craftcore.dewar_vessel": "Dewar Vessel",
+  "item.ae2craftcore.quantum_processor_press": "Inscriber Quantum Press",
   "itemGroup.ae2craftcore": "Ae2 CraftCore"
 }
