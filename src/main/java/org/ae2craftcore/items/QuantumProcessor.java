@@ -4,20 +4,20 @@ import net.minecraft.world.item.Item;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import org.ae2craftcore.registry.annotations.RegisterItem;
 
-@RegisterItem(name = "quantum_processor_300nm")
-@RegisterItem(name = "quantum_processor_250nm")
-@RegisterItem(name = "quantum_processor_200nm")
-@RegisterItem(name = "quantum_processor_150nm")
-@RegisterItem(name = "quantum_processor_100nm")
-@RegisterItem(name = "quantum_processor_50nm")
+@RegisterItem(name = "quantum_processor_1")
+@RegisterItem(name = "quantum_processor_2")
+@RegisterItem(name = "quantum_processor_3")
+@RegisterItem(name = "quantum_processor_4")
+@RegisterItem(name = "quantum_processor_5")
+@RegisterItem(name = "quantum_processor_6")
 public class QuantumProcessor extends Item {
 
-    public static DeferredHolder<Item, QuantumProcessor> QUANTUM_PROCESSOR_300NM;
-    public static DeferredHolder<Item, QuantumProcessor> QUANTUM_PROCESSOR_250NM;
-    public static DeferredHolder<Item, QuantumProcessor> QUANTUM_PROCESSOR_200NM;
-    public static DeferredHolder<Item, QuantumProcessor> QUANTUM_PROCESSOR_150NM;
-    public static DeferredHolder<Item, QuantumProcessor> QUANTUM_PROCESSOR_100NM;
-    public static DeferredHolder<Item, QuantumProcessor> QUANTUM_PROCESSOR_50NM;
+    public static DeferredHolder<Item, QuantumProcessor> QUANTUM_PROCESSOR_1;
+    public static DeferredHolder<Item, QuantumProcessor> QUANTUM_PROCESSOR_2;
+    public static DeferredHolder<Item, QuantumProcessor> QUANTUM_PROCESSOR_3;
+    public static DeferredHolder<Item, QuantumProcessor> QUANTUM_PROCESSOR_4;
+    public static DeferredHolder<Item, QuantumProcessor> QUANTUM_PROCESSOR_5;
+    public static DeferredHolder<Item, QuantumProcessor> QUANTUM_PROCESSOR_6;
 
     public QuantumProcessor(Properties properties) {
         super(properties);
