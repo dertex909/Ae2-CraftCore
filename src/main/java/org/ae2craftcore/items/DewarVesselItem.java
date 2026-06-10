@@ -129,7 +129,7 @@ public class DewarVesselItem extends Item implements IAEItemPowerStorage {
     }
 
     @Override
-    public void appendHoverText(@NotNull ItemStack stack, Item.@NotNull TooltipContext context, @NotNull List<Component> tooltipComponents, @NotNull TooltipFlag tooltipFlag) {
+    public void appendHoverText(@NotNull ItemStack stack, @NotNull TooltipContext context, @NotNull List<Component> tooltipComponents, @NotNull TooltipFlag tooltipFlag) {
         Integer stateVal = stack.get(AutoAttachmentRegistry.VESSEL_STATE.get());
         int vesselState = stateVal != null ? stateVal : 0;
 
