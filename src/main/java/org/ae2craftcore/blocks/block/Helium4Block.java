@@ -17,7 +17,7 @@ import java.util.Optional;
 import static net.minecraft.core.Direction.UP;
 import static net.minecraft.world.level.block.Blocks.SNOW;
 
-@RegisterBlock(name = "helium_4", strength = 3.0f, resistance = 3.0f, sound = "stone", requiresCorrectTool = true)
+@RegisterBlock(name = "helium_4", strength = 3.0f, resistance = 3.0f, sound = "stone", requiresCorrectTool = true, noOcclusion = true)
 public class Helium4Block extends Block {
     public Helium4Block(Properties properties) {
         super(properties);
