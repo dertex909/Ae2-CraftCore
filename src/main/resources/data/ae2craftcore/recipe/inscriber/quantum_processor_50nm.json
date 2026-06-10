@@ -1,0 +1,18 @@
+{
+  "type": "ae2:inscriber",
+  "mode": "press",
+  "ingredients": {
+    "top": {
+      "item": "ae2craftcore:quantum_processor_100nm"
+    },
+    "middle": {
+      "item": "ae2:ender_dust"
+    },
+    "bottom": {
+      "item": "ae2craftcore:quantum_processor_100nm"
+    }
+  },
+  "result": {
+    "id": "ae2craftcore:quantum_processor_50nm"
+  }
+}

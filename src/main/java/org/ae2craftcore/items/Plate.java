@@ -7,13 +7,13 @@ import org.ae2craftcore.registry.annotations.RegisterItem;
 @RegisterItem(name = "obsidian_plate")
 @RegisterItem(name = "quartz_plate")
 @RegisterItem(name = "end_stone_plate")
-public class Plates extends Item {
+public class Plate extends Item {
 
-    public static DeferredHolder<Item, Item> OBSIDIAN_PLATE;
-    public static DeferredHolder<Item, Item> QUARTZ_PLATE;
-    public static DeferredHolder<Item, Item> END_STONE_PLATE;
+    public static DeferredHolder<Item, Plate> OBSIDIAN_PLATE;
+    public static DeferredHolder<Item, Plate> QUARTZ_PLATE;
+    public static DeferredHolder<Item, Plate> END_STONE_PLATE;
 
-    public Plates(Properties properties) {
+    public Plate(Properties properties) {
         super(properties);
     }
 }
