@@ -20,6 +20,7 @@ import org.ae2craftcore.registry.annotations.RegisterItem;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
+import java.util.Objects;
 
 @RegisterItem(name = "dewar_vessel", stacksTo = 1)
 public class DewarVesselItem extends Item implements IAEItemPowerStorage {
@@ -133,10 +134,9 @@ public class DewarVesselItem extends Item implements IAEItemPowerStorage {
         int vesselState = stateVal != null ? stateVal : 0;
 
         if (vesselState == 1) {
-            Long currentVal = stack.get(AutoAttachmentRegistry.VESSEL_ENERGY.get());
-            long current = currentVal != null ? currentVal : 0L;
-            tooltipComponents.add(Component.literal("§7Energy: §a" + String.format("%,d", current) + " §7/ §a1,000,000,000 AE"));
             tooltipComponents.add(Component.literal("§bContains Helium-4"));
+            long current = Objects.requireNonNullElse(stack.get(AutoAttachmentRegistry.VESSEL_ENERGY.get()), 0L);
+            tooltipComponents.add(Component.literal(String.format("§7Energy: §a%,d §7/ §a1,000,000,000 AE", current)));
         } else if (vesselState == 2) {
             tooltipComponents.add(Component.literal("§bContains Helium-3"));
         } else {
