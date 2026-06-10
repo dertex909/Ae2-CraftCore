@@ -13,7 +13,6 @@ import org.ae2craftcore.registry.annotations.RegisterBlock;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Optional;
-import java.util.Random;
 
 import static net.minecraft.core.Direction.UP;
 import static net.minecraft.world.level.block.Blocks.SNOW;
@@ -26,7 +25,7 @@ public class Helium4Block extends Block {
 
     @Override
     public @NotNull BlockState playerWillDestroy(Level level, @NotNull BlockPos pos, @NotNull BlockState state, @NotNull Player player) {
-        if (!level.isClientSide) {
+        if (!level.isClientSide && !player.isCreative()) {
             level.removeBlock(pos, false);
             this.explode(level, pos);
             this.spawnSnow(level, pos);
@@ -54,7 +53,7 @@ public class Helium4Block extends Block {
     }
 
     private void spawnSnow(Level level, BlockPos pos) {
-        var random = new Random();
+        var random = level.getRandom();
         int radius = 5;
         for (int x = -radius; x <= radius; x++) {
             for (int y = -radius; y <= radius; y++) {
