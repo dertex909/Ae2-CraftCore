@@ -28,8 +28,8 @@ public class LogicAssemblerMenu extends AbstractContainerMenu {
 
         container.startOpen(playerInventory.player);
 
-        this.addSlot(new Slot(container, 0, 44, 35));
-        this.addSlot(new Slot(container, 1, 62, 35));
+        this.addSlot(new Slot(container, 0, 53, 17));
+        this.addSlot(new Slot(container, 1, 53, 53));
         this.addSlot(new Slot(container, 2, 120, 35) {
             @Override
             public boolean mayPlace(@NotNull ItemStack stack) {
@@ -61,7 +61,7 @@ public class LogicAssemblerMenu extends AbstractContainerMenu {
     @Override
     public @NotNull ItemStack quickMoveStack(@NotNull Player player, int index) {
         var itemstack = ItemStack.EMPTY;
-        Slot slot = this.slots.get(index);
+        var slot = this.slots.get(index);
         if (slot.hasItem()) {
             var itemstack1 = slot.getItem();
             itemstack = itemstack1.copy();

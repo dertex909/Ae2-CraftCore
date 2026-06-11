@@ -22,6 +22,7 @@ public class Ae2craftcore {
         ModSounds.register(modEventBus);
         AutoCreativeTabsRegistry.register(modEventBus);
         ModMenuTypes.register(modEventBus);
+        ModRecipeTypes.register(modEventBus);
         AutoBlockEntityRegistry.register(modEventBus);
         modEventBus.addListener(AutoNetworkRegistry::registerPayloads);
     }
