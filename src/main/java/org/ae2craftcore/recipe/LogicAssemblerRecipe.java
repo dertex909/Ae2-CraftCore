@@ -10,6 +10,9 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.*;
 import net.minecraft.world.level.Level;
+import net.minecraft.core.NonNullList;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.world.item.Item;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
@@ -27,6 +30,14 @@ public class LogicAssemblerRecipe implements Recipe<RecipeInput> {
         this.result = result;
         this.chance = chance;
         this.upgrades = upgrades;
+    }
+
+    @Override
+    public @NotNull NonNullList<Ingredient> getIngredients() {
+        NonNullList<Ingredient> ingredients = NonNullList.create();
+        ingredients.add(this.top);
+        ingredients.add(this.bottom);
+        return ingredients;
     }
 
     public Ingredient getTop() {
@@ -78,17 +89,14 @@ public class LogicAssemblerRecipe implements Recipe<RecipeInput> {
         return Type.INSTANCE;
     }
 
-    public record RecipeUpgrade(Ingredient card, float chanceBonus) {
-        public static final Codec<RecipeUpgrade> CODEC = RecordCodecBuilder.create(
-                inst -> inst.group(
-                        Ingredient.CODEC.fieldOf("card").forGetter(RecipeUpgrade::card),
-                        Codec.FLOAT.fieldOf("chance_bonus").forGetter(RecipeUpgrade::chanceBonus)
-                ).apply(inst, RecipeUpgrade::new));
+    public record RecipeUpgrade(Item card, float chanceBonus) {
+        public static final Codec<RecipeUpgrade> CODEC = RecordCodecBuilder.create(inst ->
+                inst.group(BuiltInRegistries.ITEM.byNameCodec().fieldOf("card").forGetter(RecipeUpgrade::card),
+                        Codec.FLOAT.fieldOf("chance_bonus").forGetter(RecipeUpgrade::chanceBonus)).apply(inst, RecipeUpgrade::new));
 
         public static final StreamCodec<RegistryFriendlyByteBuf, RecipeUpgrade> STREAM_CODEC = StreamCodec.composite(
-                Ingredient.CONTENTS_STREAM_CODEC, RecipeUpgrade::card,
-                ByteBufCodecs.FLOAT, RecipeUpgrade::chanceBonus,
-                RecipeUpgrade::new
+                ByteBufCodecs.fromCodec(BuiltInRegistries.ITEM.byNameCodec()), RecipeUpgrade::card,
+                ByteBufCodecs.FLOAT, RecipeUpgrade::chanceBonus, RecipeUpgrade::new
         );
     }
 

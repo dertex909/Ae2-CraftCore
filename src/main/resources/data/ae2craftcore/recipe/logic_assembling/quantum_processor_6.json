@@ -13,9 +13,7 @@
   "chance": 0.05,
   "upgrades": [
     {
-      "card": {
-        "item": "ae2craftcore:luck_card_4"
-      },
+      "card": "ae2craftcore:luck_card_4",
       "chance_bonus": 0.05
     }
   ]

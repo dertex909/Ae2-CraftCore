@@ -12,8 +12,8 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ContainerData;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
@@ -152,10 +152,10 @@ public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity imp
         return bonus;
     }
 
-    private boolean hasUpgradeCard(Ingredient cardIngredient) {
+    private boolean hasUpgradeCard(Item cardItem) {
         for (int i = 3; i < 7; i++) {
             var stack = this.getItem(i);
-            if (!stack.isEmpty() && cardIngredient.test(stack)) return true;
+            if (!stack.isEmpty() && stack.is(cardItem)) return true;
         }
         return false;
     }
