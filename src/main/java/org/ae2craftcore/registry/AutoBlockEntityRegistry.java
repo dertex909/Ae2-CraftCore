@@ -92,7 +92,7 @@ public class AutoBlockEntityRegistry {
             if (!field.getName().equals("TYPE")) continue;
             try {
                 field.setAccessible(true);
-                MethodHandles.lookup().unreflectSetter(field).invoke(type);
+                field.set(null, type);
                 return;
             } catch (Throwable e) {
                 Ae2craftcore.LOGGER.error("Failed to inject TYPE into block entity class: {}", clazz.getName(), e);
