@@ -12,14 +12,13 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ContainerData;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import org.ae2craftcore.blocks.block.LogicAssemblerBlock;
 import org.ae2craftcore.blocks.menu.LogicAssemblerMenu;
-import org.ae2craftcore.items.LuckUpgradeCard;
 import org.ae2craftcore.recipe.LogicAssemblerRecipe;
 import org.ae2craftcore.registry.ModRecipeTypes;
 import org.ae2craftcore.registry.annotations.RegisterBlockEntity;
@@ -147,17 +146,17 @@ public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity imp
         });
     }
 
-    public int getLuckCardsCount() {
-        int count = 0;
-        if (hasLuckCard(LuckUpgradeCard.LUCK_CARD_1.get())) count++;
-        if (hasLuckCard(LuckUpgradeCard.LUCK_CARD_2.get())) count++;
-        if (hasLuckCard(LuckUpgradeCard.LUCK_CARD_3.get())) count++;
-        if (hasLuckCard(LuckUpgradeCard.LUCK_CARD_4.get())) count++;
-        return count;
+    public float calculateRecipeBonus(LogicAssemblerRecipe recipe) {
+        float bonus = 0.0f;
+        for (var upgrade : recipe.getUpgrades()) if (hasUpgradeCard(upgrade.card())) bonus += upgrade.chanceBonus();
+        return bonus;
     }
 
-    private boolean hasLuckCard(Item item) {
-        for (int i = 3; i < 7; i++) if (this.getItem(i).is(item)) return true;
+    private boolean hasUpgradeCard(Ingredient cardIngredient) {
+        for (int i = 3; i < 7; i++) {
+            var stack = this.getItem(i);
+            if (!stack.isEmpty() && cardIngredient.test(stack)) return true;
+        }
         return false;
     }
 
@@ -182,8 +181,8 @@ public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity imp
                     top.shrink(1);
                     bottom.shrink(1);
 
-                    float luckBonus = 0.15f * blockEntity.getLuckCardsCount();
-                    float finalChance = Math.min(1.0f, recipe.getChance() + luckBonus);
+                    float recipeBonus = blockEntity.calculateRecipeBonus(recipe);
+                    float finalChance = Math.min(1.0f, recipe.getChance() + recipeBonus);
 
                     if (level.random.nextFloat() <= finalChance) {
                         blockEntity.rolledResult = recipeResult.copy();

@@ -5,23 +5,28 @@ import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.*;
 import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.List;
+
 public class LogicAssemblerRecipe implements Recipe<RecipeInput> {
     private final Ingredient top;
     private final Ingredient bottom;
     private final ItemStack result;
     private final float chance;
+    private final List<RecipeUpgrade> upgrades;
 
-    public LogicAssemblerRecipe(Ingredient top, Ingredient bottom, ItemStack result, float chance) {
+    public LogicAssemblerRecipe(Ingredient top, Ingredient bottom, ItemStack result, float chance, List<RecipeUpgrade> upgrades) {
         this.top = top;
         this.bottom = bottom;
         this.result = result;
         this.chance = chance;
+        this.upgrades = upgrades;
     }
 
     public Ingredient getTop() {
@@ -34,6 +39,10 @@ public class LogicAssemblerRecipe implements Recipe<RecipeInput> {
 
     public float getChance() {
         return chance;
+    }
+
+    public List<RecipeUpgrade> getUpgrades() {
+        return upgrades;
     }
 
     @Override
@@ -69,6 +78,20 @@ public class LogicAssemblerRecipe implements Recipe<RecipeInput> {
         return Type.INSTANCE;
     }
 
+    public record RecipeUpgrade(Ingredient card, float chanceBonus) {
+        public static final Codec<RecipeUpgrade> CODEC = RecordCodecBuilder.create(
+                inst -> inst.group(
+                        Ingredient.CODEC.fieldOf("card").forGetter(RecipeUpgrade::card),
+                        Codec.FLOAT.fieldOf("chance_bonus").forGetter(RecipeUpgrade::chanceBonus)
+                ).apply(inst, RecipeUpgrade::new));
+
+        public static final StreamCodec<RegistryFriendlyByteBuf, RecipeUpgrade> STREAM_CODEC = StreamCodec.composite(
+                Ingredient.CONTENTS_STREAM_CODEC, RecipeUpgrade::card,
+                ByteBufCodecs.FLOAT, RecipeUpgrade::chanceBonus,
+                RecipeUpgrade::new
+        );
+    }
+
     public record LogicAssemblerInput(ItemStack top, ItemStack bottom) implements RecipeInput {
         @Override
         public @NotNull ItemStack getItem(int index) {
@@ -92,14 +115,16 @@ public class LogicAssemblerRecipe implements Recipe<RecipeInput> {
                 Ingredient.CODEC.fieldOf("top").forGetter(LogicAssemblerRecipe::getTop),
                 Ingredient.CODEC.fieldOf("bottom").forGetter(LogicAssemblerRecipe::getBottom),
                 ItemStack.CODEC.fieldOf("result").forGetter(r -> r.result),
-                Codec.FLOAT.fieldOf("chance").forGetter(LogicAssemblerRecipe::getChance)
+                Codec.FLOAT.fieldOf("chance").forGetter(LogicAssemblerRecipe::getChance),
+                Codec.list(RecipeUpgrade.CODEC).optionalFieldOf("upgrades", List.of()).forGetter(LogicAssemblerRecipe::getUpgrades)
         ).apply(inst, LogicAssemblerRecipe::new));
 
         public static final StreamCodec<RegistryFriendlyByteBuf, LogicAssemblerRecipe> STREAM_CODEC = StreamCodec.composite(
                 Ingredient.CONTENTS_STREAM_CODEC, LogicAssemblerRecipe::getTop,
                 Ingredient.CONTENTS_STREAM_CODEC, LogicAssemblerRecipe::getBottom,
                 ItemStack.STREAM_CODEC, r -> r.result,
-                net.minecraft.network.codec.ByteBufCodecs.FLOAT, LogicAssemblerRecipe::getChance,
+                ByteBufCodecs.FLOAT, LogicAssemblerRecipe::getChance,
+                RecipeUpgrade.STREAM_CODEC.apply(ByteBufCodecs.list()), LogicAssemblerRecipe::getUpgrades,
                 LogicAssemblerRecipe::new
         );
 

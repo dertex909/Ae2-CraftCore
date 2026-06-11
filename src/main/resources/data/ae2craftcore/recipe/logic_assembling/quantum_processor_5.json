@@ -10,5 +10,19 @@
     "id": "ae2craftcore:quantum_processor_5",
     "count": 1
   },
-  "chance": 0.10
+  "chance": 0.10,
+  "upgrades": [
+    {
+      "card": {
+        "item": "ae2craftcore:luck_card_3"
+      },
+      "chance_bonus": 0.05
+    },
+    {
+      "card": {
+        "item": "ae2craftcore:luck_card_4"
+      },
+      "chance_bonus": 0.10
+    }
+  ]
 }
