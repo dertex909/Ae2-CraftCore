@@ -30,9 +30,9 @@ public class LogicAssemblerMenu extends AbstractContainerMenu {
 
         container.startOpen(playerInventory.player);
 
-        this.addSlot(new Slot(container, 0, 53, 17));
-        this.addSlot(new Slot(container, 1, 53, 53));
-        this.addSlot(new Slot(container, 2, 120, 35) {
+        this.addSlot(new Slot(container, 0, 39, 23));
+        this.addSlot(new Slot(container, 1, 39, 55));
+        this.addSlot(new Slot(container, 2, 113, 40) {
             @Override
             public boolean mayPlace(@NotNull ItemStack stack) {
                 return false;
@@ -51,12 +51,12 @@ public class LogicAssemblerMenu extends AbstractContainerMenu {
 
         for (int row = 0; row < 3; ++row) {
             for (int col = 0; col < 9; ++col) {
-                this.addSlot(new Slot(playerInventory, col + row * 9 + 9, 8 + col * 18, 84 + row * 18));
+                this.addSlot(new Slot(playerInventory, col + row * 9 + 9, 8 + col * 18, 94 + row * 18));
             }
         }
 
         for (int col = 0; col < 9; ++col) {
-            this.addSlot(new Slot(playerInventory, col, 8 + col * 18, 142));
+            this.addSlot(new Slot(playerInventory, col, 8 + col * 18, 152));
         }
 
         this.addDataSlots(data);
