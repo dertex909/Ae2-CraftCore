@@ -16,8 +16,8 @@ public class LogicAssemblerScreen extends AbstractContainerScreen<LogicAssembler
 
     public LogicAssemblerScreen(LogicAssemblerMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
-        this.imageWidth = 176;
-        this.imageHeight = 197;
+        this.imageWidth = 197;
+        this.imageHeight = 178;
     }
 
     @Override
@@ -25,7 +25,6 @@ public class LogicAssemblerScreen extends AbstractContainerScreen<LogicAssembler
         super.init();
         this.titleLabelX = (this.imageWidth - this.font.width(this.title)) / 2;
         this.inventoryLabelY = 83;
-        this.topPos += 10;
     }
 
     @Override
@@ -48,8 +47,9 @@ public class LogicAssemblerScreen extends AbstractContainerScreen<LogicAssembler
         int progress = this.menu.getProgress();
         int maxProgress = this.menu.getMaxProgress();
         if (progress > 0 && maxProgress > 0) {
-            int progressWidth = (progress * 24) / maxProgress;
-            guiGraphics.blit(TEXTURE, x + 84, y + 35, 176, 0, progressWidth, 17);
+            int h = (progress * 18) / maxProgress;
+            int offset = 18 - h;
+            guiGraphics.blit(TEXTURE, x + 135, y + 39 + offset, 197, offset, 6, h);
         }
     }
 }

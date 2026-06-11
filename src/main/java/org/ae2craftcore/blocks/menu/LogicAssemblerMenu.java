@@ -56,7 +56,7 @@ public class LogicAssemblerMenu extends AbstractContainerMenu {
         });
 
         for (int i = 0; i < 4; i++) {
-            this.addSlot(new Slot(container, 3 + i, 152, 8 + i * 18) {
+            this.addSlot(new Slot(container, 3 + i, 175, 6 + i * 18) {
                 @Override
                 public boolean mayPlace(@NotNull ItemStack stack) {
                     return AEItems.SPEED_CARD.is(stack);
