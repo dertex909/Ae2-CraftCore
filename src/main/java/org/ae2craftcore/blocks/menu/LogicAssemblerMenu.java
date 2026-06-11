@@ -39,12 +39,16 @@ public class LogicAssemblerMenu extends AbstractContainerMenu {
             }
         });
 
-        // Четыре слота под карты ускорения (принимают только карты скорости)
         for (int i = 0; i < 4; i++) {
             this.addSlot(new Slot(container, 3 + i, 152, 8 + i * 18) {
                 @Override
                 public boolean mayPlace(@NotNull ItemStack stack) {
                     return AEItems.SPEED_CARD.is(stack);
+                }
+
+                @Override
+                public int getMaxStackSize() {
+                    return 1;
                 }
             });
         }
@@ -79,18 +83,13 @@ public class LogicAssemblerMenu extends AbstractContainerMenu {
             itemstack = itemstack1.copy();
 
             if (index < 7) {
-                // Из инвентаря прибора (входы, выход, улучшения) перемещаем в инвентарь игрока (слоты 7-42)
                 if (!this.moveItemStackTo(itemstack1, 7, 43, true)) return ItemStack.EMPTY;
             } else {
-                // Из инвентаря игрока перемещаем в прибор
                 if (AEItems.SPEED_CARD.is(itemstack1)) {
-                    // Карты скорости сначала пробуем положить в слоты улучшений (3-6)
                     if (!this.moveItemStackTo(itemstack1, 3, 7, false)) {
-                        // Если занято, пытаемся положить во входные слоты (0-1)
                         if (!this.moveItemStackTo(itemstack1, 0, 2, false)) return ItemStack.EMPTY;
                     }
                 } else {
-                    // Обычные ресурсы идут только в рабочие входы (0-1)
                     if (!this.moveItemStackTo(itemstack1, 0, 2, false)) return ItemStack.EMPTY;
                 }
             }

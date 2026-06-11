@@ -23,15 +23,23 @@ import org.ae2craftcore.blocks.blockentity.LogicAssemblerBlockEntity;
 import org.ae2craftcore.registry.annotations.RegisterBlock;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import appeng.api.orientation.IOrientableBlock;
+import appeng.api.orientation.IOrientationStrategy;
+import appeng.api.orientation.OrientationStrategies;
 
 @RegisterBlock(name = "logic_assembler", strength = 3.0f, resistance = 3.0f, requiresCorrectTool = true)
-public class LogicAssemblerBlock extends BaseEntityBlock {
+public class LogicAssemblerBlock extends BaseEntityBlock implements IOrientableBlock {
     public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
     public static final MapCodec<LogicAssemblerBlock> CODEC = simpleCodec(LogicAssemblerBlock::new);
 
     public LogicAssemblerBlock(Properties properties) {
         super(properties);
         registerDefaultState(defaultBlockState().setValue(FACING, Direction.NORTH));
+    }
+
+    @Override
+    public IOrientationStrategy getOrientationStrategy() {
+        return OrientationStrategies.horizontalFacing();
     }
 
     @Override

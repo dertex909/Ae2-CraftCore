@@ -42,17 +42,16 @@ import java.util.Set;
 public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity implements WorldlyContainer, MenuProvider {
     public static BlockEntityType<LogicAssemblerBlockEntity> TYPE;
 
-    // Используем встроенный инвентарь AE2, настроенный на 7 слотов с максимальным стаком 64
     private final AppEngInternalInventory inv = new AppEngInternalInventory(this, 7, 64, new IAEItemFilter() {
         @Override
         public boolean allowInsert(InternalInventory inventory, int slot, ItemStack stack) {
-            if (slot == 2) return false; // Запрещено вручную/автоматически класть в выходной слот
+            if (slot == 2) return false;
             if (slot >= 3 && slot <= 6) return AEItems.SPEED_CARD.is(stack);
-            // В слоты 3-6 можно класть только карты скорости
-            return true; // Рабочие входы (0 и 1)
+            return true;
         }
     });
 
+    private ItemStack rolledResult = ItemStack.EMPTY;
     private int progress = 0;
     private int maxProgress = 100;
 
@@ -82,8 +81,8 @@ public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity imp
 
     public LogicAssemblerBlockEntity(BlockPos pos, BlockState state) {
         super(TYPE, pos, state);
-        this.getMainNode().setFlags().setIdlePowerUsage(1); // Потребление в простое: 1 AE/t
-        this.setInternalMaxPower(1600); // Максимальный буфер энергии прибора
+        this.getMainNode().setFlags().setIdlePowerUsage(10);
+        this.setInternalMaxPower(10000); // Максимальный буфер энергии прибора
         this.setPowerSides(getGridConnectableSides(getOrientation()));
     }
 
@@ -183,14 +182,16 @@ public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity imp
                 }
 
                 if (blockEntity.progress >= blockEntity.maxProgress) {
-                    ItemStack craftResult;
-
-                    if (level.random.nextFloat() <= recipe.getChance()) {
-                        craftResult = recipeResult.copy();
-                    } else {
-                        craftResult = new ItemStack(net.minecraft.world.item.Items.DIRT);//todo
+                    if (blockEntity.rolledResult.isEmpty()) {
+                        if (level.random.nextFloat() <= recipe.getChance()) {
+                            blockEntity.rolledResult = recipeResult.copy();
+                        } else {
+                            blockEntity.rolledResult = new ItemStack(net.minecraft.world.item.Items.DIRT);//todo
+                        }
+                        blockEntity.setChanged();
                     }
 
+                    var craftResult = blockEntity.rolledResult;
                     if (outputStack.isEmpty() || (ItemStack.isSameItemSameComponents(outputStack, craftResult)
                             && outputStack.getCount() + craftResult.getCount() <= outputStack.getMaxStackSize())) {
 
@@ -198,11 +199,12 @@ public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity imp
                         blockEntity.getItem(1).shrink(1);
 
                         if (outputStack.isEmpty()) {
-                            blockEntity.setItem(2, craftResult);
+                            blockEntity.setItem(2, craftResult.copy());
                         } else {
                             outputStack.grow(craftResult.getCount());
                         }
 
+                        blockEntity.rolledResult = ItemStack.EMPTY;
                         blockEntity.progress = 0;
                         blockEntity.setChanged();
                     }
@@ -211,6 +213,10 @@ public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity imp
         } else {
             if (blockEntity.progress > 0) {
                 blockEntity.progress = 0;
+                blockEntity.setChanged();
+            }
+            if (!blockEntity.rolledResult.isEmpty()) {
+                blockEntity.rolledResult = ItemStack.EMPTY;
                 blockEntity.setChanged();
             }
         }
@@ -300,6 +306,7 @@ public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity imp
         super.saveAdditional(tag, registries);
         tag.putInt("Progress", this.progress);
         tag.putInt("MaxProgress", this.maxProgress);
+        if (!this.rolledResult.isEmpty()) tag.put("RolledResult", this.rolledResult.save(registries));
     }
 
     @Override
@@ -307,5 +314,10 @@ public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity imp
         super.loadTag(tag, registries);
         this.progress = tag.getInt("Progress");
         this.maxProgress = tag.getInt("MaxProgress");
+        if (tag.contains("RolledResult")) {
+            this.rolledResult = ItemStack.parseOptional(registries, tag.getCompound("RolledResult"));
+        } else {
+            this.rolledResult = ItemStack.EMPTY;
+        }
     }
 }
