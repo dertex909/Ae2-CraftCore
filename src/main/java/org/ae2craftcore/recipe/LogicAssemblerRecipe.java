@@ -95,8 +95,12 @@ public class LogicAssemblerRecipe implements Recipe<RecipeInput> {
                 Codec.FLOAT.fieldOf("chance").forGetter(LogicAssemblerRecipe::getChance)
         ).apply(inst, LogicAssemblerRecipe::new));
 
-        public static final StreamCodec<RegistryFriendlyByteBuf, LogicAssemblerRecipe> STREAM_CODEC = StreamCodec.of(
-                Serializer::toNetwork, Serializer::fromNetwork
+        public static final StreamCodec<RegistryFriendlyByteBuf, LogicAssemblerRecipe> STREAM_CODEC = StreamCodec.composite(
+                Ingredient.CONTENTS_STREAM_CODEC, LogicAssemblerRecipe::getTop,
+                Ingredient.CONTENTS_STREAM_CODEC, LogicAssemblerRecipe::getBottom,
+                ItemStack.STREAM_CODEC, r -> r.result,
+                net.minecraft.network.codec.ByteBufCodecs.FLOAT, LogicAssemblerRecipe::getChance,
+                LogicAssemblerRecipe::new
         );
 
         @Override
@@ -107,21 +111,6 @@ public class LogicAssemblerRecipe implements Recipe<RecipeInput> {
         @Override
         public @NotNull StreamCodec<RegistryFriendlyByteBuf, LogicAssemblerRecipe> streamCodec() {
             return STREAM_CODEC;
-        }
-
-        private static LogicAssemblerRecipe fromNetwork(RegistryFriendlyByteBuf buffer) {
-            var top = Ingredient.CONTENTS_STREAM_CODEC.decode(buffer);
-            var bottom = Ingredient.CONTENTS_STREAM_CODEC.decode(buffer);
-            var result = ItemStack.STREAM_CODEC.decode(buffer);
-            var chance = buffer.readFloat();
-            return new LogicAssemblerRecipe(top, bottom, result, chance);
-        }
-
-        private static void toNetwork(RegistryFriendlyByteBuf buffer, LogicAssemblerRecipe recipe) {
-            Ingredient.CONTENTS_STREAM_CODEC.encode(buffer, recipe.top);
-            Ingredient.CONTENTS_STREAM_CODEC.encode(buffer, recipe.bottom);
-            ItemStack.STREAM_CODEC.encode(buffer, recipe.result);
-            buffer.writeFloat(recipe.chance);
         }
     }
 }
