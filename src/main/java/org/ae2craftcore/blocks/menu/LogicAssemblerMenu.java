@@ -12,17 +12,19 @@ import net.minecraft.world.item.ItemStack;
 import org.ae2craftcore.registry.ModMenuTypes;
 import org.jetbrains.annotations.NotNull;
 
+import appeng.core.definitions.AEItems;
+
 public class LogicAssemblerMenu extends AbstractContainerMenu {
     private final Container container;
     private final ContainerData data;
 
     public LogicAssemblerMenu(int containerId, Inventory playerInventory) {
-        this(containerId, playerInventory, new SimpleContainer(3), new SimpleContainerData(2));
+        this(containerId, playerInventory, new SimpleContainer(7), new SimpleContainerData(2));
     }
 
     public LogicAssemblerMenu(int containerId, Inventory playerInventory, Container container, ContainerData data) {
         super(ModMenuTypes.LOGIC_ASSEMBLER.get(), containerId);
-        checkContainerSize(container, 3);
+        checkContainerSize(container, 7);
         this.container = container;
         this.data = data;
 
@@ -36,6 +38,16 @@ public class LogicAssemblerMenu extends AbstractContainerMenu {
                 return false;
             }
         });
+
+        // Четыре слота под карты ускорения (принимают только карты скорости)
+        for (int i = 0; i < 4; i++) {
+            this.addSlot(new Slot(container, 3 + i, 152, 8 + i * 18) {
+                @Override
+                public boolean mayPlace(@NotNull ItemStack stack) {
+                    return AEItems.SPEED_CARD.is(stack);
+                }
+            });
+        }
 
         for (int row = 0; row < 3; ++row) {
             for (int col = 0; col < 9; ++col) {
@@ -65,10 +77,22 @@ public class LogicAssemblerMenu extends AbstractContainerMenu {
         if (slot.hasItem()) {
             var itemstack1 = slot.getItem();
             itemstack = itemstack1.copy();
-            if (index < 3) {
-                if (!this.moveItemStackTo(itemstack1, 3, 39, true)) return ItemStack.EMPTY;
-            } else if (!this.moveItemStackTo(itemstack1, 0, 2, false)) {
-                return ItemStack.EMPTY;
+
+            if (index < 7) {
+                // Из инвентаря прибора (входы, выход, улучшения) перемещаем в инвентарь игрока (слоты 7-42)
+                if (!this.moveItemStackTo(itemstack1, 7, 43, true)) return ItemStack.EMPTY;
+            } else {
+                // Из инвентаря игрока перемещаем в прибор
+                if (AEItems.SPEED_CARD.is(itemstack1)) {
+                    // Карты скорости сначала пробуем положить в слоты улучшений (3-6)
+                    if (!this.moveItemStackTo(itemstack1, 3, 7, false)) {
+                        // Если занято, пытаемся положить во входные слоты (0-1)
+                        if (!this.moveItemStackTo(itemstack1, 0, 2, false)) return ItemStack.EMPTY;
+                    }
+                } else {
+                    // Обычные ресурсы идут только в рабочие входы (0-1)
+                    if (!this.moveItemStackTo(itemstack1, 0, 2, false)) return ItemStack.EMPTY;
+                }
             }
 
             if (itemstack1.isEmpty()) {
