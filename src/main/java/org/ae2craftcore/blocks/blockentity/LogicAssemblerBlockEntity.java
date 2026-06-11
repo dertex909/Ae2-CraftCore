@@ -82,7 +82,7 @@ public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity imp
     public LogicAssemblerBlockEntity(BlockPos pos, BlockState state) {
         super(TYPE, pos, state);
         this.getMainNode().setFlags().setIdlePowerUsage(10);
-        this.setInternalMaxPower(10000); // Максимальный буфер энергии прибора
+        this.setInternalMaxPower(10000);
         this.setPowerSides(getGridConnectableSides(getOrientation()));
     }
 

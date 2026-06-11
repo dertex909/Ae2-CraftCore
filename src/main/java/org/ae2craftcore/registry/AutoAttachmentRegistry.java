@@ -14,8 +14,8 @@ public final class AutoAttachmentRegistry {
     public static final DeferredRegister.DataComponents DATA_COMPONENTS =
             DeferredRegister.createDataComponents(Registries.DATA_COMPONENT_TYPE, Ae2craftcore.MODID);
 
-    public static final Supplier<DataComponentType<Long>> VESSEL_ENERGY = DATA_COMPONENTS.registerComponentType(
-            "vessel_energy", builder -> builder.persistent(Codec.LONG).networkSynchronized(ByteBufCodecs.VAR_LONG)
+    public static final Supplier<DataComponentType<Double>> VESSEL_ENERGY = DATA_COMPONENTS.registerComponentType(
+            "vessel_energy", builder -> builder.persistent(Codec.DOUBLE).networkSynchronized(ByteBufCodecs.DOUBLE)
     );
 
     public static final Supplier<DataComponentType<Integer>> VESSEL_STATE = DATA_COMPONENTS.registerComponentType(
