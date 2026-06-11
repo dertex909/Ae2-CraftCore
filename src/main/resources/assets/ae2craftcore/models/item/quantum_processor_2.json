@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "ae2craftcore:item/quantum_processor"
+    "layer0": "ae2craftcore:item/quantum_processor_2"
   }
 }
