@@ -1,4 +1,4 @@
-package org.ae2craftcore.blocks.screen;
+package org.ae2craftcore.client.screen;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.gui.GuiGraphics;
