@@ -14,6 +14,7 @@ import org.ae2craftcore.registry.annotations.RegisterItem;
 @RegisterItem(name = "quantum_processor_4")
 @RegisterItem(name = "quantum_processor_5")
 @RegisterItem(name = "quantum_processor_6")
+@RegisterItem(name = "quantum_scrap")
 
 @RegisterItem(name = "quantum_processor_press", stacksTo = 1)
 public class BaseResources extends Item {
@@ -28,6 +29,7 @@ public class BaseResources extends Item {
     public static DeferredHolder<Item, BaseResources> QUANTUM_PROCESSOR_4;
     public static DeferredHolder<Item, BaseResources> QUANTUM_PROCESSOR_5;
     public static DeferredHolder<Item, BaseResources> QUANTUM_PROCESSOR_6;
+    public static DeferredHolder<Item, BaseResources> QUANTUM_SCRAP;
 
     public static DeferredHolder<Item, BaseResources> QUANTUM_PROCESSOR_PRESS;
 

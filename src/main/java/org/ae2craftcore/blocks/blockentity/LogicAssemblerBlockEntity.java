@@ -19,6 +19,7 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import org.ae2craftcore.blocks.block.LogicAssemblerBlock;
 import org.ae2craftcore.blocks.menu.LogicAssemblerMenu;
+import org.ae2craftcore.items.BaseResources;
 import org.ae2craftcore.recipe.LogicAssemblerRecipe;
 import org.ae2craftcore.registry.ModRecipeTypes;
 import org.ae2craftcore.registry.annotations.RegisterBlockEntity;
@@ -188,7 +189,7 @@ public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity imp
                     if (level.random.nextFloat() <= finalChance) {
                         blockEntity.rolledResult = recipeResult.copy();
                     } else {
-                        blockEntity.rolledResult = new ItemStack(net.minecraft.world.item.Items.DIRT);
+                        blockEntity.rolledResult = new ItemStack(BaseResources.QUANTUM_SCRAP);
                     }
 
                     blockEntity.activeRecipeChance = Math.round(finalChance * 100);
