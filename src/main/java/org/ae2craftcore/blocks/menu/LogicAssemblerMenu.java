@@ -21,7 +21,7 @@ public class LogicAssemblerMenu extends AbstractContainerMenu {
     private final ContainerData data;
 
     public LogicAssemblerMenu(int containerId, Inventory playerInventory) {
-        this(containerId, playerInventory, new SimpleContainer(7), new SimpleContainerData(2));
+        this(containerId, playerInventory, new SimpleContainer(7), new SimpleContainerData(3));
     }
 
     public LogicAssemblerMenu(int containerId, Inventory playerInventory, Container container, ContainerData data) {
@@ -107,6 +107,10 @@ public class LogicAssemblerMenu extends AbstractContainerMenu {
 
     public int getMaxProgress() {
         return this.data.get(1);
+    }
+
+    public int getCraftingChance() {
+        return this.data.get(2);
     }
 
     @Override

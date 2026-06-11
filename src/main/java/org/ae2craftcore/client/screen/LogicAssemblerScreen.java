@@ -34,6 +34,18 @@ public class LogicAssemblerScreen extends AbstractContainerScreen<LogicAssembler
     }
 
     @Override
+    protected void renderLabels(@NotNull GuiGraphics guiGraphics, int mouseX, int mouseY) {
+        super.renderLabels(guiGraphics, mouseX, mouseY);
+
+        int chance = this.menu.getCraftingChance();
+        if (chance > 0) {
+            var text = Component.literal(chance + "%");
+            int textWidth = this.font.width(text);
+            guiGraphics.drawString(this.font, text, 121 - textWidth / 2, 28, 0x000000, false);
+        }
+    }
+
+    @Override
     protected void renderBg(@NotNull GuiGraphics guiGraphics, float partialTick, int mouseX, int mouseY) {
         RenderSystem.setShader(GameRenderer::getPositionTexShader);
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);

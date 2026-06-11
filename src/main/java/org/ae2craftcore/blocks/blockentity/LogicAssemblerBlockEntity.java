@@ -54,6 +54,7 @@ public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity imp
     private ItemStack rolledResult = ItemStack.EMPTY;
     private int progress = 0;
     private int maxProgress = 100;
+    private int activeRecipeChance = 0;
 
     protected final ContainerData dataAccess = new ContainerData() {
         @Override
@@ -61,6 +62,7 @@ public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity imp
             return switch (index) {
                 case 0 -> LogicAssemblerBlockEntity.this.progress;
                 case 1 -> LogicAssemblerBlockEntity.this.maxProgress;
+                case 2 -> LogicAssemblerBlockEntity.this.activeRecipeChance;
                 default -> 0;
             };
         }
@@ -70,12 +72,13 @@ public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity imp
             switch (index) {
                 case 0 -> LogicAssemblerBlockEntity.this.progress = value;
                 case 1 -> LogicAssemblerBlockEntity.this.maxProgress = value;
+                case 2 -> LogicAssemblerBlockEntity.this.activeRecipeChance = value;
             }
         }
 
         @Override
         public int getCount() {
-            return 2;
+            return 3;
         }
     };
 
@@ -150,6 +153,10 @@ public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity imp
                 blockEntity.progress = 0;
                 blockEntity.setChanged();
             }
+            if (blockEntity.activeRecipeChance != 0) {
+                blockEntity.activeRecipeChance = 0;
+                blockEntity.setChanged();
+            }
             return;
         }
 
@@ -160,6 +167,12 @@ public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity imp
             var holder = optionalRecipe.get();
             var recipe = holder.value();
             var recipeResult = recipe.getResultItem(level.registryAccess());
+
+            int newChance = Math.round(recipe.getChance() * 100);
+            if (blockEntity.activeRecipeChance != newChance) {
+                blockEntity.activeRecipeChance = newChance;
+                blockEntity.setChanged();
+            }
 
             var outputStack = blockEntity.getItem(2);
 
@@ -213,6 +226,10 @@ public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity imp
         } else {
             if (blockEntity.progress > 0) {
                 blockEntity.progress = 0;
+                blockEntity.setChanged();
+            }
+            if (blockEntity.activeRecipeChance != 0) {
+                blockEntity.activeRecipeChance = 0;
                 blockEntity.setChanged();
             }
             if (!blockEntity.rolledResult.isEmpty()) {
