@@ -1,5 +1,6 @@
 package org.ae2craftcore.blocks.menu;
 
+import appeng.api.upgrades.Upgrades;
 import net.minecraft.world.Container;
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.player.Inventory;
@@ -10,15 +11,23 @@ import net.minecraft.world.inventory.SimpleContainerData;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
+import org.ae2craftcore.blocks.block.LogicAssemblerBlock;
 import org.ae2craftcore.registry.ModMenuTypes;
 import org.ae2craftcore.registry.ModRecipeTypes;
 import org.jetbrains.annotations.NotNull;
 
-import appeng.core.definitions.AEItems;
-
 public class LogicAssemblerMenu extends AbstractContainerMenu {
     private final Container container;
     private final ContainerData data;
+
+    public static boolean canInstallUpgradeCard(Container inv, int slot, ItemStack stack) {
+        if (Upgrades.getMaxInstallable(stack.getItem(), LogicAssemblerBlock.HOLDER.get()) <= 0) return false;
+        for (int i = 3; i < 7; i++) {
+            if (i == slot) continue;
+            if (inv.getItem(i).is(stack.getItem())) return false;
+        }
+        return true;
+    }
 
     public LogicAssemblerMenu(int containerId, Inventory playerInventory) {
         this(containerId, playerInventory, new SimpleContainer(7), new SimpleContainerData(3));
@@ -31,8 +40,7 @@ public class LogicAssemblerMenu extends AbstractContainerMenu {
         this.data = data;
 
         container.startOpen(playerInventory.player);
-
-        Level level = playerInventory.player.level();
+        var level = playerInventory.player.level();
 
         this.addSlot(new Slot(container, 0, 39, 23) {
             @Override
@@ -59,7 +67,7 @@ public class LogicAssemblerMenu extends AbstractContainerMenu {
             this.addSlot(new Slot(container, 3 + i, 175, 6 + i * 18) {
                 @Override
                 public boolean mayPlace(@NotNull ItemStack stack) {
-                    return AEItems.SPEED_CARD.is(stack);
+                    return canInstallUpgradeCard(container, this.getSlotIndex(), stack);
                 }
 
                 @Override
@@ -124,7 +132,7 @@ public class LogicAssemblerMenu extends AbstractContainerMenu {
             if (index < 7) {
                 if (!this.moveItemStackTo(itemstack1, 7, 43, true)) return ItemStack.EMPTY;
             } else {
-                if (AEItems.SPEED_CARD.is(itemstack1)) {
+                if (appeng.api.upgrades.Upgrades.getMaxInstallable(itemstack1.getItem(), LogicAssemblerBlock.HOLDER.get()) > 0) {
                     if (!this.moveItemStackTo(itemstack1, 3, 7, false)) {
                         if (!this.moveItemStackTo(itemstack1, 0, 2, false)) return ItemStack.EMPTY;
                     }

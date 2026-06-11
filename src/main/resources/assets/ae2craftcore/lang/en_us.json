@@ -12,6 +12,10 @@
   "item.ae2craftcore.obsidian_plate": "Obsidian plate",
   "item.ae2craftcore.quartz_plate": "Quartz plate",
   "item.ae2craftcore.end_stone_plate": "End stone plate",
+  "item.ae2craftcore.luck_card_1": "AC Error Correction Card",
+  "item.ae2craftcore.luck_card_2": "FC Error Correction Card",
+  "item.ae2craftcore.luck_card_3": "ML Error Correction Card",
+  "item.ae2craftcore.luck_card_4": "MC Error Correction Card",
   "itemGroup.ae2craftcore": "Ae2 CraftCore",
   "block.ae2craftcore.logic_assembler": "Logic Assembler",
   "container.ae2craftcore.logic_assembler": "Logic Assembler"

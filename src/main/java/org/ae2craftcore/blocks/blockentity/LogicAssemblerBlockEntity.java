@@ -12,12 +12,14 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ContainerData;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import org.ae2craftcore.blocks.block.LogicAssemblerBlock;
 import org.ae2craftcore.blocks.menu.LogicAssemblerMenu;
+import org.ae2craftcore.items.LuckUpgradeCard;
 import org.ae2craftcore.recipe.LogicAssemblerRecipe;
 import org.ae2craftcore.registry.ModRecipeTypes;
 import org.ae2craftcore.registry.annotations.RegisterBlockEntity;
@@ -46,7 +48,8 @@ public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity imp
         @Override
         public boolean allowInsert(InternalInventory inventory, int slot, ItemStack stack) {
             if (slot == 2) return false;
-            if (slot >= 3 && slot <= 6) return AEItems.SPEED_CARD.is(stack);
+            if (slot >= 3 && slot <= 6)
+                return LogicAssemblerMenu.canInstallUpgradeCard(LogicAssemblerBlockEntity.this, slot, stack);
             return LogicAssemblerBlockEntity.this.isValidInput(slot, stack);
         }
     });
@@ -144,6 +147,20 @@ public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity imp
         });
     }
 
+    public int getLuckCardsCount() {
+        int count = 0;
+        if (hasLuckCard(LuckUpgradeCard.LUCK_CARD_1.get())) count++;
+        if (hasLuckCard(LuckUpgradeCard.LUCK_CARD_2.get())) count++;
+        if (hasLuckCard(LuckUpgradeCard.LUCK_CARD_3.get())) count++;
+        if (hasLuckCard(LuckUpgradeCard.LUCK_CARD_4.get())) count++;
+        return count;
+    }
+
+    private boolean hasLuckCard(Item item) {
+        for (int i = 3; i < 7; i++) if (this.getItem(i).is(item)) return true;
+        return false;
+    }
+
     public static void tick(Level level, BlockPos pos, BlockState state, LogicAssemblerBlockEntity blockEntity) {
         if (level.isClientSide) return;
 
@@ -165,13 +182,16 @@ public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity imp
                     top.shrink(1);
                     bottom.shrink(1);
 
-                    if (level.random.nextFloat() <= recipe.getChance()) {
+                    float luckBonus = 0.15f * blockEntity.getLuckCardsCount();
+                    float finalChance = Math.min(1.0f, recipe.getChance() + luckBonus);
+
+                    if (level.random.nextFloat() <= finalChance) {
                         blockEntity.rolledResult = recipeResult.copy();
                     } else {
                         blockEntity.rolledResult = new ItemStack(net.minecraft.world.item.Items.DIRT);
                     }
 
-                    blockEntity.activeRecipeChance = Math.round(recipe.getChance() * 100);
+                    blockEntity.activeRecipeChance = Math.round(finalChance * 100);
                     blockEntity.progress = 0;
                     blockEntity.setChanged();
                 }
@@ -317,7 +337,7 @@ public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity imp
     @Override
     public boolean canPlaceItem(int slot, @NotNull ItemStack stack) {
         if (slot == 2) return false;
-        if (slot >= 3 && slot <= 6) return AEItems.SPEED_CARD.is(stack);
+        if (slot >= 3 && slot <= 6) return LogicAssemblerMenu.canInstallUpgradeCard(this, slot, stack);
         return this.isValidInput(slot, stack);
     }
 
