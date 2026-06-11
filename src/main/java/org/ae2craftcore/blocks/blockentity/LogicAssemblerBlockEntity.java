@@ -47,7 +47,7 @@ public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity imp
         public boolean allowInsert(InternalInventory inventory, int slot, ItemStack stack) {
             if (slot == 2) return false;
             if (slot >= 3 && slot <= 6) return AEItems.SPEED_CARD.is(stack);
-            return true;
+            return LogicAssemblerBlockEntity.this.isValidInput(slot, stack);
         }
     });
 
@@ -186,7 +186,7 @@ public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity imp
                         if (level.random.nextFloat() <= recipe.getChance()) {
                             blockEntity.rolledResult = recipeResult.copy();
                         } else {
-                            blockEntity.rolledResult = new ItemStack(net.minecraft.world.item.Items.DIRT);//todo
+                            blockEntity.rolledResult = new ItemStack(net.minecraft.world.item.Items.DIRT);
                         }
                         blockEntity.setChanged();
                     }
@@ -220,6 +220,23 @@ public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity imp
                 blockEntity.setChanged();
             }
         }
+    }
+
+    public boolean isValidInput(int slot, @NotNull ItemStack stack) {
+        if (this.level == null) return true;
+        var otherStack = this.getItem(slot == 0 ? 1 : 0);
+        var recipes = this.level.getRecipeManager().getAllRecipesFor(ModRecipeTypes.LOGIC_ASSEMBLING_TYPE.get());
+
+        for (var holder : recipes) {
+            var recipe = holder.value();
+            boolean matchesCurrent = (slot == 0) ? recipe.getTop().test(stack) : recipe.getBottom().test(stack);
+            if (matchesCurrent) {
+                if (otherStack.isEmpty()) return true;
+                boolean matchesOther = (slot == 0) ? recipe.getBottom().test(otherStack) : recipe.getTop().test(otherStack);
+                if (matchesOther) return true;
+            }
+        }
+        return false;
     }
 
     @Override
@@ -291,9 +308,16 @@ public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity imp
     }
 
     @Override
+    public boolean canPlaceItem(int slot, @NotNull ItemStack stack) {
+        if (slot == 2) return false;
+        if (slot >= 3 && slot <= 6) return AEItems.SPEED_CARD.is(stack);
+        return this.isValidInput(slot, stack);
+    }
+
+    @Override
     public boolean canPlaceItemThroughFace(int index, @NotNull ItemStack stack, @Nullable Direction direction) {
-        if (index >= 2) return false;
-        return direction != Direction.DOWN;
+        if (direction == Direction.DOWN) return false;
+        return this.canPlaceItem(index, stack);
     }
 
     @Override

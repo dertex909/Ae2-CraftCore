@@ -9,7 +9,9 @@ import net.minecraft.world.inventory.ContainerData;
 import net.minecraft.world.inventory.SimpleContainerData;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
 import org.ae2craftcore.registry.ModMenuTypes;
+import org.ae2craftcore.registry.ModRecipeTypes;
 import org.jetbrains.annotations.NotNull;
 
 import appeng.core.definitions.AEItems;
@@ -30,8 +32,22 @@ public class LogicAssemblerMenu extends AbstractContainerMenu {
 
         container.startOpen(playerInventory.player);
 
-        this.addSlot(new Slot(container, 0, 39, 23));
-        this.addSlot(new Slot(container, 1, 39, 55));
+        Level level = playerInventory.player.level();
+
+        this.addSlot(new Slot(container, 0, 39, 23) {
+            @Override
+            public boolean mayPlace(@NotNull ItemStack stack) {
+                return isValidInputForSlot(level, container, 0, stack);
+            }
+        });
+
+        this.addSlot(new Slot(container, 1, 39, 55) {
+            @Override
+            public boolean mayPlace(@NotNull ItemStack stack) {
+                return isValidInputForSlot(level, container, 1, stack);
+            }
+        });
+
         this.addSlot(new Slot(container, 2, 113, 40) {
             @Override
             public boolean mayPlace(@NotNull ItemStack stack) {
@@ -64,6 +80,25 @@ public class LogicAssemblerMenu extends AbstractContainerMenu {
         }
 
         this.addDataSlots(data);
+    }
+
+    private static boolean isValidInputForSlot(Level level, Container container, int slot, ItemStack stack) {
+        if (level == null) return true;
+
+        var otherStack = container.getItem(slot == 0 ? 1 : 0);
+        var recipes = level.getRecipeManager().getAllRecipesFor(ModRecipeTypes.LOGIC_ASSEMBLING_TYPE.get());
+
+        for (var holder : recipes) {
+            var recipe = holder.value();
+            boolean matchesCurrent = (slot == 0) ? recipe.getTop().test(stack) : recipe.getBottom().test(stack);
+
+            if (matchesCurrent) {
+                if (otherStack.isEmpty()) return true;
+                boolean matchesOther = (slot == 0) ? recipe.getBottom().test(otherStack) : recipe.getTop().test(otherStack);
+                if (matchesOther) return true;
+            }
+        }
+        return false;
     }
 
     public int getProgress() {
