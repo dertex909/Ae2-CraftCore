@@ -142,6 +142,7 @@ public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity imp
         if (level.isClientSide) return;
 
         blockEntity.chargeInternalBuffer();
+
         var top = blockEntity.getItem(0);
         var bottom = blockEntity.getItem(1);
 
@@ -159,44 +160,52 @@ public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity imp
         if (optionalRecipe.isPresent()) {
             var holder = optionalRecipe.get();
             var recipe = holder.value();
-            var recipeResult = recipe.assemble(input, level.registryAccess());
+            var recipeResult = recipe.getResultItem(level.registryAccess());
 
             var outputStack = blockEntity.getItem(2);
-            if (outputStack.isEmpty() || (ItemStack.isSameItemSameComponents(outputStack, recipeResult)
-                    && outputStack.getCount() + recipeResult.getCount() <= outputStack.getMaxStackSize())) {
 
-                int speedCards = blockEntity.getSpeedCardsCount();
-                int progressStep = switch (speedCards) {
-                    case 1 -> 2;
-                    case 2 -> 4;
-                    case 3 -> 8;
-                    case 4 -> 16;
-                    default -> 1;
-                };
-                double powerRequired = 5.0 * progressStep;
+            int speedCards = blockEntity.getSpeedCardsCount();
+            int progressStep = switch (speedCards) {
+                case 1 -> 2;
+                case 2 -> 4;
+                case 3 -> 8;
+                case 4 -> 16;
+                default -> 1;
+            };
+            double powerRequired = 5.0 * progressStep;
 
-                double powerExtracted = blockEntity.extractPower(powerRequired);
-                if (powerExtracted >= powerRequired - 0.01) {
+            double powerExtracted = blockEntity.extractPower(powerRequired);
+            if (powerExtracted >= powerRequired - 0.01) {
+
+                if (blockEntity.progress < blockEntity.maxProgress) {
                     blockEntity.progress += progressStep;
                     blockEntity.setChanged();
+                }
 
-                    if (blockEntity.progress >= blockEntity.maxProgress) {
-                        blockEntity.progress = 0;
+                if (blockEntity.progress >= blockEntity.maxProgress) {
+                    ItemStack craftResult;
+
+                    if (level.random.nextFloat() <= recipe.getChance()) {
+                        craftResult = recipeResult.copy();
+                    } else {
+                        craftResult = new ItemStack(net.minecraft.world.item.Items.DIRT);//todo
+                    }
+
+                    if (outputStack.isEmpty() || (ItemStack.isSameItemSameComponents(outputStack, craftResult)
+                            && outputStack.getCount() + craftResult.getCount() <= outputStack.getMaxStackSize())) {
+
                         blockEntity.getItem(0).shrink(1);
                         blockEntity.getItem(1).shrink(1);
 
                         if (outputStack.isEmpty()) {
-                            blockEntity.setItem(2, recipeResult.copy());
+                            blockEntity.setItem(2, craftResult);
                         } else {
-                            outputStack.grow(recipeResult.getCount());
+                            outputStack.grow(craftResult.getCount());
                         }
+
+                        blockEntity.progress = 0;
                         blockEntity.setChanged();
                     }
-                }
-            } else {
-                if (blockEntity.progress > 0) {
-                    blockEntity.progress = 0;
-                    blockEntity.setChanged();
                 }
             }
         } else {

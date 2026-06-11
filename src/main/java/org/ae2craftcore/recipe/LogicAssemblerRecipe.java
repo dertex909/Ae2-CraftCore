@@ -1,5 +1,6 @@
 package org.ae2craftcore.recipe;
 
+import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.HolderLookup;
@@ -14,11 +15,13 @@ public class LogicAssemblerRecipe implements Recipe<RecipeInput> {
     private final Ingredient top;
     private final Ingredient bottom;
     private final ItemStack result;
+    private final float chance;
 
-    public LogicAssemblerRecipe(Ingredient top, Ingredient bottom, ItemStack result) {
+    public LogicAssemblerRecipe(Ingredient top, Ingredient bottom, ItemStack result, float chance) {
         this.top = top;
         this.bottom = bottom;
         this.result = result;
+        this.chance = chance;
     }
 
     public Ingredient getTop() {
@@ -27,6 +30,10 @@ public class LogicAssemblerRecipe implements Recipe<RecipeInput> {
 
     public Ingredient getBottom() {
         return bottom;
+    }
+
+    public float getChance() {
+        return chance;
     }
 
     @Override
@@ -84,7 +91,8 @@ public class LogicAssemblerRecipe implements Recipe<RecipeInput> {
         public static final MapCodec<LogicAssemblerRecipe> CODEC = RecordCodecBuilder.mapCodec(inst -> inst.group(
                 Ingredient.CODEC.fieldOf("top").forGetter(LogicAssemblerRecipe::getTop),
                 Ingredient.CODEC.fieldOf("bottom").forGetter(LogicAssemblerRecipe::getBottom),
-                ItemStack.CODEC.fieldOf("result").forGetter(r -> r.result)
+                ItemStack.CODEC.fieldOf("result").forGetter(r -> r.result),
+                Codec.FLOAT.fieldOf("chance").forGetter(LogicAssemblerRecipe::getChance)
         ).apply(inst, LogicAssemblerRecipe::new));
 
         public static final StreamCodec<RegistryFriendlyByteBuf, LogicAssemblerRecipe> STREAM_CODEC = StreamCodec.of(
@@ -105,13 +113,15 @@ public class LogicAssemblerRecipe implements Recipe<RecipeInput> {
             var top = Ingredient.CONTENTS_STREAM_CODEC.decode(buffer);
             var bottom = Ingredient.CONTENTS_STREAM_CODEC.decode(buffer);
             var result = ItemStack.STREAM_CODEC.decode(buffer);
-            return new LogicAssemblerRecipe(top, bottom, result);
+            var chance = buffer.readFloat();
+            return new LogicAssemblerRecipe(top, bottom, result, chance);
         }
 
         private static void toNetwork(RegistryFriendlyByteBuf buffer, LogicAssemblerRecipe recipe) {
             Ingredient.CONTENTS_STREAM_CODEC.encode(buffer, recipe.top);
             Ingredient.CONTENTS_STREAM_CODEC.encode(buffer, recipe.bottom);
             ItemStack.STREAM_CODEC.encode(buffer, recipe.result);
+            buffer.writeFloat(recipe.chance);
         }
     }
 }

@@ -1,0 +1,14 @@
+{
+  "type": "ae2craftcore:logic_assembling",
+  "top": {
+    "item": "ae2craftcore:quantum_processor_2"
+  },
+  "bottom": {
+    "item": "ae2craftcore:quantum_processor_2"
+  },
+  "result": {
+    "id": "ae2craftcore:quantum_processor_3",
+    "count": 1
+  },
+  "chance": 0.20
+}
