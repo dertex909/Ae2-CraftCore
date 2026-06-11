@@ -90,6 +90,8 @@ public class LogicAssemblerBlock extends BaseEntityBlock implements IOrientableB
             var blockEntity = level.getBlockEntity(pos);
             if (blockEntity instanceof LogicAssemblerBlockEntity assembler) {
                 Containers.dropContents(level, pos, assembler);
+                var rolled = assembler.getRolledResult();
+                if (rolled != null && !rolled.isEmpty()) Block.popResource(level, pos, rolled);
                 level.updateNeighbourForOutputSignal(pos, this);
             }
             super.onRemove(state, level, pos, newState, movedByPiston);

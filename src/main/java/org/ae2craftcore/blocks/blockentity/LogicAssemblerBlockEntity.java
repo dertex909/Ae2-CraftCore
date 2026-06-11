@@ -89,6 +89,10 @@ public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity imp
         this.setPowerSides(getGridConnectableSides(getOrientation()));
     }
 
+    public ItemStack getRolledResult() {
+        return this.rolledResult;
+    }
+
     @Override
     public InternalInventory getInternalInventory() {
         return this.inv;
@@ -145,37 +149,36 @@ public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity imp
 
         blockEntity.chargeInternalBuffer();
 
-        var top = blockEntity.getItem(0);
-        var bottom = blockEntity.getItem(1);
+        if (blockEntity.rolledResult.isEmpty()) {
+            var top = blockEntity.getItem(0);
+            var bottom = blockEntity.getItem(1);
 
-        if (top.isEmpty() || bottom.isEmpty()) {
-            if (blockEntity.progress > 0) {
-                blockEntity.progress = 0;
-                blockEntity.setChanged();
+            if (!top.isEmpty() && !bottom.isEmpty()) {
+                var input = new LogicAssemblerRecipe.LogicAssemblerInput(top, bottom);
+                var optionalRecipe = level.getRecipeManager().getRecipeFor(ModRecipeTypes.LOGIC_ASSEMBLING_TYPE.get(), input, level);
+
+                if (optionalRecipe.isPresent()) {
+                    var holder = optionalRecipe.get();
+                    var recipe = holder.value();
+                    var recipeResult = recipe.getResultItem(level.registryAccess());
+
+                    top.shrink(1);
+                    bottom.shrink(1);
+
+                    if (level.random.nextFloat() <= recipe.getChance()) {
+                        blockEntity.rolledResult = recipeResult.copy();
+                    } else {
+                        blockEntity.rolledResult = new ItemStack(net.minecraft.world.item.Items.DIRT);
+                    }
+
+                    blockEntity.activeRecipeChance = Math.round(recipe.getChance() * 100);
+                    blockEntity.progress = 0;
+                    blockEntity.setChanged();
+                }
             }
-            if (blockEntity.activeRecipeChance != 0) {
-                blockEntity.activeRecipeChance = 0;
-                blockEntity.setChanged();
-            }
-            return;
         }
 
-        var input = new LogicAssemblerRecipe.LogicAssemblerInput(top, bottom);
-        var optionalRecipe = level.getRecipeManager().getRecipeFor(ModRecipeTypes.LOGIC_ASSEMBLING_TYPE.get(), input, level);
-
-        if (optionalRecipe.isPresent()) {
-            var holder = optionalRecipe.get();
-            var recipe = holder.value();
-            var recipeResult = recipe.getResultItem(level.registryAccess());
-
-            int newChance = Math.round(recipe.getChance() * 100);
-            if (blockEntity.activeRecipeChance != newChance) {
-                blockEntity.activeRecipeChance = newChance;
-                blockEntity.setChanged();
-            }
-
-            var outputStack = blockEntity.getItem(2);
-
+        if (!blockEntity.rolledResult.isEmpty()) {
             int speedCards = blockEntity.getSpeedCardsCount();
             int progressStep = switch (speedCards) {
                 case 1 -> 2;
@@ -195,21 +198,11 @@ public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity imp
                 }
 
                 if (blockEntity.progress >= blockEntity.maxProgress) {
-                    if (blockEntity.rolledResult.isEmpty()) {
-                        if (level.random.nextFloat() <= recipe.getChance()) {
-                            blockEntity.rolledResult = recipeResult.copy();
-                        } else {
-                            blockEntity.rolledResult = new ItemStack(net.minecraft.world.item.Items.DIRT);
-                        }
-                        blockEntity.setChanged();
-                    }
-
+                    var outputStack = blockEntity.getItem(2);
                     var craftResult = blockEntity.rolledResult;
+
                     if (outputStack.isEmpty() || (ItemStack.isSameItemSameComponents(outputStack, craftResult)
                             && outputStack.getCount() + craftResult.getCount() <= outputStack.getMaxStackSize())) {
-
-                        blockEntity.getItem(0).shrink(1);
-                        blockEntity.getItem(1).shrink(1);
 
                         if (outputStack.isEmpty()) {
                             blockEntity.setItem(2, craftResult.copy());
@@ -219,6 +212,7 @@ public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity imp
 
                         blockEntity.rolledResult = ItemStack.EMPTY;
                         blockEntity.progress = 0;
+                        blockEntity.activeRecipeChance = 0;
                         blockEntity.setChanged();
                     }
                 }
@@ -230,10 +224,6 @@ public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity imp
             }
             if (blockEntity.activeRecipeChance != 0) {
                 blockEntity.activeRecipeChance = 0;
-                blockEntity.setChanged();
-            }
-            if (!blockEntity.rolledResult.isEmpty()) {
-                blockEntity.rolledResult = ItemStack.EMPTY;
                 blockEntity.setChanged();
             }
         }
@@ -347,6 +337,7 @@ public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity imp
         super.saveAdditional(tag, registries);
         tag.putInt("Progress", this.progress);
         tag.putInt("MaxProgress", this.maxProgress);
+        tag.putInt("ActiveRecipeChance", this.activeRecipeChance);
         if (!this.rolledResult.isEmpty()) tag.put("RolledResult", this.rolledResult.save(registries));
     }
 
@@ -355,6 +346,7 @@ public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity imp
         super.loadTag(tag, registries);
         this.progress = tag.getInt("Progress");
         this.maxProgress = tag.getInt("MaxProgress");
+        this.activeRecipeChance = tag.getInt("ActiveRecipeChance");
         if (tag.contains("RolledResult")) {
             this.rolledResult = ItemStack.parseOptional(registries, tag.getCompound("RolledResult"));
         } else {
