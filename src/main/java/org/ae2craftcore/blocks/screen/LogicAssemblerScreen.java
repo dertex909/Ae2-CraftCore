@@ -16,6 +16,8 @@ public class LogicAssemblerScreen extends AbstractContainerScreen<LogicAssembler
 
     public LogicAssemblerScreen(LogicAssemblerMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
+        this.imageWidth = 176;
+        this.imageHeight = 197;
     }
 
     @Override
