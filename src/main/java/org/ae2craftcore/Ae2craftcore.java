@@ -25,5 +25,6 @@ public class Ae2craftcore {
         ModRecipeTypes.register(modEventBus);
         AutoBlockEntityRegistry.register(modEventBus);
         modEventBus.addListener(AutoNetworkRegistry::registerPayloads);
+        modEventBus.addListener(Ae2Setup::commonSetup);
     }
 }

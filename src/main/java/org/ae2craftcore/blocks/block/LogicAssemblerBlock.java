@@ -19,6 +19,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.phys.BlockHitResult;
+import net.neoforged.neoforge.registries.DeferredHolder;
 import org.ae2craftcore.blocks.blockentity.LogicAssemblerBlockEntity;
 import org.ae2craftcore.registry.annotations.RegisterBlock;
 import org.jetbrains.annotations.NotNull;
@@ -29,6 +30,9 @@ import appeng.api.orientation.OrientationStrategies;
 
 @RegisterBlock(name = "logic_assembler", strength = 3.0f, resistance = 3.0f, requiresCorrectTool = true)
 public class LogicAssemblerBlock extends BaseEntityBlock implements IOrientableBlock {
+
+    public static DeferredHolder<Block, LogicAssemblerBlock> HOLDER;
+
     public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
     public static final MapCodec<LogicAssemblerBlock> CODEC = simpleCodec(LogicAssemblerBlock::new);
 
