@@ -32,12 +32,13 @@ import appeng.api.inventories.InternalInventory;
 import appeng.api.orientation.BlockOrientation;
 import appeng.api.util.AECableType;
 import appeng.blockentity.grid.AENetworkedPoweredBlockEntity;
-import appeng.core.definitions.AEItems;
 import appeng.util.inv.AppEngInternalInventory;
 import appeng.util.inv.filter.IAEItemFilter;
 
 import java.util.EnumSet;
 import java.util.Set;
+
+import static appeng.core.definitions.AEItems.SPEED_CARD;
 
 @RegisterBlockEntity(name = "logic_assembler", blocks = {LogicAssemblerBlock.class})
 public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity implements WorldlyContainer, MenuProvider {
@@ -120,7 +121,7 @@ public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity imp
         int count = 0;
         for (int i = 3; i < 7; i++) {
             var stack = this.getItem(i);
-            if (!stack.isEmpty() && AEItems.SPEED_CARD.is(stack)) count += stack.getCount();
+            if (!stack.isEmpty() && SPEED_CARD.is(stack)) count += stack.getCount();
         }
         return Math.min(4, count);
     }
@@ -326,11 +327,8 @@ public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity imp
 
     @Override
     public int @NotNull [] getSlotsForFace(@NotNull Direction side) {
-        if (side == Direction.DOWN) {
-            return new int[]{2};
-        } else {
-            return new int[]{0, 1};
-        }
+        if (side == Direction.DOWN) return new int[]{2};
+        else return new int[]{0, 1};
     }
 
     @Override
@@ -368,8 +366,6 @@ public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity imp
         this.activeRecipeChance = tag.getInt("ActiveRecipeChance");
         if (tag.contains("RolledResult")) {
             this.rolledResult = ItemStack.parseOptional(registries, tag.getCompound("RolledResult"));
-        } else {
-            this.rolledResult = ItemStack.EMPTY;
-        }
+        } else this.rolledResult = ItemStack.EMPTY;
     }
 }
