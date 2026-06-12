@@ -36,10 +36,10 @@ public class LogicAssemblerScreen extends AbstractContainerScreen<LogicAssembler
         super.renderLabels(guiGraphics, mouseX, mouseY);
 
         int chance = this.menu.getCraftingChance();
-        if (chance > 0) {
+        if (chance >= 0 ) {
             var text = Component.literal(chance + "%");
             int textWidth = this.font.width(text);
-            guiGraphics.drawString(this.font, text, 121 - textWidth / 2, 28, 0x000000, false);
+            guiGraphics.drawString(this.font, text, 122 - textWidth / 2, 26, 0x000000, false);
         }
     }
 

@@ -185,7 +185,7 @@ public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity imp
 
                     float recipeBonus = blockEntity.calculateRecipeBonus(recipe);
                     int speedCards = blockEntity.getSpeedCardsCount();
-                    float penalty = speedCards * 0.05f;
+                    float penalty = speedCards * 0.01f;
                     float finalChance = Math.clamp(recipe.getChance() + recipeBonus - penalty, 0.0f, 1.0f);
 
                     if (level.random.nextFloat() <= finalChance) {

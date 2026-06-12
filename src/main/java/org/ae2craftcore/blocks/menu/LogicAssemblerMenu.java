@@ -21,12 +21,15 @@ public class LogicAssemblerMenu extends AbstractContainerMenu {
     private final ContainerData data;
 
     public static boolean canInstallUpgradeCard(Container inv, int slot, ItemStack stack) {
-        if (Upgrades.getMaxInstallable(stack.getItem(), LogicAssemblerBlock.HOLDER.get()) <= 0) return false;
+        int maxAllowed = Upgrades.getMaxInstallable(stack.getItem(), LogicAssemblerBlock.HOLDER.get());
+        if (maxAllowed <= 0) return false;
+        int currentCount = 0;
         for (int i = 3; i < 7; i++) {
             if (i == slot) continue;
-            if (inv.getItem(i).is(stack.getItem())) return false;
+            var installed = inv.getItem(i);
+            if (!installed.isEmpty() && installed.is(stack.getItem())) currentCount += installed.getCount();
         }
-        return true;
+        return currentCount < maxAllowed;
     }
 
     public LogicAssemblerMenu(int containerId, Inventory playerInventory) {
