@@ -56,7 +56,7 @@ public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity imp
     });
 
     private ItemStack rolledResult = ItemStack.EMPTY;
-    private int progress = 0;
+    private double progress = 0.0;
     private int maxProgress = 100;
     private int activeRecipeChance = 0;
 
@@ -64,7 +64,7 @@ public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity imp
         @Override
         public int get(int index) {
             return switch (index) {
-                case 0 -> LogicAssemblerBlockEntity.this.progress;
+                case 0 -> (int) Math.round(LogicAssemblerBlockEntity.this.progress);
                 case 1 -> LogicAssemblerBlockEntity.this.maxProgress;
                 case 2 -> LogicAssemblerBlockEntity.this.activeRecipeChance;
                 default -> 0;
@@ -184,7 +184,9 @@ public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity imp
                     bottom.shrink(1);
 
                     float recipeBonus = blockEntity.calculateRecipeBonus(recipe);
-                    float finalChance = Math.min(1.0f, recipe.getChance() + recipeBonus);
+                    int speedCards = blockEntity.getSpeedCardsCount();
+                    float penalty = speedCards * 0.05f;
+                    float finalChance = Math.clamp(recipe.getChance() + recipeBonus - penalty, 0.0f, 1.0f);
 
                     if (level.random.nextFloat() <= finalChance) {
                         blockEntity.rolledResult = recipeResult.copy();
@@ -201,14 +203,14 @@ public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity imp
 
         if (!blockEntity.rolledResult.isEmpty()) {
             int speedCards = blockEntity.getSpeedCardsCount();
-            int progressStep = switch (speedCards) {
-                case 1 -> 2;
-                case 2 -> 4;
-                case 3 -> 8;
-                case 4 -> 16;
-                default -> 1;
+            double progressStep = switch (speedCards) {
+                case 1 -> 2.5;
+                case 2 -> 5.0;
+                case 3 -> 7.5;
+                case 4 -> 10.0;
+                default -> 1.0;
             };
-            double powerRequired = 5.0 * progressStep;
+            double powerRequired = 26.7 * progressStep;
 
             double powerExtracted = blockEntity.extractPower(powerRequired);
             if (powerExtracted >= powerRequired - 0.01) {
@@ -353,7 +355,8 @@ public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity imp
     @Override
     public void saveAdditional(@NotNull CompoundTag tag, HolderLookup.@NotNull Provider registries) {
         super.saveAdditional(tag, registries);
-        tag.putInt("Progress", this.progress);
+        tag.putDouble("ProgressDouble", this.progress);
+        tag.putInt("Progress", (int) Math.round(this.progress));
         tag.putInt("MaxProgress", this.maxProgress);
         tag.putInt("ActiveRecipeChance", this.activeRecipeChance);
         if (!this.rolledResult.isEmpty()) tag.put("RolledResult", this.rolledResult.save(registries));
@@ -362,7 +365,11 @@ public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity imp
     @Override
     public void loadTag(@NotNull CompoundTag tag, HolderLookup.@NotNull Provider registries) {
         super.loadTag(tag, registries);
-        this.progress = tag.getInt("Progress");
+        if (tag.contains("ProgressDouble")) {
+            this.progress = tag.getDouble("ProgressDouble");
+        } else {
+            this.progress = tag.getInt("Progress");
+        }
         this.maxProgress = tag.getInt("MaxProgress");
         this.activeRecipeChance = tag.getInt("ActiveRecipeChance");
         if (tag.contains("RolledResult")) {

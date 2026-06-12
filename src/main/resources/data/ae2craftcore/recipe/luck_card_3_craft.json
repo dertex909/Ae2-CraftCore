@@ -1,0 +1,15 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    {
+      "item": "ae2craftcore:quantum_processor_4"
+    },
+    {
+      "item": "ae2:advanced_card"
+    }
+  ],
+  "result": {
+    "count": 1,
+    "id": "ae2craftcore:luck_card_3"
+  }
+}

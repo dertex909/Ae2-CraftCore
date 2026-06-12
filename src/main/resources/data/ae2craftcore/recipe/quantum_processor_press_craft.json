@@ -1,6 +1,5 @@
 {
   "type": "minecraft:crafting_shaped",
-  "category": "misc",
   "key": {
     "T": {
       "item": "ae2:fluix_upgrade_smithing_template"
