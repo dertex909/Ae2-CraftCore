@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory;
 @Mod(Ae2craftcore.MODID)
 public class Ae2craftcore {
     public static final String MODID = "ae2craftcore";
-    public static final String MOD_NAME = "Ae2 СraftСore";
+    public static final String MOD_NAME = "Ae2 CraftCore";
     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_NAME);
 
     public Ae2craftcore(IEventBus modEventBus, ModContainer modContainer) {
