@@ -1,0 +1,26 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "key": {
+    "Q": {
+      "item": "ae2craftcore:quantum_processor_1"
+    },
+    "S": {
+      "item": "ae2:quantum_entangled_singularity"
+    },
+    "O": {
+      "item": "ae2craftcore:obsidian_plate"
+    },
+    "U": {
+      "item": "ae2craftcore:quartz_plate"
+    }
+  },
+  "pattern": [
+    "OQO",
+    "S S",
+    "OUO"
+  ],
+  "result": {
+    "count": 1,
+    "id": "ae2craftcore:logic_assembler"
+  }
+}
