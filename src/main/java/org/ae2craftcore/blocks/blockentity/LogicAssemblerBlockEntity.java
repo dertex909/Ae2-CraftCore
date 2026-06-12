@@ -60,13 +60,34 @@ public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity imp
     private int maxProgress = 100;
     private int activeRecipeChance = 0;
 
+    public int getPotentialOrActiveChance() {
+        if (!this.rolledResult.isEmpty()) return this.activeRecipeChance;
+        if (this.level != null) {
+            var top = this.getItem(0);
+            var bottom = this.getItem(1);
+            if (!top.isEmpty() && !bottom.isEmpty()) {
+                var input = new LogicAssemblerRecipe.LogicAssemblerInput(top, bottom);
+                var optionalRecipe = this.level.getRecipeManager().getRecipeFor(ModRecipeTypes.LOGIC_ASSEMBLING_TYPE.get(), input, this.level);
+                if (optionalRecipe.isPresent()) {
+                    var recipe = optionalRecipe.get().value();
+                    float recipeBonus = this.calculateRecipeBonus(recipe);
+                    int speedCards = this.getSpeedCardsCount();
+                    float penalty = speedCards * 0.01f;
+                    float finalChance = Math.clamp(recipe.getChance() + recipeBonus - penalty, 0.0f, 1.0f);
+                    return Math.round(finalChance * 100);
+                }
+            }
+        }
+        return 0;
+    }
+
     protected final ContainerData dataAccess = new ContainerData() {
         @Override
         public int get(int index) {
             return switch (index) {
                 case 0 -> (int) Math.round(LogicAssemblerBlockEntity.this.progress);
                 case 1 -> LogicAssemblerBlockEntity.this.maxProgress;
-                case 2 -> LogicAssemblerBlockEntity.this.activeRecipeChance;
+                case 2 -> LogicAssemblerBlockEntity.this.getPotentialOrActiveChance();
                 default -> 0;
             };
         }
