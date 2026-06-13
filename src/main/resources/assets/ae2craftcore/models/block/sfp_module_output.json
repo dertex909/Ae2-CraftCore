@@ -1,6 +1,12 @@
 {
-  "parent": "minecraft:block/cube_all",
+  "parent": "minecraft:block/cube",
   "textures": {
-    "all": "ae2craftcore:block/sfp_module_output"
+    "particle": "ae2:block/generics/side",
+    "up": "ae2craftcore:block/sfp_module_top_output",
+    "down": "ae2:block/generics/bottom",
+    "north": "ae2craftcore:block/sfp_module_front",
+    "south": "ae2:block/generics/back",
+    "west": "ae2:block/generics/side",
+    "east": "ae2craftcore:block/side_m"
   }
 }
