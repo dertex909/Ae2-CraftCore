@@ -46,6 +46,15 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity implemen
     private Object activeConnection = null;
     private boolean pathValid = false;
 
+    private int delayTicks = 100;
+    private int checkTimer = 0;
+    private boolean needsTrace = true;
+
+    public void markNeedsTrace() {
+        this.needsTrace = true;
+        this.checkTimer = 0;
+    }
+
     protected final ContainerData dataAccess = new ContainerData() {
         @Override
         public int get(int index) {
@@ -206,22 +215,33 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity implemen
     public static void tick(Level level, BlockPos pos, BlockState state, SfpModuleBlockEntity blockEntity) {
         if (level.isClientSide) return;
 
+        if (blockEntity.delayTicks > 0) {
+            blockEntity.delayTicks--;
+            return;
+        }
+
         if (blockEntity.sfpMode == SFPMode.INPUT) {
-            boolean isAdjacent = blockEntity.isAdjacentToController();
-            var result = blockEntity.traceConnection();
+            blockEntity.checkTimer--;
+            if (blockEntity.needsTrace || blockEntity.checkTimer <= 0) {
+                blockEntity.needsTrace = false;
+                blockEntity.checkTimer = 40;
 
-            boolean currentlyValid = isAdjacent && result.isValid;
-            blockEntity.pathValid = currentlyValid;
+                boolean isAdjacent = blockEntity.isAdjacentToController();
+                var result = blockEntity.traceConnection();
 
-            if (currentlyValid) {
-                var outputBe = level.getBlockEntity(result.outputPos);
-                if (outputBe instanceof SfpModuleBlockEntity outSfp) {
-                    blockEntity.connectGrid(outSfp);
+                boolean currentlyValid = isAdjacent && result.isValid;
+                blockEntity.pathValid = currentlyValid;
+
+                if (currentlyValid) {
+                    var outputBe = level.getBlockEntity(result.outputPos);
+                    if (outputBe instanceof SfpModuleBlockEntity outSfp) {
+                        blockEntity.connectGrid(outSfp);
+                    } else {
+                        blockEntity.disconnectGrid();
+                    }
                 } else {
                     blockEntity.disconnectGrid();
                 }
-            } else {
-                blockEntity.disconnectGrid();
             }
         }
     }

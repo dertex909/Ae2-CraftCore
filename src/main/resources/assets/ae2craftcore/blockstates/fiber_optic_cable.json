@@ -1,52 +1,5 @@
 {
-  "multipart": [
-    {
-      "when": { "north": "false" },
-      "apply": { "model": "ae2craftcore:block/fiber_optic_cable_core_end" }
-    },
-    {
-      "when": { "east": "false" },
-      "apply": { "model": "ae2craftcore:block/fiber_optic_cable_core_end", "y": 90 }
-    },
-    {
-      "when": { "south": "false" },
-      "apply": { "model": "ae2craftcore:block/fiber_optic_cable_core_end", "y": 180 }
-    },
-    {
-      "when": { "west": "false" },
-      "apply": { "model": "ae2craftcore:block/fiber_optic_cable_core_end", "y": 270 }
-    },
-    {
-      "when": { "up": "false" },
-      "apply": { "model": "ae2craftcore:block/fiber_optic_cable_core_end", "x": 270 }
-    },
-    {
-      "when": { "down": "false" },
-      "apply": { "model": "ae2craftcore:block/fiber_optic_cable_core_end", "x": 90 }
-    },
-    {
-      "when": { "north": "true" },
-      "apply": { "model": "ae2craftcore:block/fiber_optic_cable_side" }
-    },
-    {
-      "when": { "east": "true" },
-      "apply": { "model": "ae2craftcore:block/fiber_optic_cable_side", "y": 90 }
-    },
-    {
-      "when": { "south": "true" },
-      "apply": { "model": "ae2craftcore:block/fiber_optic_cable_side", "y": 180 }
-    },
-    {
-      "when": { "west": "true" },
-      "apply": { "model": "ae2craftcore:block/fiber_optic_cable_side", "y": 270 }
-    },
-    {
-      "when": { "up": "true" },
-      "apply": { "model": "ae2craftcore:block/fiber_optic_cable_side", "x": 270 }
-    },
-    {
-      "when": { "down": "true" },
-      "apply": { "model": "ae2craftcore:block/fiber_optic_cable_side", "x": 90 }
-    }
-  ]
+  "variants": {
+    "": { "model": "ae2craftcore:block/fiber_optic_cable_core_end" }
+  }
 }
