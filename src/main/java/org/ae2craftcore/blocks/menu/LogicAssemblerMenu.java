@@ -135,7 +135,7 @@ public class LogicAssemblerMenu extends AbstractContainerMenu {
             if (index < 7) {
                 if (!this.moveItemStackTo(itemstack1, 7, 43, true)) return ItemStack.EMPTY;
             } else {
-                if (appeng.api.upgrades.Upgrades.getMaxInstallable(itemstack1.getItem(), LogicAssemblerBlock.HOLDER.get()) > 0) {
+                if (Upgrades.getMaxInstallable(itemstack1.getItem(), LogicAssemblerBlock.HOLDER.get()) > 0) {
                     if (!this.moveItemStackTo(itemstack1, 3, 7, false)) {
                         if (!this.moveItemStackTo(itemstack1, 0, 2, false)) return ItemStack.EMPTY;
                     }
