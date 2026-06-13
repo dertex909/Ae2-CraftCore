@@ -23,6 +23,7 @@ public class LogicAssemblerRecipe implements Recipe<RecipeInput> {
     private final ItemStack result;
     private final float chance;
     private final List<RecipeUpgrade> upgrades;
+    private final NonNullList<Ingredient> ingredients;
 
     public LogicAssemblerRecipe(Ingredient top, Ingredient bottom, ItemStack result, float chance, List<RecipeUpgrade> upgrades) {
         this.top = top;
@@ -30,14 +31,14 @@ public class LogicAssemblerRecipe implements Recipe<RecipeInput> {
         this.result = result;
         this.chance = chance;
         this.upgrades = upgrades;
+        this.ingredients = NonNullList.create();
+        this.ingredients.add(top);
+        this.ingredients.add(bottom);
     }
 
     @Override
     public @NotNull NonNullList<Ingredient> getIngredients() {
-        NonNullList<Ingredient> ingredients = NonNullList.create();
-        ingredients.add(this.top);
-        ingredients.add(this.bottom);
-        return ingredients;
+        return this.ingredients;
     }
 
     public Ingredient getTop() {

@@ -21,7 +21,6 @@ public class SfpModuleScreen extends AbstractContainerScreen<SfpModuleMenu> {
     @Override
     protected void init() {
         super.init();
-        
         int x = this.leftPos;
         int y = this.topPos;
 
@@ -61,7 +60,7 @@ public class SfpModuleScreen extends AbstractContainerScreen<SfpModuleMenu> {
 
         String channelString = String.format("%d Channels", this.menu.getChannels());
         int channelStrWidth = this.font.width(channelString);
-        guiGraphics.drawString(this.font, Component.literal(channelString), (this.imageWidth - channelStrWidth) / 2, 40, 0x1AEBFF, false);
+        guiGraphics.drawString(this.font, Component.literal(channelString), (this.imageWidth - channelStrWidth) >> 1, 40, 0x1AEBFF, false);
 
         guiGraphics.drawString(this.font, Component.literal("Channels Range: 64 to 8192"), 14, 88, 0x888888, false);
     }

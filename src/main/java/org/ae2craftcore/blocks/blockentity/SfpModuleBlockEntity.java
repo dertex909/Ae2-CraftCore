@@ -7,6 +7,7 @@ import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -26,12 +27,14 @@ import appeng.api.inventories.InternalInventory;
 import appeng.blockentity.grid.AENetworkedPoweredBlockEntity;
 import appeng.util.inv.AppEngInternalInventory;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 
 @RegisterBlockEntity(name = "sfp_module", blocks = {SfpModuleBlock.class})
 public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity implements MenuProvider {
     public static BlockEntityType<SfpModuleBlockEntity> TYPE;
+
+    private static final Direction[] DIRECTIONS = Direction.values();
+    private static final ResourceLocation CONTROLLER_ID = ResourceLocation.fromNamespaceAndPath("ae2", "controller");
 
     public enum SFPMode {
         INPUT,
@@ -122,10 +125,9 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity implemen
 
     private boolean isAdjacentToController() {
         if (this.level == null) return false;
-        for (var d : Direction.values()) {
+        for (var d : DIRECTIONS) {
             var adjState = this.level.getBlockState(this.worldPosition.relative(d));
-            String regName = BuiltInRegistries.BLOCK.getKey(adjState.getBlock()).toString();
-            if (regName.equals("ae2:controller")) return true;
+            if (BuiltInRegistries.BLOCK.getKey(adjState.getBlock()).equals(CONTROLLER_ID)) return true;
         }
         return false;
     }
@@ -140,42 +142,49 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity implemen
         var currentPos = this.worldPosition;
         BlockPos outputPos;
 
-        var adjacentFirstCables = new ArrayList<BlockPos>();
+        BlockPos nextPos = null;
         var blockState = getBlockState();
         if (blockState.hasProperty(SfpModuleBlock.FACING)) {
             var neighbor = currentPos.relative(blockState.getValue(SfpModuleBlock.FACING));
             var state = this.level.getBlockState(neighbor);
-            if (state.getBlock() instanceof FiberOpticCableBlock) adjacentFirstCables.add(neighbor.immutable());
+            if (state.getBlock() instanceof FiberOpticCableBlock) nextPos = neighbor.immutable();
         }
 
-        if (adjacentFirstCables.size() != 1) return new TraceResult(false, null);
+        if (nextPos == null) return new TraceResult(false, null);
 
-        var nextPos = adjacentFirstCables.getFirst();
         visitedCables.add(nextPos);
 
         while (true) {
             currentPos = nextPos;
-            var neighbors = new ArrayList<BlockPos>();
-            var adjacentOutputSfps = new ArrayList<BlockPos>();
+            BlockPos singleNeighbor = null;
+            int neighborsCount = 0;
+            BlockPos singleOutputSfp = null;
+            int outputSfpsCount = 0;
 
-            for (var d : Direction.values()) {
+            for (var d : DIRECTIONS) {
                 var neighbor = currentPos.relative(d);
                 if (neighbor.equals(this.worldPosition)) continue;
 
                 var state = this.level.getBlockState(neighbor);
                 if (state.getBlock() instanceof FiberOpticCableBlock) {
-                    if (!visitedCables.contains(neighbor)) neighbors.add(neighbor.immutable());
+                    if (!visitedCables.contains(neighbor)) {
+                        singleNeighbor = neighbor.immutable();
+                        neighborsCount++;
+                    }
                 } else if (state.getBlock() instanceof SfpModuleBlock) {
                     var be = this.level.getBlockEntity(neighbor);
                     if (be instanceof SfpModuleBlockEntity sfp && sfp.getSfpMode() == SFPMode.OUTPUT) {
                         var sfpFacing = state.getValue(SfpModuleBlock.FACING);
-                        if (sfpFacing == d.getOpposite()) adjacentOutputSfps.add(neighbor.immutable());
+                        if (sfpFacing == d.getOpposite()) {
+                            singleOutputSfp = neighbor.immutable();
+                            outputSfpsCount++;
+                        }
                     }
                 }
             }
 
             int totalConnectionsAtCurrent = 0;
-            for (var d : Direction.values()) {
+            for (var d : DIRECTIONS) {
                 var neighbor = currentPos.relative(d);
                 var state = this.level.getBlockState(neighbor);
                 if (state.getBlock() instanceof FiberOpticCableBlock) {
@@ -191,15 +200,15 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity implemen
 
             if (totalConnectionsAtCurrent != 2) return new TraceResult(false, null);
 
-            if (!adjacentOutputSfps.isEmpty()) if (adjacentOutputSfps.size() == 1) {
-                outputPos = adjacentOutputSfps.getFirst();
+            if (outputSfpsCount > 0) if (outputSfpsCount == 1) {
+                outputPos = singleOutputSfp;
                 break;
             } else {
                 return new TraceResult(false, null);
             }
 
-            if (neighbors.size() == 1) {
-                nextPos = neighbors.getFirst();
+            if (neighborsCount == 1) {
+                nextPos = singleNeighbor;
                 visitedCables.add(nextPos);
             } else {
                 return new TraceResult(false, null);
@@ -210,7 +219,7 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity implemen
         var outState = this.level.getBlockState(outputPos);
         if (outState.hasProperty(SfpModuleBlock.FACING)) {
             var outFacing = outState.getValue(SfpModuleBlock.FACING);
-            for (var d : Direction.values()) {
+            for (var d : DIRECTIONS) {
                 var neighbor = outputPos.relative(d);
                 var state = this.level.getBlockState(neighbor);
                 if (state.getBlock() instanceof FiberOpticCableBlock) if (d == outFacing) outputSfpConnections++;

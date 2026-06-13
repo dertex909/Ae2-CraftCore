@@ -18,12 +18,37 @@ import org.ae2craftcore.blocks.block.SfpModuleBlock;
 import org.ae2craftcore.registry.annotations.RegisterBlockEntity;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
-
 @RegisterBlockEntity(name = "fiber_optic_cable", blocks = {FiberOpticCableBlock.class})
 public class FiberOpticCableBlockEntity extends BlockEntity {
     public static BlockEntityType<FiberOpticCableBlockEntity> TYPE;
     public static final ModelProperty<Integer> CONNECTION_MASK = new ModelProperty<>();
+
+    private static final Direction[] DIRECTIONS = Direction.values();
+
+    private static final int[] DIR_BITS = new int[6];
+    private static final int[] OPPOSITE_BITS = new int[6];
+
+    static {
+        for (var dir : DIRECTIONS) {
+            int ord = dir.ordinal();
+            DIR_BITS[ord] = switch (dir) {
+                case NORTH -> 1;
+                case EAST -> 2;
+                case SOUTH -> 4;
+                case WEST -> 8;
+                case UP -> 16;
+                case DOWN -> 32;
+            };
+            OPPOSITE_BITS[ord] = switch (dir) {
+                case NORTH -> 4;
+                case EAST -> 8;
+                case SOUTH -> 1;
+                case WEST -> 2;
+                case UP -> 32;
+                case DOWN -> 16;
+            };
+        }
+    }
 
     private int connectionMask = 0;
 
@@ -43,29 +68,42 @@ public class FiberOpticCableBlockEntity extends BlockEntity {
     public void recalculateConnections() {
         if (this.level == null) return;
 
-        var potentialDirs = new ArrayList<Direction>();
-        for (var dir : Direction.values()) if (canConnectToNeighbor(dir)) potentialDirs.add(dir);
+        int potentialMask = 0;
+        for (var dir : DIRECTIONS) if (canConnectToNeighbor(dir)) potentialMask |= DIR_BITS[dir.ordinal()];
 
-        var finalDirs = new ArrayList<Direction>();
-        for (var dir : potentialDirs) {
-            int dirBit = getDirectionBit(dir);
-            if ((this.connectionMask & dirBit) != 0) finalDirs.add(dir);
-        }
+        int existingMask = this.connectionMask & potentialMask;
 
-        for (var dir : potentialDirs) {
-            if (finalDirs.size() >= 2) break;
-            if (!finalDirs.contains(dir)) {
-                if (finalDirs.size() == 1) if (dir == finalDirs.getFirst().getOpposite()) finalDirs.add(dir);
+        Direction firstDir = null;
+        int newMask = 0;
+        int finalCount = 0;
+
+        for (var dir : DIRECTIONS) {
+            int dirBit = DIR_BITS[dir.ordinal()];
+            if ((existingMask & dirBit) != 0) {
+                newMask |= dirBit;
+                if (finalCount == 0) firstDir = dir;
+                finalCount++;
+                if (finalCount >= 2) break;
             }
         }
 
-        for (var dir : potentialDirs) {
-            if (finalDirs.size() >= 2) break;
-            if (!finalDirs.contains(dir)) finalDirs.add(dir);
+        if (finalCount == 1) {
+            Direction opposite = firstDir.getOpposite();
+            int oppositeBit = DIR_BITS[opposite.ordinal()];
+            if ((potentialMask & oppositeBit) != 0) {
+                newMask |= oppositeBit;
+                finalCount++;
+            }
         }
 
-        int newMask = 0;
-        for (var dir : finalDirs) newMask |= getDirectionBit(dir);
+        if (finalCount < 2) for (var dir : DIRECTIONS) {
+            int dirBit = DIR_BITS[dir.ordinal()];
+            if ((potentialMask & dirBit) != 0 && (newMask & dirBit) == 0) {
+                newMask |= dirBit;
+                finalCount++;
+                if (finalCount >= 2) break;
+            }
+        }
 
         if (this.connectionMask != newMask) {
             this.connectionMask = newMask;
@@ -75,7 +113,7 @@ public class FiberOpticCableBlockEntity extends BlockEntity {
                 this.requestModelDataUpdate();
             } else {
                 this.level.sendBlockUpdated(this.worldPosition, this.getBlockState(), this.getBlockState(), 3);
-                for (var dir : Direction.values()) {
+                for (var dir : DIRECTIONS) {
                     var neighborBe = this.level.getBlockEntity(this.worldPosition.relative(dir));
                     if (neighborBe instanceof FiberOpticCableBlockEntity nCable) nCable.recalculateConnections();
                 }
@@ -118,28 +156,6 @@ public class FiberOpticCableBlockEntity extends BlockEntity {
         }
     }
 
-    private int getDirectionBit(Direction dir) {
-        return switch (dir) {
-            case NORTH -> 1;
-            case EAST -> 2;
-            case SOUTH -> 4;
-            case WEST -> 8;
-            case UP -> 16;
-            case DOWN -> 32;
-        };
-    }
-
-    private int getOppositeBit(Direction dir) {
-        return switch (dir) {
-            case NORTH -> 4;
-            case EAST -> 8;
-            case SOUTH -> 1;
-            case WEST -> 2;
-            case UP -> 32;
-            case DOWN -> 16;
-        };
-    }
-
     private boolean canConnectToNeighbor(Direction dir) {
         var neighborPos = this.worldPosition.relative(dir);
         if (this.level == null) return false;
@@ -155,7 +171,7 @@ public class FiberOpticCableBlockEntity extends BlockEntity {
             int neighborMask = neighborCable.getConnectionMask();
             int neighborConnectionsCount = Integer.bitCount(neighborMask);
             if (neighborConnectionsCount < 2) return true;
-            int oppositeBit = getOppositeBit(dir);
+            int oppositeBit = OPPOSITE_BITS[dir.ordinal()];
             return (neighborMask & oppositeBit) != 0;
         }
 

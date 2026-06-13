@@ -2,7 +2,6 @@ package org.ae2craftcore.client;
 
 import net.minecraft.client.RecipeBookCategories;
 import net.minecraft.client.resources.model.ModelResourceLocation;
-import net.minecraft.resources.ResourceLocation;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -16,10 +15,11 @@ import org.ae2craftcore.client.screen.SfpModuleScreen;
 import org.ae2craftcore.registry.ModMenuTypes;
 import org.ae2craftcore.registry.ModRecipeTypes;
 
-import java.util.HashMap;
+import java.util.ArrayList;
 
 @EventBusSubscriber(modid = Ae2craftcore.MODID, value = Dist.CLIENT)
 public class ClientSetup {
+
     @SubscribeEvent
     public static void registerScreens(RegisterMenuScreensEvent event) {
         event.register(ModMenuTypes.LOGIC_ASSEMBLER.get(), LogicAssemblerScreen::new);
@@ -34,17 +34,23 @@ public class ClientSetup {
     @SubscribeEvent
     public static void onModifyBakingResult(ModelEvent.ModifyBakingResult event) {
         var model = event.getModels();
-        for (var entry : new HashMap<>(model).entrySet()) {
-            var loc = entry.getKey();
+        var keysToReplace = new ArrayList<ModelResourceLocation>();
+
+        for (var loc : model.keySet()) {
             if (loc.id().getNamespace().equals(Ae2craftcore.MODID) && loc.id().getPath().equals("fiber_optic_cable")) {
-                if (!loc.variant().equals("inventory")) model.put(loc, new FiberOpticCableBakedModel(entry.getValue()));
+                if (!loc.variant().equals("inventory")) keysToReplace.add(loc);
             }
+        }
+
+        for (var loc : keysToReplace) {
+            var original = model.get(loc);
+            if (original != null) model.put(loc, new FiberOpticCableBakedModel(original));
         }
     }
 
     @SubscribeEvent
     public static void registerAdditionalModels(ModelEvent.RegisterAdditional event) {
-        event.register(new ModelResourceLocation(ResourceLocation.fromNamespaceAndPath(Ae2craftcore.MODID, "block/fiber_optic_cable_side"), "standalone"));
-        event.register(new ModelResourceLocation(ResourceLocation.fromNamespaceAndPath(Ae2craftcore.MODID, "block/fiber_optic_cable_core_end"), "standalone"));
+        event.register(FiberOpticCableBakedModel.SIDE_MODEL_RL);
+        event.register(FiberOpticCableBakedModel.CORE_END_MODEL_RL);
     }
 }

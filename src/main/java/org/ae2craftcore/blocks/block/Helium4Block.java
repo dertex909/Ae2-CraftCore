@@ -19,6 +19,9 @@ import static net.minecraft.world.level.block.Blocks.SNOW;
 
 @RegisterBlock(name = "helium_4", strength = 3.0f, resistance = 3.0f, sound = "stone", requiresCorrectTool = true, noOcclusion = true)
 public class Helium4Block extends Block {
+
+    private static final int[] SQRT_LUT = {0, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 5};
+
     public Helium4Block(Properties properties) {
         super(properties);
     }
@@ -54,15 +57,36 @@ public class Helium4Block extends Block {
 
     private void spawnSnow(Level level, BlockPos pos) {
         var random = level.getRandom();
+
         int radius = 5;
+        int r2 = radius * radius;
+
+        var spawnPos = new BlockPos.MutableBlockPos();
+        var belowPos = new BlockPos.MutableBlockPos();
+
+        int originX = pos.getX();
+        int originY = pos.getY();
+        int originZ = pos.getZ();
+
         for (int x = -radius; x <= radius; x++) {
+            int x2 = x * x;
             for (int y = -radius; y <= radius; y++) {
-                for (int z = -radius; z <= radius; z++) {
-                    if (x * x + y * y + z * z <= radius * radius) if (random.nextFloat() < 0.7f) {
-                        var spawnPos = pos.offset(x, y, z);
-                        var belowState = level.getBlockState(spawnPos.below());
-                        if (level.getBlockState(spawnPos).isAir() && !belowState.isAir() && belowState.isFaceSturdy(level, spawnPos.below(), UP)) {
-                            level.setBlockAndUpdate(spawnPos, SNOW.defaultBlockState());
+                int x2y2 = x2 + y * y;
+                if (x2y2 > r2) continue;
+                int maxZ = SQRT_LUT[r2 - x2y2];
+
+                for (int z = -maxZ; z <= maxZ; z++) {
+                    if (random.nextFloat() < 0.7f) {
+                        int tx = originX + x;
+                        int ty = originY + y;
+                        int tz = originZ + z;
+
+                        spawnPos.set(tx, ty, tz);
+                        belowPos.set(tx, ty - 1, tz);
+
+                        var belowState = level.getBlockState(belowPos);
+                        if (level.getBlockState(spawnPos).isAir() && !belowState.isAir() && belowState.isFaceSturdy(level, belowPos, UP)) {
+                            level.setBlockAndUpdate(spawnPos.immutable(), SNOW.defaultBlockState());
                         }
                     }
                 }

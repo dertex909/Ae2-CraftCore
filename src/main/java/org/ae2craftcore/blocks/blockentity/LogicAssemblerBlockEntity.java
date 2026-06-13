@@ -275,7 +275,7 @@ public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity imp
 
     public boolean isValidInput(int slot, @NotNull ItemStack stack) {
         if (this.level == null) return true;
-        var otherStack = this.getItem(slot == 0 ? 1 : 0);
+        var otherStack = this.getItem(slot ^ 1);
         var recipes = this.level.getRecipeManager().getAllRecipesFor(ModRecipeTypes.LOGIC_ASSEMBLING_TYPE.get());
 
         for (var holder : recipes) {

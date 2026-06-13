@@ -21,7 +21,7 @@ public class LogicAssemblerScreen extends AbstractContainerScreen<LogicAssembler
     @Override
     protected void init() {
         super.init();
-        this.titleLabelX = (this.imageWidth - this.font.width(this.title)) / 2;
+        this.titleLabelX = (this.imageWidth - this.font.width(this.title)) >> 1;
         this.inventoryLabelY = 83;
     }
 
@@ -39,7 +39,7 @@ public class LogicAssemblerScreen extends AbstractContainerScreen<LogicAssembler
         if (chance >= 0 ) {
             var text = Component.literal(chance + "%");
             int textWidth = this.font.width(text);
-            guiGraphics.drawString(this.font, text, 122 - textWidth / 2, 26, 0x000000, false);
+            guiGraphics.drawString(this.font, text, 122 - (textWidth >> 1), 26, 0x000000, false);
         }
     }
 

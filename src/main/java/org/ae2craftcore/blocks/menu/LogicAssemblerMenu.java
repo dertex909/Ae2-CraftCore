@@ -24,9 +24,21 @@ public class LogicAssemblerMenu extends AbstractContainerMenu {
         int maxAllowed = Upgrades.getMaxInstallable(stack.getItem(), LogicAssemblerBlock.HOLDER.get());
         if (maxAllowed <= 0) return false;
         int currentCount = 0;
-        for (int i = 3; i < 7; i++) {
-            if (i == slot) continue;
-            var installed = inv.getItem(i);
+
+        if (slot != 3) {
+            var installed = inv.getItem(3);
+            if (!installed.isEmpty() && installed.is(stack.getItem())) currentCount += installed.getCount();
+        }
+        if (slot != 4) {
+            var installed = inv.getItem(4);
+            if (!installed.isEmpty() && installed.is(stack.getItem())) currentCount += installed.getCount();
+        }
+        if (slot != 5) {
+            var installed = inv.getItem(5);
+            if (!installed.isEmpty() && installed.is(stack.getItem())) currentCount += installed.getCount();
+        }
+        if (slot != 6) {
+            var installed = inv.getItem(6);
             if (!installed.isEmpty() && installed.is(stack.getItem())) currentCount += installed.getCount();
         }
         return currentCount < maxAllowed;
@@ -96,17 +108,24 @@ public class LogicAssemblerMenu extends AbstractContainerMenu {
     private static boolean isValidInputForSlot(Level level, Container container, int slot, ItemStack stack) {
         if (level == null) return true;
 
-        var otherStack = container.getItem(slot == 0 ? 1 : 0);
+        var otherStack = container.getItem(slot ^ 1);
         var recipes = level.getRecipeManager().getAllRecipesFor(ModRecipeTypes.LOGIC_ASSEMBLING_TYPE.get());
 
-        for (var holder : recipes) {
-            var recipe = holder.value();
-            boolean matchesCurrent = (slot == 0) ? recipe.getTop().test(stack) : recipe.getBottom().test(stack);
-
-            if (matchesCurrent) {
-                if (otherStack.isEmpty()) return true;
-                boolean matchesOther = (slot == 0) ? recipe.getBottom().test(otherStack) : recipe.getTop().test(otherStack);
-                if (matchesOther) return true;
+        if (slot == 0) {
+            for (var holder : recipes) {
+                var recipe = holder.value();
+                if (recipe.getTop().test(stack)) {
+                    if (otherStack.isEmpty()) return true;
+                    if (recipe.getBottom().test(otherStack)) return true;
+                }
+            }
+        } else {
+            for (var holder : recipes) {
+                var recipe = holder.value();
+                if (recipe.getBottom().test(stack)) {
+                    if (otherStack.isEmpty()) return true;
+                    if (recipe.getTop().test(otherStack)) return true;
+                }
             }
         }
         return false;

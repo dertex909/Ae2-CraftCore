@@ -25,6 +25,8 @@ import java.util.Map;
 public class FiberOpticCableBlock extends BaseEntityBlock {
     public static final MapCodec<FiberOpticCableBlock> CODEC = simpleCodec(FiberOpticCableBlock::new);
 
+    private static final Direction[] DIRECTIONS = Direction.values();
+
     private static final VoxelShape CORE_SHAPE = Block.box(6.0, 6.0, 6.0, 10.0, 10.0, 10.0);
     private static final Map<Direction, VoxelShape> SHAPES_BY_DIRECTION = new EnumMap<>(Map.of(
             Direction.NORTH, Block.box(6.0, 6.0, 0.0, 10.0, 10.0, 6.0),
@@ -98,7 +100,7 @@ public class FiberOpticCableBlock extends BaseEntityBlock {
         if (!level.isClientSide) {
             var be = level.getBlockEntity(pos);
             if (be instanceof FiberOpticCableBlockEntity cable) cable.recalculateConnections();
-            for (var dir : Direction.values()) {
+            for (var dir : DIRECTIONS) {
                 var neighborBe = level.getBlockEntity(pos.relative(dir));
                 if (neighborBe instanceof FiberOpticCableBlockEntity nCable) nCable.recalculateConnections();
             }
@@ -118,7 +120,7 @@ public class FiberOpticCableBlock extends BaseEntityBlock {
     @Override
     protected void onRemove(@NotNull BlockState state, @NotNull Level level, @NotNull BlockPos pos, @NotNull BlockState newState, boolean isMoving) {
         if (!state.is(newState.getBlock())) {
-            if (!level.isClientSide) for (var dir : Direction.values()) {
+            if (!level.isClientSide) for (var dir : DIRECTIONS) {
                 var neighborBe = level.getBlockEntity(pos.relative(dir));
                 if (neighborBe instanceof FiberOpticCableBlockEntity nCable) nCable.recalculateConnections();
             }

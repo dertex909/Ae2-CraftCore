@@ -2,7 +2,6 @@ package org.ae2craftcore.client.renderer;
 
 import appeng.api.orientation.BlockOrientation;
 import appeng.client.render.cablebus.QuadRotator;
-
 import appeng.thirdparty.fabric.MeshBuilderImpl;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.RenderType;
@@ -28,8 +27,20 @@ import java.util.List;
 
 public class FiberOpticCableBakedModel implements IDynamicBakedModel {
     private final BakedModel baseModel;
+
     @SuppressWarnings("unchecked")
     private final List<BakedQuad>[] cache = new List[64];
+
+    private static final Direction[] DIRECTIONS = Direction.values();
+
+    private static final int[] DIR_BITS = {32, 16, 1, 4, 8, 2};
+
+    public static final ModelResourceLocation SIDE_MODEL_RL = new ModelResourceLocation(
+            ResourceLocation.fromNamespaceAndPath(Ae2craftcore.MODID, "block/fiber_optic_cable_side"), "standalone"
+    );
+    public static final ModelResourceLocation CORE_END_MODEL_RL = new ModelResourceLocation(
+            ResourceLocation.fromNamespaceAndPath(Ae2craftcore.MODID, "block/fiber_optic_cable_core_end"), "standalone"
+    );
 
     public FiberOpticCableBakedModel(BakedModel baseModel) {
         this.baseModel = baseModel;
@@ -50,32 +61,23 @@ public class FiberOpticCableBakedModel implements IDynamicBakedModel {
 
         var quads = cache[mask];
         if (quads == null) {
-            quads = generateQuads(mask);
+            quads = generateQuads(mask, rand);
             cache[mask] = quads;
         }
         return quads;
     }
 
-    private List<BakedQuad> generateQuads(int mask) {
+    private List<BakedQuad> generateQuads(int mask, RandomSource random) {
         var quads = new ArrayList<BakedQuad>();
         var modelManager = Minecraft.getInstance().getModelManager();
-        var sideModel = modelManager.getModel(new ModelResourceLocation(ResourceLocation.fromNamespaceAndPath(Ae2craftcore.MODID, "block/fiber_optic_cable_side"), "standalone"));
-        var coreEndModel = modelManager.getModel(new ModelResourceLocation(ResourceLocation.fromNamespaceAndPath(Ae2craftcore.MODID, "block/fiber_optic_cable_core_end"), "standalone"));
-
-        var random = RandomSource.create();
+        var sideModel = modelManager.getModel(SIDE_MODEL_RL);
+        var coreEndModel = modelManager.getModel(CORE_END_MODEL_RL);
 
         var meshBuilder = new MeshBuilderImpl();
         var emitter = meshBuilder.getEmitter();
 
-        for (var dir : Direction.values()) {
-            boolean isConnected = switch (dir) {
-                case NORTH -> (mask & 1) != 0;
-                case EAST -> (mask & 2) != 0;
-                case SOUTH -> (mask & 4) != 0;
-                case WEST -> (mask & 8) != 0;
-                case UP -> (mask & 16) != 0;
-                case DOWN -> (mask & 32) != 0;
-            };
+        for (var dir : DIRECTIONS) {
+            boolean isConnected = (mask & DIR_BITS[dir.ordinal()]) != 0;
 
             var modelToRender = isConnected ? sideModel : coreEndModel;
             if (modelToRender != modelManager.getMissingModel()) {
@@ -90,7 +92,7 @@ public class FiberOpticCableBakedModel implements IDynamicBakedModel {
                     rotator.transform(emitter);
                     quads.add(emitter.toBakedQuad(quad.getSprite()));
                 }
-                for (var cullDir : Direction.values()) {
+                for (var cullDir : DIRECTIONS) {
                     var culledQuads = modelToRender.getQuads(null, cullDir, random, ModelData.EMPTY, null);
                     for (var quad : culledQuads) {
                         emitter.fromVanilla(quad, null);

@@ -38,6 +38,10 @@ public class SfpModuleBlock extends BaseEntityBlock implements IOrientableBlock 
     public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
     public static final MapCodec<SfpModuleBlock> CODEC = simpleCodec(SfpModuleBlock::new);
 
+    private static final Component MSG_MODE_INPUT = Component.literal("SFP Module mode changed to: INPUT");
+    private static final Component MSG_MODE_OUTPUT = Component.literal("SFP Module mode changed to: OUTPUT");
+    private static final Component MSG_OUTPUT_WARNING = Component.literal("SFP Module is in OUTPUT mode. Channels are only configurable on INPUT modules!");
+
     public SfpModuleBlock(Properties properties) {
         super(properties);
         registerDefaultState(defaultBlockState().setValue(IS_INPUT, true).setValue(FACING, Direction.NORTH));
@@ -86,13 +90,12 @@ public class SfpModuleBlock extends BaseEntityBlock implements IOrientableBlock 
                 boolean newInput = !currentInput;
                 level.setBlock(pos, state.setValue(IS_INPUT, newInput), 3);
                 sfp.setSfpMode(newInput ? SfpModuleBlockEntity.SFPMode.INPUT : SfpModuleBlockEntity.SFPMode.OUTPUT);
-                var msg = Component.literal("SFP Module mode changed to: " + (newInput ? "INPUT" : "OUTPUT"));
-                player.displayClientMessage(msg, true);
+                player.displayClientMessage(newInput ? MSG_MODE_INPUT : MSG_MODE_OUTPUT, true);
             } else {
                 if (state.getValue(IS_INPUT)) {
                     player.openMenu(sfp, pos);
                 } else {
-                    player.displayClientMessage(Component.literal("SFP Module is in OUTPUT mode. Channels are only configurable on INPUT modules!"), true);
+                    player.displayClientMessage(MSG_OUTPUT_WARNING, true);
                 }
             }
         }

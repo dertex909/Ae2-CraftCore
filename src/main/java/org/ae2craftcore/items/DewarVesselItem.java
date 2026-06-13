@@ -13,6 +13,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.context.UseOnContext;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import org.ae2craftcore.registry.AutoAttachmentRegistry;
@@ -29,6 +30,19 @@ public class DewarVesselItem extends Item implements IAEItemPowerStorage {
 
     private static final ResourceLocation HELIUM_4_LOC = ResourceLocation.fromNamespaceAndPath("ae2craftcore", "helium_4");
 
+    private static final double MAX_POWER = 1_000_000_000.0;
+
+    private static final Component HELIUM_4_TOOLTIP = Component.literal("§bContains Helium-4");
+    private static final Component HELIUM_3_TOOLTIP = Component.literal("§bContains Helium-3");
+    private static final Component EMPTY_TOOLTIP = Component.literal("§8Empty Vessel");
+
+    private static Block cachedHelium4Block = null;
+
+    private static Block getHelium4Block() {
+        if (cachedHelium4Block == null) cachedHelium4Block = BuiltInRegistries.BLOCK.get(HELIUM_4_LOC);
+        return cachedHelium4Block;
+    }
+
     public DewarVesselItem(Properties properties) {
         super(properties);
     }
@@ -43,34 +57,33 @@ public class DewarVesselItem extends Item implements IAEItemPowerStorage {
 
     @Override
     public @NotNull InteractionResult useOn(UseOnContext context) {
-        var level = context.getLevel();
-        var pos = context.getClickedPos();
         var player = context.getPlayer();
-        var hand = context.getHand();
-
         if (player == null) return InteractionResult.PASS;
 
-        var state = level.getBlockState(pos);
-        var stack = player.getItemInHand(hand);
+        var stack = player.getItemInHand(context.getHand());
+        if (getVesselState(stack) != 0) return InteractionResult.PASS;
 
-        if (getVesselState(stack) == 0 && BuiltInRegistries.BLOCK.containsKey(HELIUM_4_LOC)) {
-            var helium4Block = BuiltInRegistries.BLOCK.get(HELIUM_4_LOC);
-            if (state.is(helium4Block)) {
-                if (!level.isClientSide) {
-                    level.setBlockAndUpdate(pos, Blocks.END_STONE.defaultBlockState());
-                    stack.set(AutoAttachmentRegistry.VESSEL_STATE.get(), 1);
-                    stack.set(AutoAttachmentRegistry.VESSEL_ENERGY.get(), 0.0);
-                    level.playSound(null, pos, SoundEvents.BOTTLE_FILL, SoundSource.BLOCKS, 1.0F, 1.0F);
-                }
-                return InteractionResult.sidedSuccess(level.isClientSide);
+        var level = context.getLevel();
+        var pos = context.getClickedPos();
+        var state = level.getBlockState(pos);
+
+        var helium4Block = getHelium4Block();
+        if (helium4Block != Blocks.AIR && state.is(helium4Block)) {
+            if (!level.isClientSide) {
+                level.setBlockAndUpdate(pos, Blocks.END_STONE.defaultBlockState());
+                stack.set(AutoAttachmentRegistry.VESSEL_STATE.get(), 1);
+                stack.set(AutoAttachmentRegistry.VESSEL_ENERGY.get(), 0.0);
+                level.playSound(null, pos, SoundEvents.BOTTLE_FILL, SoundSource.BLOCKS, 1.0F, 1.0F);
             }
+            return InteractionResult.sidedSuccess(level.isClientSide);
         }
+
         return InteractionResult.PASS;
     }
 
     @Override
     public double getAEMaxPower(ItemStack stack) {
-        return getVesselState(stack) == 1 ? 1_000_000_000.0 : 0.0;
+        return getVesselState(stack) == 1 ? MAX_POWER : 0.0;
     }
 
     @Override
@@ -83,13 +96,12 @@ public class DewarVesselItem extends Item implements IAEItemPowerStorage {
         if (getVesselState(stack) != 1) return amount;
 
         double current = getVesselEnergy(stack);
-        double max = getAEMaxPower(stack);
-        double space = max - current;
+        double space = MAX_POWER - current;
         double injected = Math.min(space, amount);
 
         if (mode == Actionable.MODULATE && injected > 0) {
             double next = current + injected;
-            if (next >= max) {
+            if (next >= MAX_POWER) {
                 stack.set(AutoAttachmentRegistry.VESSEL_STATE.get(), 2);
                 stack.set(AutoAttachmentRegistry.VESSEL_ENERGY.get(), 0.0);
             } else {
@@ -119,13 +131,13 @@ public class DewarVesselItem extends Item implements IAEItemPowerStorage {
         int vesselState = getVesselState(stack);
 
         if (vesselState == 1) {
-            tooltipComponents.add(Component.literal("§bContains Helium-4"));
+            tooltipComponents.add(HELIUM_4_TOOLTIP);
             double current = getVesselEnergy(stack);
             tooltipComponents.add(Component.literal(String.format("§7Energy: §a%,d §7/ §a1,000,000,000 AE", (long) current)));
         } else if (vesselState == 2) {
-            tooltipComponents.add(Component.literal("§bContains Helium-3"));
+            tooltipComponents.add(HELIUM_3_TOOLTIP);
         } else {
-            tooltipComponents.add(Component.literal("§8Empty Vessel"));
+            tooltipComponents.add(EMPTY_TOOLTIP);
         }
     }
 }
