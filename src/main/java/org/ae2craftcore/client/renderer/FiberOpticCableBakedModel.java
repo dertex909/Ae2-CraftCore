@@ -16,7 +16,6 @@ import net.minecraft.client.resources.model.ModelResourceLocation;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.block.state.BlockState;
-import net.neoforged.neoforge.client.ChunkRenderTypeSet;
 import net.neoforged.neoforge.client.model.IDynamicBakedModel;
 import net.neoforged.neoforge.client.model.data.ModelData;
 import org.ae2craftcore.Ae2craftcore;
@@ -119,15 +118,9 @@ public class FiberOpticCableBakedModel implements IDynamicBakedModel {
         return false;
     }
 
-    // Современная замена устаревшего метода для получения иконки текстуры частиц в NeoForge
     @Override
     public @NotNull TextureAtlasSprite getParticleIcon(@NotNull ModelData data) {
         return baseModel.getParticleIcon(data);
-    }
-
-    @Override
-    public @NotNull ChunkRenderTypeSet getRenderTypes(@NotNull BlockState state, @NotNull RandomSource rand, @NotNull ModelData data) {
-        return ChunkRenderTypeSet.of(RenderType.translucent());
     }
 
     @Override

@@ -1,6 +1,6 @@
 {
-  "render_type": "minecraft:translucent",
   "textures": {
+    "particle": "ae2craftcore:block/fiber_optic_cable",
     "texture": "ae2craftcore:block/fiber_optic_cable"
   },
   "elements": [
