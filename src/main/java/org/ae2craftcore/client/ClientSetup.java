@@ -33,11 +33,11 @@ public class ClientSetup {
 
     @SubscribeEvent
     public static void onModifyBakingResult(ModelEvent.ModifyBakingResult event) {
-        var models = event.getModels();
-        for (var entry : new HashMap<>(models).entrySet()) {
+        var model = event.getModels();
+        for (var entry : new HashMap<>(model).entrySet()) {
             var loc = entry.getKey();
             if (loc.id().getNamespace().equals(Ae2craftcore.MODID) && loc.id().getPath().equals("fiber_optic_cable")) {
-                models.put(loc, new FiberOpticCableBakedModel(entry.getValue()));
+                if (!loc.variant().equals("inventory")) model.put(loc, new FiberOpticCableBakedModel(entry.getValue()));
             }
         }
     }

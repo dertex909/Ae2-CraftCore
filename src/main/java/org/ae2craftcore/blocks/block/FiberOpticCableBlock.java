@@ -72,18 +72,24 @@ public class FiberOpticCableBlock extends BaseEntityBlock {
         var be = level.getBlockEntity(pos);
         if (be instanceof FiberOpticCableBlockEntity cable) return cache[cable.getConnectionMask()];
         int mask = 0;
-        if (canConnect(level, pos.north())) mask |= 1;
-        if (canConnect(level, pos.east())) mask |= 2;
-        if (canConnect(level, pos.south())) mask |= 4;
-        if (canConnect(level, pos.west())) mask |= 8;
-        if (canConnect(level, pos.above())) mask |= 16;
-        if (canConnect(level, pos.below())) mask |= 32;
+        if (canConnect(level, pos, Direction.NORTH)) mask |= 1;
+        if (canConnect(level, pos, Direction.EAST)) mask |= 2;
+        if (canConnect(level, pos, Direction.SOUTH)) mask |= 4;
+        if (canConnect(level, pos, Direction.WEST)) mask |= 8;
+        if (canConnect(level, pos, Direction.UP)) mask |= 16;
+        if (canConnect(level, pos, Direction.DOWN)) mask |= 32;
         return cache[mask];
     }
 
-    private boolean canConnect(BlockGetter level, BlockPos neighborPos) {
+    private boolean canConnect(BlockGetter level, BlockPos myPos, Direction dir) {
+        var neighborPos = myPos.relative(dir);
         var state = level.getBlockState(neighborPos);
-        return state.getBlock() instanceof FiberOpticCableBlock || state.getBlock() instanceof SfpModuleBlock;
+        if (state.getBlock() instanceof FiberOpticCableBlock) return true;
+        if (state.getBlock() instanceof SfpModuleBlock) {
+            var facing = state.getValue(SfpModuleBlock.FACING);
+            return facing == dir.getOpposite();
+        }
+        return false;
     }
 
     @Override

@@ -141,8 +141,9 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity implemen
         BlockPos outputPos;
 
         var adjacentFirstCables = new ArrayList<BlockPos>();
-        for (var d : Direction.values()) {
-            var neighbor = currentPos.relative(d);
+        var blockState = getBlockState();
+        if (blockState.hasProperty(SfpModuleBlock.FACING)) {
+            var neighbor = currentPos.relative(blockState.getValue(SfpModuleBlock.FACING));
             var state = this.level.getBlockState(neighbor);
             if (state.getBlock() instanceof FiberOpticCableBlock) adjacentFirstCables.add(neighbor.immutable());
         }
@@ -167,7 +168,8 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity implemen
                 } else if (state.getBlock() instanceof SfpModuleBlock) {
                     var be = this.level.getBlockEntity(neighbor);
                     if (be instanceof SfpModuleBlockEntity sfp && sfp.getSfpMode() == SFPMode.OUTPUT) {
-                        adjacentOutputSfps.add(neighbor.immutable());
+                        var sfpFacing = state.getValue(SfpModuleBlock.FACING);
+                        if (sfpFacing == d.getOpposite()) adjacentOutputSfps.add(neighbor.immutable());
                     }
                 }
             }
@@ -180,7 +182,10 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity implemen
                     totalConnectionsAtCurrent++;
                 } else if (state.getBlock() instanceof SfpModuleBlock) {
                     var be = this.level.getBlockEntity(neighbor);
-                    if (be instanceof SfpModuleBlockEntity) totalConnectionsAtCurrent++;
+                    if (be instanceof SfpModuleBlockEntity) {
+                        var sfpFacing = state.getValue(SfpModuleBlock.FACING);
+                        if (sfpFacing == d.getOpposite()) totalConnectionsAtCurrent++;
+                    }
                 }
             }
 
@@ -202,10 +207,14 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity implemen
         }
 
         int outputSfpConnections = 0;
-        for (var d : Direction.values()) {
-            var neighbor = outputPos.relative(d);
-            var state = this.level.getBlockState(neighbor);
-            if (state.getBlock() instanceof FiberOpticCableBlock) outputSfpConnections++;
+        var outState = this.level.getBlockState(outputPos);
+        if (outState.hasProperty(SfpModuleBlock.FACING)) {
+            var outFacing = outState.getValue(SfpModuleBlock.FACING);
+            for (var d : Direction.values()) {
+                var neighbor = outputPos.relative(d);
+                var state = this.level.getBlockState(neighbor);
+                if (state.getBlock() instanceof FiberOpticCableBlock) if (d == outFacing) outputSfpConnections++;
+            }
         }
         if (outputSfpConnections != 1) return new TraceResult(false, null);
 

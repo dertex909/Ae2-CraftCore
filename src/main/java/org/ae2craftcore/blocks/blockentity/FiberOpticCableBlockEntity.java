@@ -147,7 +147,8 @@ public class FiberOpticCableBlockEntity extends BlockEntity {
         var state = this.level.getBlockState(neighborPos);
         if (!(state.getBlock() instanceof FiberOpticCableBlock || state.getBlock() instanceof SfpModuleBlock))
             return false;
-        if (state.getBlock() instanceof SfpModuleBlock) return true;
+        if (state.getBlock() instanceof SfpModuleBlock)
+            return state.getValue(SfpModuleBlock.FACING) == dir.getOpposite();
 
         var be = this.level.getBlockEntity(neighborPos);
         if (be instanceof FiberOpticCableBlockEntity neighborCable) {
