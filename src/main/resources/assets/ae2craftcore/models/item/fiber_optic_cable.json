@@ -1,3 +1,4 @@
 {
-  "parent": "ae2craftcore:block/fiber_optic_cable_core_end"
+  "parent": "ae2craftcore:block/fiber_optic_cable",
+  "render_type": "minecraft:solid"
 }

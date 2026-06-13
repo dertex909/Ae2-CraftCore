@@ -1,4 +1,5 @@
 {
+  "parent": "minecraft:block/block",
   "textures": {
     "particle": "ae2craftcore:block/fiber_optic_cable",
     "texture": "ae2craftcore:block/fiber_optic_cable"
@@ -12,8 +13,8 @@
         "up":    { "uv": [ 6, 0, 10, 16 ], "texture": "#texture" },
         "north": { "uv": [ 6, 6, 10, 10 ], "texture": "#texture" },
         "south": { "uv": [ 6, 6, 10, 10 ], "texture": "#texture" },
-        "west":  { "uv": [ 0, 6, 16, 10 ], "texture": "#texture" },
-        "east":  { "uv": [ 0, 6, 16, 10 ], "texture": "#texture" }
+        "west":  { "uv": [ 6, 0, 10, 16 ], "rotation": 90, "texture": "#texture" },
+        "east":  { "uv": [ 6, 0, 10, 16 ], "rotation": 90, "texture": "#texture" }
       }
     }
   ]

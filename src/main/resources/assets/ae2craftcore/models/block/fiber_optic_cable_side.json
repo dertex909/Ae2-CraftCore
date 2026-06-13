@@ -10,8 +10,8 @@
       "faces": {
         "down":  { "uv": [ 6, 1, 10, 7 ], "texture": "#texture" },
         "up":    { "uv": [ 6, 1, 10, 7 ], "texture": "#texture" },
-        "west":  { "uv": [ 1, 6, 7, 10 ], "texture": "#texture" },
-        "east":  { "uv": [ 1, 6, 7, 10 ], "texture": "#texture" }
+        "west":  { "uv": [ 6, 1, 10, 7 ], "rotation": 90, "texture": "#texture" },
+        "east":  { "uv": [ 6, 1, 10, 7 ], "rotation": 90, "texture": "#texture" }
       }
     }
   ]

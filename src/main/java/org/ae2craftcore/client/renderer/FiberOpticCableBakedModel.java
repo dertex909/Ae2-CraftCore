@@ -39,9 +39,14 @@ public class FiberOpticCableBakedModel implements IDynamicBakedModel {
     public @NotNull List<BakedQuad> getQuads(@Nullable BlockState state, @Nullable Direction side, @NotNull RandomSource rand, @NotNull ModelData data, @Nullable RenderType renderType) {
         if (side != null) return List.of();
 
-        Integer maskObj = data.get(FiberOpticCableBlockEntity.CONNECTION_MASK);
-        int mask = maskObj != null ? maskObj : 0;
-        if (mask < 0 || mask > 63) mask = 0;
+        int mask;
+        if (state == null) {
+            mask = 5;
+        } else {
+            Integer maskObj = data.get(FiberOpticCableBlockEntity.CONNECTION_MASK);
+            mask = maskObj != null ? maskObj : 0;
+            if (mask < 0 || mask > 63) mask = 0;
+        }
 
         var quads = cache[mask];
         if (quads == null) {
