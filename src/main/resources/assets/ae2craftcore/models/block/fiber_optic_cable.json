@@ -1,7 +1,20 @@
 {
-  "parent": "minecraft:block/cube_all",
   "render_type": "minecraft:translucent",
   "textures": {
-    "all": "ae2craftcore:block/fiber_optic_cable"
-  }
+    "texture": "ae2craftcore:block/fiber_optic_cable"
+  },
+  "elements": [
+    {
+      "from": [ 6, 6, 0 ],
+      "to": [ 10, 10, 16 ],
+      "faces": {
+        "down":  { "uv": [ 6, 0, 10, 16 ], "texture": "#texture" },
+        "up":    { "uv": [ 6, 0, 10, 16 ], "texture": "#texture" },
+        "north": { "uv": [ 6, 6, 10, 10 ], "texture": "#texture" },
+        "south": { "uv": [ 6, 6, 10, 10 ], "texture": "#texture" },
+        "west":  { "uv": [ 0, 6, 16, 10 ], "texture": "#texture" },
+        "east":  { "uv": [ 0, 6, 16, 10 ], "texture": "#texture" }
+      }
+    }
+  ]
 }
