@@ -142,11 +142,7 @@ public class SfpModuleBlock extends AEBaseEntityBlock<SfpModuleBlockEntity> impl
     @Override
     @SuppressWarnings("unchecked")
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(@NotNull Level level, @NotNull BlockState state, @NotNull BlockEntityType<T> type) {
-        if (level.isClientSide) {
-            return null;
-        }
-        return type == SfpModuleBlockEntity.TYPE
-                ? (BlockEntityTicker<T>) (BlockEntityTicker<SfpModuleBlockEntity>) SfpModuleBlockEntity::tick
-                : null;
+        if (level.isClientSide) return null;
+        return type == SfpModuleBlockEntity.TYPE ? (BlockEntityTicker<T>) (BlockEntityTicker<SfpModuleBlockEntity>) SfpModuleBlockEntity::tick : null;
     }
 }
