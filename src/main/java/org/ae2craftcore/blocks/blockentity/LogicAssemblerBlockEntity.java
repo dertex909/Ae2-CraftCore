@@ -374,6 +374,11 @@ public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity imp
     }
 
     @Override
+    protected Item getItemFromBlockEntity() {
+        return this.getBlockState().getBlock().asItem();
+    }
+
+    @Override
     public void saveAdditional(@NotNull CompoundTag tag, HolderLookup.@NotNull Provider registries) {
         super.saveAdditional(tag, registries);
         tag.putDouble("ProgressDouble", this.progress);

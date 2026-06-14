@@ -8,8 +8,8 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.BaseEntityBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.HorizontalDirectionalBlock;
 import net.minecraft.world.level.block.RenderShape;
@@ -29,9 +29,10 @@ import org.jetbrains.annotations.Nullable;
 import appeng.api.orientation.IOrientableBlock;
 import appeng.api.orientation.IOrientationStrategy;
 import appeng.api.orientation.OrientationStrategies;
+import appeng.block.AEBaseEntityBlock;
 
 @RegisterBlock(name = "sfp_module", strength = 3.0f, resistance = 3.0f, requiresCorrectTool = true)
-public class SfpModuleBlock extends BaseEntityBlock implements IOrientableBlock {
+public class SfpModuleBlock extends AEBaseEntityBlock<SfpModuleBlockEntity> implements IOrientableBlock {
 
     public static DeferredHolder<Block, SfpModuleBlock> HOLDER;
     public static final BooleanProperty IS_INPUT = BooleanProperty.create("is_input");
@@ -45,6 +46,7 @@ public class SfpModuleBlock extends BaseEntityBlock implements IOrientableBlock 
     public SfpModuleBlock(Properties properties) {
         super(properties);
         registerDefaultState(defaultBlockState().setValue(IS_INPUT, true).setValue(FACING, Direction.NORTH));
+        this.setBlockEntity(SfpModuleBlockEntity.class, null, null, null);
     }
 
     @Override
@@ -53,7 +55,7 @@ public class SfpModuleBlock extends BaseEntityBlock implements IOrientableBlock 
     }
 
     @Override
-    protected @NotNull MapCodec<? extends BaseEntityBlock> codec() {
+    protected @NotNull MapCodec<? extends AEBaseEntityBlock<SfpModuleBlockEntity>> codec() {
         return CODEC;
     }
 
@@ -77,6 +79,24 @@ public class SfpModuleBlock extends BaseEntityBlock implements IOrientableBlock 
     @Override
     public BlockEntity newBlockEntity(@NotNull BlockPos pos, @NotNull BlockState state) {
         return new SfpModuleBlockEntity(pos, state);
+    }
+
+    @Nullable
+    @Override
+    public SfpModuleBlockEntity getBlockEntity(BlockGetter level, BlockPos pos) {
+        var be = level.getBlockEntity(pos);
+        return be instanceof SfpModuleBlockEntity sfp ? sfp : null;
+    }
+
+    @Nullable
+    @Override
+    public SfpModuleBlockEntity getBlockEntity(BlockGetter level, int x, int y, int z) {
+        return this.getBlockEntity(level, new BlockPos(x, y, z));
+    }
+
+    @Override
+    public BlockEntityType<SfpModuleBlockEntity> getBlockEntityType() {
+        return SfpModuleBlockEntity.TYPE;
     }
 
     @Override
@@ -114,7 +134,13 @@ public class SfpModuleBlock extends BaseEntityBlock implements IOrientableBlock 
 
     @Nullable
     @Override
+    @SuppressWarnings("unchecked")
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(@NotNull Level level, @NotNull BlockState state, @NotNull BlockEntityType<T> type) {
-        return createTickerHelper(type, SfpModuleBlockEntity.TYPE, SfpModuleBlockEntity::tick);
+        if (level.isClientSide) {
+            return null;
+        }
+        return type == SfpModuleBlockEntity.TYPE
+                ? (BlockEntityTicker<T>) (BlockEntityTicker<SfpModuleBlockEntity>) SfpModuleBlockEntity::tick
+                : null;
     }
 }

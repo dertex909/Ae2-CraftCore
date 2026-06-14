@@ -13,6 +13,7 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ContainerData;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
@@ -24,10 +25,17 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import appeng.api.inventories.InternalInventory;
+import appeng.api.networking.GridFlags;
+import appeng.api.orientation.BlockOrientation;
+import appeng.api.util.AECableType;
 import appeng.blockentity.grid.AENetworkedPoweredBlockEntity;
 import appeng.util.inv.AppEngInternalInventory;
 
 import java.util.HashSet;
+import java.util.EnumSet;
+import java.util.Set;
+
+import static appeng.api.orientation.RelativeSide.FRONT;
 
 @RegisterBlockEntity(name = "sfp_module", blocks = {SfpModuleBlock.class})
 public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity implements MenuProvider {
@@ -86,7 +94,7 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity implemen
 
     public SfpModuleBlockEntity(BlockPos pos, BlockState state) {
         super(TYPE, pos, state);
-        this.getMainNode().setFlags().setIdlePowerUsage(5);
+        this.getMainNode().setFlags(GridFlags.REQUIRE_CHANNEL).setIdlePowerUsage(5);
         this.setInternalMaxPower(1000);
     }
 
@@ -97,6 +105,17 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity implemen
     public void setSfpMode(SFPMode mode) {
         if (this.sfpMode != mode) {
             this.sfpMode = mode;
+            boolean wasActive = this.getMainNode().isReady();
+            if (wasActive) this.getMainNode().destroy();
+
+            if (mode == SFPMode.INPUT) {
+                this.getMainNode().setFlags(appeng.api.networking.GridFlags.REQUIRE_CHANNEL);
+            } else {
+                this.getMainNode().setFlags();
+            }
+
+            if (wasActive && this.level != null) this.getMainNode().create(this.level, this.worldPosition);
+
             disconnectGrid();
             this.setChanged();
         }
@@ -301,9 +320,31 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity implemen
     }
 
     @Override
+    public Set<Direction> getGridConnectableSides(BlockOrientation orientation) {
+        return EnumSet.complementOf(EnumSet.of(orientation.getSide(FRONT)));
+    }
+
+    @Override
+    public AECableType getCableConnectionType(Direction dir) {
+        if (dir == getOrientation().getSide(FRONT)) return AECableType.NONE;
+        return AECableType.DENSE_SMART;
+    }
+
+    @Override
+    protected void onOrientationChanged(BlockOrientation orientation) {
+        super.onOrientationChanged(orientation);
+        onGridConnectableSidesChanged();
+    }
+
+    @Override
     public void setRemoved() {
         disconnectGrid();
         super.setRemoved();
+    }
+
+    @Override
+    protected Item getItemFromBlockEntity() {
+        return this.getBlockState().getBlock().asItem();
     }
 
     @Override
@@ -318,5 +359,11 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity implemen
         super.loadTag(tag, registries);
         if (tag.contains("SfpMode")) this.sfpMode = SFPMode.valueOf(tag.getString("SfpMode"));
         if (tag.contains("Channels")) this.channels = tag.getInt("Channels");
+        if (this.sfpMode == SFPMode.INPUT) {
+            this.getMainNode().setFlags(GridFlags.REQUIRE_CHANNEL);
+        } else {
+            this.getMainNode().setFlags();
+        }
+        onGridConnectableSidesChanged();
     }
 }
