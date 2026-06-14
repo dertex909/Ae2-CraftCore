@@ -22,8 +22,6 @@ import org.ae2craftcore.blocks.menu.SfpModuleMenu;
 import org.ae2craftcore.registry.annotations.RegisterBlockEntity;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import appeng.api.inventories.InternalInventory;
 import appeng.api.networking.GridFlags;
@@ -45,7 +43,6 @@ import static appeng.api.config.PowerUnit.AE;
 public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity implements MenuProvider {
     public static BlockEntityType<SfpModuleBlockEntity> TYPE;
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(SfpModuleBlockEntity.class);
     private static final Direction[] DIRECTIONS = Direction.values();
 
     public enum SFPMode {
@@ -270,10 +267,7 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity implemen
                             double powerNeeded = outSfp.getInternalMaxPower() - outSfp.getInternalCurrentPower();
                             if (powerNeeded > 0) {
                                 double extracted = gridA.getEnergyService().extractAEPower(powerNeeded, MODULATE, ONE);
-                                if (extracted > 0) {
-                                    outSfp.injectExternalPower(AE, extracted, MODULATE);
-                                    LOGGER.info("[SFP-DEBUG] Запитали выходной SFP на {} AE для запуска его ноды.", extracted);
-                                }
+                                if (extracted > 0) outSfp.injectExternalPower(AE, extracted, MODULATE);
                             }
                         }
                         blockEntity.connectGrid(outSfp);
@@ -293,27 +287,19 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity implemen
         var nodeA = this.getMainNode().getNode();
         var nodeB = outputSfp.getMainNode().getNode();
 
-        LOGGER.info("[SFP-DEBUG] Попытка соединения сетей. Нода А (вход): {}, Нода B (выход): {}",
-                nodeA != null ? "АКТИВНА" : "OFFLINE/NULL", nodeB != null ? "АКТИВНА" : "OFFLINE/NULL");
-
         if (nodeA != null && nodeB != null) try {
             this.activeConnection = GridHelper.createConnection(nodeA, nodeB);
             this.connectedOutput = outputSfp;
             this.connectedOutput.pathValid = true;
-            LOGGER.info("[SFP-DEBUG] Соединение МЭ-сетей успешно установлено!");
-        } catch (Throwable e) {
-            LOGGER.error("[SFP-DEBUG] Не удалось объединить МЭ-сети!", e);
+        } catch (Throwable ignored) {
         }
-
     }
 
     private void disconnectGrid() {
         if (this.activeConnection != null) {
             try {
                 this.activeConnection.destroy();
-                LOGGER.info("[SFP-DEBUG] Соединение МЭ-сетей разорвано.");
-            } catch (Throwable e) {
-                LOGGER.error("[SFP-DEBUG] Ошибка при удалении соединения МЭ-сетей!", e);
+            } catch (Throwable ignored) {
             }
             this.activeConnection = null;
         }
