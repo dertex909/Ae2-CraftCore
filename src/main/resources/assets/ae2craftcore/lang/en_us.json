@@ -22,5 +22,17 @@
   "container.ae2craftcore.logic_assembler": "Logic Assembler",
   "block.ae2craftcore.sfp_module": "SFP-Module",
   "block.ae2craftcore.fiber_optic_cable": "Fiber Optic Cable",
-  "container.ae2craftcore.sfp_module": "SFP-Module"
+  "container.ae2craftcore.sfp_module": "SFP-Module",
+  "block.ae2craftcore.cryostat": "Cryostat",
+  "item.ae2craftcore.cryostat": "Cryostat",
+  "block.ae2craftcore.structural_block": "Structural Block",
+  "item.ae2craftcore.structural_block": "Structural Block",
+  "block.ae2craftcore.shock_absorbing_spring": "Shock Absorbing Spring",
+  "item.ae2craftcore.shock_absorbing_spring": "Shock Absorbing Spring",
+  "block.ae2craftcore.mu_metal": "Mu-Metal",
+  "item.ae2craftcore.mu_metal": "Mu-Metal",
+  "block.ae2craftcore.shielded_mesh": "Shielded Mesh",
+  "item.ae2craftcore.shielded_mesh": "Shielded Mesh",
+  "block.ae2craftcore.fis_injector": "FIS Injector",
+  "item.ae2craftcore.fis_injector": "FIS Injector"
 }
