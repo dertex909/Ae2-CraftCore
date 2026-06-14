@@ -19,10 +19,9 @@ public final class RegistryScanHelper {
     @SafeVarargs
     public static ObjectOpenHashSet<String> findAnnotatedClasses(Class<? extends Annotation>... annotations) {
         var scanData = getScanData();
-        ObjectOpenHashSet<String> result = new ObjectOpenHashSet<>();
-        ObjectOpenHashSet<String> names = new ObjectOpenHashSet<>();
+        var result = new ObjectOpenHashSet<String>();
+        var names = new ObjectOpenHashSet<String>();
         for (var a : annotations) names.add(a.getName());
-
         for (var data : scanData.getAnnotations()) {
             if (names.contains(data.annotationType().getClassName())) result.add(data.clazz().getClassName());
         }
