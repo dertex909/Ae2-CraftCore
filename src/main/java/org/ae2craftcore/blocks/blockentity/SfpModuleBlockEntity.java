@@ -81,7 +81,7 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity implemen
         public void set(int index, int value) {
             switch (index) {
                 case 0 -> SfpModuleBlockEntity.this.channels = Math.clamp(value, 64, 8192);
-                case 1 -> SfpModuleBlockEntity.this.updateSfpMode(value == 1 ? SFPMode.INPUT : SFPMode.OUTPUT);
+                case 1 -> {}
                 case 2 -> SfpModuleBlockEntity.this.pathValid = value == 1;
             }
         }
@@ -95,29 +95,18 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity implemen
     public SfpModuleBlockEntity(BlockPos pos, BlockState state) {
         super(TYPE, pos, state);
         this.sfpMode = state.getValue(SfpModuleBlock.IS_INPUT) ? SFPMode.INPUT : SFPMode.OUTPUT;
-        setupNodeFlags();
+
+        if (this.sfpMode == SFPMode.INPUT) {
+            this.getMainNode().setFlags(GridFlags.REQUIRE_CHANNEL, GridFlags.DENSE_CAPACITY).setIdlePowerUsage(5);
+        } else {
+            this.getMainNode().setFlags(GridFlags.CANNOT_CARRY, GridFlags.DENSE_CAPACITY).setIdlePowerUsage(5);
+        }
         this.setInternalMaxPower(1000);
     }
 
     @Override
     protected Item getItemFromBlockEntity() {
         return this.getBlockState().getBlock().asItem();
-    }
-
-    private void setupNodeFlags() {
-        if (this.sfpMode == SFPMode.INPUT) {
-            this.getMainNode().setFlags(GridFlags.REQUIRE_CHANNEL, GridFlags.DENSE_CAPACITY).setIdlePowerUsage(5);
-        } else {
-            this.getMainNode().setFlags(GridFlags.CANNOT_CARRY, GridFlags.DENSE_CAPACITY).setIdlePowerUsage(5);
-        }
-    }
-
-    public void updateSfpMode(SFPMode mode) {
-        if (this.sfpMode != mode) {
-            this.sfpMode = mode;
-            setupNodeFlags();
-            this.setChanged();
-        }
     }
 
     public SFPMode getSfpMode() {
@@ -127,6 +116,10 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity implemen
     public void setChannels(int channels) {
         this.channels = Math.clamp(channels, 64, 8192);
         this.setChanged();
+    }
+
+    public int getChannels() {
+        return this.channels;
     }
 
     @Override
@@ -321,7 +314,6 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity implemen
         if (tag.contains("Channels")) this.channels = tag.getInt("Channels");
         if (tag.contains("SfpMode")) {
             this.sfpMode = SFPMode.valueOf(tag.getString("SfpMode"));
-            setupNodeFlags();
         }
     }
 }

@@ -109,8 +109,12 @@ public class SfpModuleBlock extends AEBaseEntityBlock<SfpModuleBlockEntity> impl
                 if (held.isEmpty()) {
                     boolean currentInput = state.getValue(IS_INPUT);
                     boolean newInput = !currentInput;
-                    level.setBlock(pos, state.setValue(IS_INPUT, newInput), 3);
-                    sfp.updateSfpMode(newInput ? SfpModuleBlockEntity.SFPMode.INPUT : SfpModuleBlockEntity.SFPMode.OUTPUT);
+                    int savedChannels = sfp.getChannels();
+                    level.removeBlockEntity(pos);
+                    var newState = state.setValue(IS_INPUT, newInput);
+                    level.setBlock(pos, newState, 3);
+                    var newBe = level.getBlockEntity(pos);
+                    if (newBe instanceof SfpModuleBlockEntity newSfp) newSfp.setChannels(savedChannels);
                     player.displayClientMessage(newInput ? MSG_MODE_INPUT : MSG_MODE_OUTPUT, true);
                 } else {
                     if (state.getValue(IS_INPUT)) {
