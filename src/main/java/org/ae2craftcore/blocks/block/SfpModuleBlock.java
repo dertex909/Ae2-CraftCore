@@ -105,17 +105,30 @@ public class SfpModuleBlock extends AEBaseEntityBlock<SfpModuleBlockEntity> impl
         if (!level.isClientSide) {
             var held = player.getItemInHand(InteractionHand.MAIN_HAND);
             var blockEntity = level.getBlockEntity(pos);
-            if (blockEntity instanceof SfpModuleBlockEntity sfp) if (held.isEmpty()) {
-                boolean currentInput = state.getValue(IS_INPUT);
-                boolean newInput = !currentInput;
-                level.setBlock(pos, state.setValue(IS_INPUT, newInput), 3);
-                sfp.setSfpMode(newInput ? SfpModuleBlockEntity.SFPMode.INPUT : SfpModuleBlockEntity.SFPMode.OUTPUT);
-                player.displayClientMessage(newInput ? MSG_MODE_INPUT : MSG_MODE_OUTPUT, true);
-            } else {
-                if (state.getValue(IS_INPUT)) {
-                    player.openMenu(sfp, pos);
+            if (blockEntity instanceof SfpModuleBlockEntity sfp) {
+                if (held.isEmpty()) {
+                    boolean currentInput = state.getValue(IS_INPUT);
+                    boolean newInput = !currentInput;
+
+                    int savedChannels = sfp.getChannels();
+
+                    level.removeBlockEntity(pos);
+
+                    BlockState newState = state.setValue(IS_INPUT, newInput);
+                    level.setBlock(pos, newState, 3);
+
+                    var newBe = level.getBlockEntity(pos);
+                    if (newBe instanceof SfpModuleBlockEntity newSfp) {
+                        newSfp.setChannels(savedChannels);
+                    }
+
+                    player.displayClientMessage(newInput ? MSG_MODE_INPUT : MSG_MODE_OUTPUT, true);
                 } else {
-                    player.displayClientMessage(MSG_OUTPUT_WARNING, true);
+                    if (state.getValue(IS_INPUT)) {
+                        player.openMenu(sfp, pos);
+                    } else {
+                        player.displayClientMessage(MSG_OUTPUT_WARNING, true);
+                    }
                 }
             }
         }
