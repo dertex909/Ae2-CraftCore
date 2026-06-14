@@ -1,6 +1,6 @@
 package org.ae2craftcore.blocks.blockentity;
 
-import appeng.api.networking.IGridNode;
+import appeng.api.networking.GridHelper;
 import appeng.api.networking.IGridConnection;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -24,6 +24,8 @@ import org.ae2craftcore.blocks.menu.SfpModuleMenu;
 import org.ae2craftcore.registry.annotations.RegisterBlockEntity;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import appeng.api.inventories.InternalInventory;
 import appeng.api.networking.GridFlags;
@@ -37,11 +39,15 @@ import java.util.EnumSet;
 import java.util.Set;
 
 import static appeng.api.orientation.RelativeSide.FRONT;
+import static appeng.api.config.Actionable.MODULATE;
+import static appeng.api.config.PowerMultiplier.ONE;
+import static appeng.api.config.PowerUnit.AE;
 
 @RegisterBlockEntity(name = "sfp_module", blocks = {SfpModuleBlock.class})
 public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity implements MenuProvider {
     public static BlockEntityType<SfpModuleBlockEntity> TYPE;
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(SfpModuleBlockEntity.class);
     private static final Direction[] DIRECTIONS = Direction.values();
     private static final ResourceLocation CONTROLLER_ID = ResourceLocation.fromNamespaceAndPath("ae2", "controller");
 
@@ -271,6 +277,17 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity implemen
                 if (currentlyValid) {
                     var outputBe = level.getBlockEntity(result.outputPos);
                     if (outputBe instanceof SfpModuleBlockEntity outSfp) {
+                        var gridA = blockEntity.getMainNode().getGrid();
+                        if (gridA != null) {
+                            double powerNeeded = outSfp.getInternalMaxPower() - outSfp.getInternalCurrentPower();
+                            if (powerNeeded > 0) {
+                                double extracted = gridA.getEnergyService().extractAEPower(powerNeeded, MODULATE, ONE);
+                                if (extracted > 0) {
+                                    outSfp.injectExternalPower(AE, extracted, MODULATE);
+                                    LOGGER.info("[SFP-DEBUG] Запитали выходной SFP на {} AE для запуска его ноды.", extracted);
+                                }
+                            }
+                        }
                         blockEntity.connectGrid(outSfp);
                     } else {
                         blockEntity.disconnectGrid();
@@ -288,17 +305,25 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity implemen
         var nodeA = this.getMainNode().getNode();
         var nodeB = outputSfp.getMainNode().getNode();
 
+        LOGGER.info("[SFP-DEBUG] Попытка соединения сетей. Нода А (вход): {}, Нода B (выход): {}",
+                nodeA != null ? "АКТИВНА" : "OFFLINE/NULL", nodeB != null ? "АКТИВНА" : "OFFLINE/NULL");
+
         if (nodeA != null && nodeB != null) try {
-            this.activeConnection = appeng.api.networking.GridHelper.createConnection(nodeA, nodeB);
-        } catch (Throwable ignored) {
+            this.activeConnection = GridHelper.createConnection(nodeA, nodeB);
+            LOGGER.info("[SFP-DEBUG] Соединение МЭ-сетей успешно установлено!");
+        } catch (Throwable e) {
+            LOGGER.error("[SFP-DEBUG] Не удалось объединить МЭ-сети!", e);
         }
+
     }
 
     private void disconnectGrid() {
         if (this.activeConnection != null) {
             try {
                 this.activeConnection.destroy();
-            } catch (Throwable ignored) {
+                LOGGER.info("[SFP-DEBUG] Соединение МЭ-сетей разорвано.");
+            } catch (Throwable e) {
+                LOGGER.error("[SFP-DEBUG] Ошибка при удалении соединения МЭ-сетей!", e);
             }
             this.activeConnection = null;
         }
