@@ -27,23 +27,23 @@ public class ModCommands {
                         .then(Commands.literal("build_cryostat")
                                 .requires(source -> source.hasPermission(2))
                                 .executes(context -> {
-                                    CommandSourceStack source = context.getSource();
+                                    var source = context.getSource();
                                     var player = source.getPlayer();
                                     if (player == null) {
                                         source.sendFailure(Component.literal("Only players can execute this command."));
                                         return 0;
                                     }
 
-                                    ServerLevel level = source.getLevel();
+                                    var level = source.getLevel();
                                     var hitResult = player.pick(20.0D, 0.0F, false);
-                                    BlockPos center = BlockPos.containing(hitResult.getLocation());
+                                    var center = BlockPos.containing(hitResult.getLocation());
 
                                     if (level.getBlockState(center).isAir() && center.distManhattan(player.blockPosition()) > 10) {
                                         center = player.blockPosition().relative(player.getDirection(), 5);
                                     }
 
                                     buildStructure(level, center);
-                                    BlockPos finalCenter = center;
+                                    var finalCenter = center;
                                     source.sendSuccess(() -> Component.literal("§aSuccessfully built Cryostat multiblock structure at " + finalCenter.toShortString()), true);
                                     return 1;
                                 })
@@ -52,7 +52,6 @@ public class ModCommands {
     }
 
     private static void buildStructure(ServerLevel level, BlockPos center) {
-        // Place center Cryostat
         level.setBlockAndUpdate(center, CryostatBlock.HOLDER.get().defaultBlockState());
 
         for (int x = -4; x <= 4; x++) {
@@ -61,13 +60,11 @@ public class ModCommands {
                     if (x == 0 && y == 0 && z == 0) continue;
 
                     int dist = Math.max(Math.abs(x), Math.max(Math.abs(y), Math.abs(z)));
-                    BlockPos currentPos = center.offset(x, y, z);
+                    var currentPos = center.offset(x, y, z);
 
                     switch (dist) {
                         case 1 -> {
-                            boolean isFace = (Math.abs(x) == 1 && y == 0 && z == 0) ||
-                                    (x == 0 && Math.abs(y) == 1 && z == 0) ||
-                                    (x == 0 && y == 0 && Math.abs(z) == 1);
+                            boolean isFace = (Math.abs(x) == 1 && y == 0 && z == 0) || (x == 0 && Math.abs(y) == 1 && z == 0) || (x == 0 && y == 0 && Math.abs(z) == 1);
                             if (isFace) {
                                 level.setBlockAndUpdate(currentPos, ShockAbsorberSpringBlock.HOLDER.get().defaultBlockState());
                             } else {
@@ -75,21 +72,15 @@ public class ModCommands {
                             }
                         }
                         case 2 -> {
-                            boolean isInjector = (y == 0) && (
-                                    (x == 2 && z == 0) || (x == -2 && z == 0) || (x == 0 && z == 2) || (x == 0 && z == -2)
-                            );
+                            boolean isInjector = (y == 0) && ((x == 2 && z == 0) || (x == -2 && z == 0) || (x == 0 && z == 2) || (x == 0 && z == -2));
                             if (isInjector) {
                                 level.setBlockAndUpdate(currentPos, FisInjectorBlock.HOLDER.get().defaultBlockState());
                             } else {
                                 level.setBlockAndUpdate(currentPos, MuMetalBlock.HOLDER.get().defaultBlockState());
                             }
                         }
-                        case 3 -> {
-                            level.setBlockAndUpdate(currentPos, Blocks.AIR.defaultBlockState());
-                        }
-                        case 4 -> {
-                            level.setBlockAndUpdate(currentPos, ShieldedMeshBlock.HOLDER.get().defaultBlockState());
-                        }
+                        case 3 -> level.setBlockAndUpdate(currentPos, Blocks.AIR.defaultBlockState());
+                        case 4 -> level.setBlockAndUpdate(currentPos, ShieldedMeshBlock.HOLDER.get().defaultBlockState());
                     }
                 }
             }
