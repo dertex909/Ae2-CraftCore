@@ -1,7 +1,5 @@
 package org.ae2craftcore.blocks.blockentity;
 
-import appeng.api.networking.GridHelper;
-import appeng.api.networking.IGridConnection;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
@@ -36,6 +34,8 @@ import java.util.HashSet;
 import java.util.EnumSet;
 import java.util.Set;
 
+import static appeng.api.config.Actionable.MODULATE;
+import static appeng.api.config.PowerMultiplier.ONE;
 import static appeng.api.orientation.RelativeSide.FRONT;
 
 @RegisterBlockEntity(name = "sfp_module", blocks = {SfpModuleBlock.class})
@@ -55,7 +55,6 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity implemen
 
     private final AppEngInternalInventory inv = new AppEngInternalInventory(this, 0);
 
-    private IGridConnection activeConnection = null;
     private boolean pathValid = false;
 
     private int delayTicks = 100;
@@ -82,7 +81,7 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity implemen
         public void set(int index, int value) {
             switch (index) {
                 case 0 -> SfpModuleBlockEntity.this.channels = Math.clamp(value, 64, 8192);
-                case 1 -> SfpModuleBlockEntity.this.sfpMode = value == 1 ? SFPMode.INPUT : SFPMode.OUTPUT;
+                case 1 -> SfpModuleBlockEntity.this.updateSfpMode(value == 1 ? SFPMode.INPUT : SFPMode.OUTPUT);
                 case 2 -> SfpModuleBlockEntity.this.pathValid = value == 1;
             }
         }
@@ -96,18 +95,29 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity implemen
     public SfpModuleBlockEntity(BlockPos pos, BlockState state) {
         super(TYPE, pos, state);
         this.sfpMode = state.getValue(SfpModuleBlock.IS_INPUT) ? SFPMode.INPUT : SFPMode.OUTPUT;
-
-        if (this.sfpMode == SFPMode.INPUT) {
-            this.getMainNode().setFlags(GridFlags.REQUIRE_CHANNEL).setIdlePowerUsage(5);
-        } else {
-            this.getMainNode().setFlags().setIdlePowerUsage(5);
-        }
+        setupNodeFlags();
         this.setInternalMaxPower(1000);
     }
 
     @Override
     protected Item getItemFromBlockEntity() {
         return this.getBlockState().getBlock().asItem();
+    }
+
+    private void setupNodeFlags() {
+        if (this.sfpMode == SFPMode.INPUT) {
+            this.getMainNode().setFlags(GridFlags.REQUIRE_CHANNEL, GridFlags.DENSE_CAPACITY).setIdlePowerUsage(5);
+        } else {
+            this.getMainNode().setFlags(GridFlags.CANNOT_CARRY, GridFlags.DENSE_CAPACITY).setIdlePowerUsage(5);
+        }
+    }
+
+    public void updateSfpMode(SFPMode mode) {
+        if (this.sfpMode != mode) {
+            this.sfpMode = mode;
+            setupNodeFlags();
+            this.setChanged();
+        }
     }
 
     public SFPMode getSfpMode() {
@@ -117,10 +127,6 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity implemen
     public void setChannels(int channels) {
         this.channels = Math.clamp(channels, 64, 8192);
         this.setChanged();
-    }
-
-    public int getChannels() {
-        return this.channels;
     }
 
     @Override
@@ -270,36 +276,18 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity implemen
                 if (currentlyValid) {
                     var outputBe = level.getBlockEntity(result.outputPos);
                     if (outputBe instanceof SfpModuleBlockEntity outSfp) {
-                        blockEntity.connectGrid(outSfp);
-                    } else {
-                        blockEntity.disconnectGrid();
+                        var gridA = blockEntity.getMainNode().getGrid();
+                        var gridB = outSfp.getMainNode().getGrid();
+                        if (gridA != null && gridB != null) {
+                            double powerNeeded = gridB.getEnergyService().getEnergyDemand(1000);
+                            if (powerNeeded > 0) {
+                                double extracted = gridA.getEnergyService().extractAEPower(powerNeeded, MODULATE, ONE);
+                                if (extracted > 0) gridB.getEnergyService().injectPower(extracted, MODULATE);
+                            }
+                        }
                     }
-                } else {
-                    blockEntity.disconnectGrid();
                 }
             }
-        }
-    }
-
-    private void connectGrid(SfpModuleBlockEntity outputSfp) {
-        if (this.activeConnection != null) return;
-
-        var nodeA = this.getMainNode().getNode();
-        var nodeB = outputSfp.getMainNode().getNode();
-
-        if (nodeA != null && nodeB != null) try {
-            this.activeConnection = GridHelper.createConnection(nodeA, nodeB);
-        } catch (Throwable ignored) {
-        }
-    }
-
-    private void disconnectGrid() {
-        if (this.activeConnection != null) {
-            try {
-                this.activeConnection.destroy();
-            } catch (Throwable ignored) {
-            }
-            this.activeConnection = null;
         }
     }
 
@@ -321,20 +309,19 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity implemen
     }
 
     @Override
-    public void setRemoved() {
-        disconnectGrid();
-        super.setRemoved();
-    }
-
-    @Override
     public void saveAdditional(@NotNull CompoundTag tag, HolderLookup.@NotNull Provider registries) {
         super.saveAdditional(tag, registries);
         tag.putInt("Channels", this.channels);
+        tag.putString("SfpMode", this.sfpMode.name());
     }
 
     @Override
     public void loadTag(@NotNull CompoundTag tag, HolderLookup.@NotNull Provider registries) {
         super.loadTag(tag, registries);
         if (tag.contains("Channels")) this.channels = tag.getInt("Channels");
+        if (tag.contains("SfpMode")) {
+            this.sfpMode = SFPMode.valueOf(tag.getString("SfpMode"));
+            setupNodeFlags();
+        }
     }
 }
