@@ -5,10 +5,8 @@ import appeng.api.networking.IGridConnection;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -49,7 +47,6 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity implemen
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SfpModuleBlockEntity.class);
     private static final Direction[] DIRECTIONS = Direction.values();
-    private static final ResourceLocation CONTROLLER_ID = ResourceLocation.fromNamespaceAndPath("ae2", "controller");
 
     public enum SFPMode {
         INPUT,
@@ -62,6 +59,7 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity implemen
     private final AppEngInternalInventory inv = new AppEngInternalInventory(this, 0);
 
     private IGridConnection activeConnection = null;
+    private SfpModuleBlockEntity connectedOutput = null;
     private boolean pathValid = false;
 
     private int delayTicks = 100;
@@ -144,15 +142,6 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity implemen
     @Override
     public AbstractContainerMenu createMenu(int containerId, @NotNull Inventory playerInventory, @NotNull Player player) {
         return new SfpModuleMenu(containerId, this.dataAccess, this.worldPosition);
-    }
-
-    private boolean isAdjacentToController() {
-        if (this.level == null) return false;
-        for (var d : DIRECTIONS) {
-            var adjState = this.level.getBlockState(this.worldPosition.relative(d));
-            if (BuiltInRegistries.BLOCK.getKey(adjState.getBlock()).equals(CONTROLLER_ID)) return true;
-        }
-        return false;
     }
 
     public record TraceResult(boolean isValid, BlockPos outputPos) {
@@ -268,10 +257,9 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity implemen
                 blockEntity.needsTrace = false;
                 blockEntity.checkTimer = 40;
 
-                boolean isAdjacent = blockEntity.isAdjacentToController();
                 var result = blockEntity.traceConnection();
 
-                boolean currentlyValid = isAdjacent && result.isValid;
+                boolean currentlyValid = result.isValid;
                 blockEntity.pathValid = currentlyValid;
 
                 if (currentlyValid) {
@@ -310,6 +298,8 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity implemen
 
         if (nodeA != null && nodeB != null) try {
             this.activeConnection = GridHelper.createConnection(nodeA, nodeB);
+            this.connectedOutput = outputSfp;
+            this.connectedOutput.pathValid = true;
             LOGGER.info("[SFP-DEBUG] Соединение МЭ-сетей успешно установлено!");
         } catch (Throwable e) {
             LOGGER.error("[SFP-DEBUG] Не удалось объединить МЭ-сети!", e);
@@ -326,6 +316,10 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity implemen
                 LOGGER.error("[SFP-DEBUG] Ошибка при удалении соединения МЭ-сетей!", e);
             }
             this.activeConnection = null;
+        }
+        if (this.connectedOutput != null) {
+            this.connectedOutput.pathValid = false;
+            this.connectedOutput = null;
         }
     }
 
