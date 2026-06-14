@@ -155,6 +155,7 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity implemen
         visitedCables.add(nextPos);
 
         while (true) {
+            if (visitedCables.size() > 8192) return new TraceResult(false, null);
             currentPos = nextPos;
             BlockPos singleNeighbor = null;
             int neighborsCount = 0;

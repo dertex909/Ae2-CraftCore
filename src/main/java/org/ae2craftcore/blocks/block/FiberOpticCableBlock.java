@@ -5,27 +5,54 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.BaseEntityBlock;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.RenderShape;
-import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.IntegerProperty;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import org.ae2craftcore.blocks.blockentity.FiberOpticCableBlockEntity;
 import org.ae2craftcore.registry.annotations.RegisterBlock;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.EnumMap;
+import java.util.HashSet;
 import java.util.Map;
 
 @RegisterBlock(name = "fiber_optic_cable", resistance = 1.0f, noOcclusion = true)
-public class FiberOpticCableBlock extends BaseEntityBlock {
+public class FiberOpticCableBlock extends Block {
     public static final MapCodec<FiberOpticCableBlock> CODEC = simpleCodec(FiberOpticCableBlock::new);
 
+    public static final IntegerProperty CONNECTION_MASK = IntegerProperty.create("connection_mask", 0, 63);
+
     private static final Direction[] DIRECTIONS = Direction.values();
+
+    private static final int[] DIR_BITS = new int[6];
+    private static final int[] OPPOSITE_BITS = new int[6];
+
+    static {
+        for (var dir : DIRECTIONS) {
+            int ord = dir.ordinal();
+            DIR_BITS[ord] = switch (dir) {
+                case NORTH -> 1;
+                case EAST -> 2;
+                case SOUTH -> 4;
+                case WEST -> 8;
+                case UP -> 16;
+                case DOWN -> 32;
+            };
+            OPPOSITE_BITS[ord] = switch (dir) {
+                case NORTH -> 4;
+                case EAST -> 8;
+                case SOUTH -> 1;
+                case WEST -> 2;
+                case UP -> 32;
+                case DOWN -> 16;
+            };
+        }
+    }
 
     private static final VoxelShape CORE_SHAPE = Block.box(6.0, 6.0, 6.0, 10.0, 10.0, 10.0);
     private static final Map<Direction, VoxelShape> SHAPES_BY_DIRECTION = new EnumMap<>(Map.of(
@@ -39,8 +66,15 @@ public class FiberOpticCableBlock extends BaseEntityBlock {
 
     private final VoxelShape[] cache = new VoxelShape[64];
 
+    private static final ThreadLocal<Deque<UpdateTask>> UPDATE_QUEUE = ThreadLocal.withInitial(ArrayDeque::new);
+    private static final ThreadLocal<Boolean> IS_UPDATING = ThreadLocal.withInitial(() -> false);
+
+    private record UpdateTask(Level level, BlockPos pos) {
+    }
+
     public FiberOpticCableBlock(Properties properties) {
         super(properties);
+        this.registerDefaultState(this.stateDefinition.any().setValue(CONNECTION_MASK, 0));
         for (int i = 0; i < 64; i++) {
             var shape = CORE_SHAPE;
             if ((i & 1) != 0) shape = Shapes.or(shape, SHAPES_BY_DIRECTION.get(Direction.NORTH));
@@ -54,55 +88,128 @@ public class FiberOpticCableBlock extends BaseEntityBlock {
     }
 
     @Override
-    protected @NotNull MapCodec<? extends BaseEntityBlock> codec() {
+    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
+        builder.add(CONNECTION_MASK);
+    }
+
+    @Override
+    protected @NotNull MapCodec<? extends Block> codec() {
         return CODEC;
     }
 
     @Override
-    public @NotNull RenderShape getRenderShape(@NotNull BlockState state) {
-        return RenderShape.MODEL;
-    }
-
-    @Nullable
-    @Override
-    public BlockEntity newBlockEntity(@NotNull BlockPos pos, @NotNull BlockState state) {
-        return new FiberOpticCableBlockEntity(pos, state);
-    }
-
-    @Override
     public @NotNull VoxelShape getShape(@NotNull BlockState state, @NotNull BlockGetter level, @NotNull BlockPos pos, @NotNull CollisionContext context) {
-        var be = level.getBlockEntity(pos);
-        if (be instanceof FiberOpticCableBlockEntity cable) return cache[cable.getConnectionMask()];
-        int mask = 0;
-        if (canConnect(level, pos, Direction.NORTH)) mask |= 1;
-        if (canConnect(level, pos, Direction.EAST)) mask |= 2;
-        if (canConnect(level, pos, Direction.SOUTH)) mask |= 4;
-        if (canConnect(level, pos, Direction.WEST)) mask |= 8;
-        if (canConnect(level, pos, Direction.UP)) mask |= 16;
-        if (canConnect(level, pos, Direction.DOWN)) mask |= 32;
+        int mask = state.getValue(CONNECTION_MASK);
+        if (mask < 0 || mask > 63) mask = 0;
         return cache[mask];
     }
 
-    private boolean canConnect(BlockGetter level, BlockPos myPos, Direction dir) {
+    private boolean canConnectToNeighbor(Level level, BlockPos myPos, Direction dir) {
         var neighborPos = myPos.relative(dir);
         var state = level.getBlockState(neighborPos);
-        if (state.getBlock() instanceof FiberOpticCableBlock) return true;
-        if (state.getBlock() instanceof SfpModuleBlock) {
-            var facing = state.getValue(SfpModuleBlock.FACING);
-            return facing == dir.getOpposite();
+        if (!(state.getBlock() instanceof FiberOpticCableBlock || state.getBlock() instanceof SfpModuleBlock)) {
+            return false;
         }
+        if (state.getBlock() instanceof SfpModuleBlock) {
+            return state.getValue(SfpModuleBlock.FACING) == dir.getOpposite();
+        }
+
+        if (state.hasProperty(CONNECTION_MASK)) {
+            int neighborMask = state.getValue(CONNECTION_MASK);
+            int neighborConnectionsCount = Integer.bitCount(neighborMask);
+            if (neighborConnectionsCount < 2) return true;
+            int oppositeBit = OPPOSITE_BITS[dir.ordinal()];
+            return (neighborMask & oppositeBit) != 0;
+        }
+
         return false;
+    }
+
+    public int calculateNewMask(Level level, BlockPos pos, int currentMask) {
+        int potentialMask = 0;
+        for (var dir : DIRECTIONS) if (canConnectToNeighbor(level, pos, dir)) potentialMask |= DIR_BITS[dir.ordinal()];
+        int existingMask = currentMask & potentialMask;
+
+        Direction firstDir = null;
+        int newMask = 0;
+        int finalCount = 0;
+
+        for (var dir : DIRECTIONS) {
+            int dirBit = DIR_BITS[dir.ordinal()];
+            if ((existingMask & dirBit) != 0) {
+                newMask |= dirBit;
+                if (finalCount == 0) firstDir = dir;
+                finalCount++;
+                if (finalCount >= 2) break;
+            }
+        }
+
+        if (finalCount == 1) {
+            var opposite = firstDir.getOpposite();
+            int oppositeBit = DIR_BITS[opposite.ordinal()];
+            if ((potentialMask & oppositeBit) != 0) {
+                newMask |= oppositeBit;
+                finalCount++;
+            }
+        }
+
+        if (finalCount < 2) for (var dir : DIRECTIONS) {
+            int dirBit = DIR_BITS[dir.ordinal()];
+            if ((potentialMask & dirBit) != 0 && (newMask & dirBit) == 0) {
+                newMask |= dirBit;
+                finalCount++;
+                if (finalCount >= 2) break;
+            }
+        }
+
+        return newMask;
+    }
+
+    public static void enqueueRecalculate(Level level, BlockPos pos) {
+        if (level.isClientSide()) return;
+        var queue = UPDATE_QUEUE.get();
+        queue.addLast(new UpdateTask(level, pos.immutable()));
+        if (IS_UPDATING.get()) return;
+
+        IS_UPDATING.set(true);
+        try {
+            var visited = new HashSet<BlockPos>();
+            while (!queue.isEmpty()) {
+                var task = queue.pollFirst();
+                if (!visited.add(task.pos)) continue;
+
+                var state = task.level.getBlockState(task.pos);
+                if (state.getBlock() instanceof FiberOpticCableBlock cable) {
+                    int oldMask = state.getValue(CONNECTION_MASK);
+                    int newMask = cable.calculateNewMask(task.level, task.pos, oldMask);
+                    if (oldMask != newMask) {
+                        var newState = state.setValue(CONNECTION_MASK, newMask);
+                        task.level.setBlock(task.pos, newState, 3);
+                        for (var dir : DIRECTIONS) {
+                            var neighborPos = task.pos.relative(dir);
+                            var neighborState = task.level.getBlockState(neighborPos);
+                            if (neighborState.getBlock() instanceof FiberOpticCableBlock) {
+                                queue.addLast(new UpdateTask(task.level, neighborPos.immutable()));
+                            }
+                        }
+                    }
+                }
+            }
+        } finally {
+            IS_UPDATING.set(false);
+            queue.clear();
+        }
     }
 
     @Override
     protected void onPlace(@NotNull BlockState state, @NotNull Level level, @NotNull BlockPos pos, @NotNull BlockState oldState, boolean isMoving) {
         super.onPlace(state, level, pos, oldState, isMoving);
         if (!level.isClientSide) {
-            var be = level.getBlockEntity(pos);
-            if (be instanceof FiberOpticCableBlockEntity cable) cable.recalculateConnections();
+            enqueueRecalculate(level, pos);
             for (var dir : DIRECTIONS) {
-                var neighborBe = level.getBlockEntity(pos.relative(dir));
-                if (neighborBe instanceof FiberOpticCableBlockEntity nCable) nCable.recalculateConnections();
+                var neighborPos = pos.relative(dir);
+                var neighborState = level.getBlockState(neighborPos);
+                if (neighborState.getBlock() instanceof FiberOpticCableBlock) enqueueRecalculate(level, neighborPos);
             }
         }
     }
@@ -111,20 +218,18 @@ public class FiberOpticCableBlock extends BaseEntityBlock {
     protected void neighborChanged(@NotNull BlockState state, @NotNull Level level, @NotNull BlockPos pos,
                                    @NotNull Block block, @NotNull BlockPos fromPos, boolean isMoving) {
         super.neighborChanged(state, level, pos, block, fromPos, isMoving);
-        if (!level.isClientSide) {
-            var be = level.getBlockEntity(pos);
-            if (be instanceof FiberOpticCableBlockEntity cable) cable.recalculateConnections();
-        }
+        if (!level.isClientSide) enqueueRecalculate(level, pos);
     }
 
     @Override
     protected void onRemove(@NotNull BlockState state, @NotNull Level level, @NotNull BlockPos pos, @NotNull BlockState newState, boolean isMoving) {
         if (!state.is(newState.getBlock())) {
-            if (!level.isClientSide) for (var dir : DIRECTIONS) {
-                var neighborBe = level.getBlockEntity(pos.relative(dir));
-                if (neighborBe instanceof FiberOpticCableBlockEntity nCable) nCable.recalculateConnections();
-            }
             super.onRemove(state, level, pos, newState, isMoving);
+            if (!level.isClientSide) for (var dir : DIRECTIONS) {
+                var neighborPos = pos.relative(dir);
+                var neighborState = level.getBlockState(neighborPos);
+                if (neighborState.getBlock() instanceof FiberOpticCableBlock) enqueueRecalculate(level, neighborPos);
+            }
         }
     }
 }

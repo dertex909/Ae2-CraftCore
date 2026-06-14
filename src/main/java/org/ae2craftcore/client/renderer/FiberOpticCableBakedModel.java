@@ -18,7 +18,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.client.model.IDynamicBakedModel;
 import net.neoforged.neoforge.client.model.data.ModelData;
 import org.ae2craftcore.Ae2craftcore;
-import org.ae2craftcore.blocks.blockentity.FiberOpticCableBlockEntity;
+import org.ae2craftcore.blocks.block.FiberOpticCableBlock;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -54,8 +54,11 @@ public class FiberOpticCableBakedModel implements IDynamicBakedModel {
         if (state == null) {
             mask = 5;
         } else {
-            Integer maskObj = data.get(FiberOpticCableBlockEntity.CONNECTION_MASK);
-            mask = maskObj != null ? maskObj : 0;
+            if (state.hasProperty(FiberOpticCableBlock.CONNECTION_MASK)) {
+                mask = state.getValue(FiberOpticCableBlock.CONNECTION_MASK);
+            } else {
+                mask = 0;
+            }
             if (mask < 0 || mask > 63) mask = 0;
         }
 
