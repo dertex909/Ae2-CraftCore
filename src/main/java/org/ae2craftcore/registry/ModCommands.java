@@ -80,7 +80,7 @@ public class ModCommands {
                             }
                         }
                         case 3 -> level.setBlockAndUpdate(currentPos, Blocks.AIR.defaultBlockState());
-                        case 4 -> level.setBlockAndUpdate(currentPos, ShieldedMeshBlock.HOLDER.get().defaultBlockState());
+                        case 4 -> level.setBlockAndUpdate(currentPos, VacuumCasingBlock.HOLDER.get().defaultBlockState());
                     }
                 }
             }

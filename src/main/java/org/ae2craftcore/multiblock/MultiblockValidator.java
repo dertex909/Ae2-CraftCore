@@ -64,8 +64,8 @@ public class MultiblockValidator {
                 }
             }
             case 4 -> {
-                if (block != ShieldedMeshBlock.HOLDER.get() && block != MuMetalBlock.HOLDER.get()) {
-                    return new ValidationResult(false, "Expected Shielded Mesh or MuMetal Block", currentPos, relPos);
+                if (block != VacuumCasingBlock.HOLDER.get() && block != MuMetalBlock.HOLDER.get()) {
+                    return new ValidationResult(false, "Expected Vacuum Casing or MuMetal Block", currentPos, relPos);
                 }
             }
         }
