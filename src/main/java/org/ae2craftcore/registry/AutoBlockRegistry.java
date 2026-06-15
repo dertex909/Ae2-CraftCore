@@ -129,6 +129,7 @@ public class AutoBlockRegistry {
             case "sand" -> SoundType.SAND;
             case "gravel" -> SoundType.GRAVEL;
             case "grass" -> SoundType.GRASS;
+            case "chain" -> SoundType.CHAIN;
             default -> SoundType.EMPTY;
         };
     }

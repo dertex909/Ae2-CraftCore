@@ -23,7 +23,7 @@ import org.ae2craftcore.registry.annotations.RegisterBlock;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-@RegisterBlock(name = "fis_injector", strength = 3.0f, resistance = 3.0f, requiresCorrectTool = true)
+@RegisterBlock(name = "fis_injector", strength = 3.0f, resistance = 6.0f, sound = "chain", requiresCorrectTool = true)
 public class FisInjectorBlock extends BaseEntityBlock {
 
     public static DeferredHolder<Block, FisInjectorBlock> HOLDER;

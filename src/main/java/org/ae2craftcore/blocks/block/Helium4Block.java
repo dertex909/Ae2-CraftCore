@@ -17,7 +17,7 @@ import java.util.Optional;
 import static net.minecraft.core.Direction.UP;
 import static net.minecraft.world.level.block.Blocks.SNOW;
 
-@RegisterBlock(name = "helium_4", strength = 3.0f, resistance = 3.0f, sound = "stone", requiresCorrectTool = true, noOcclusion = true)
+@RegisterBlock(name = "helium_4", strength = 2.0f, resistance = 50.0f, sound = "stone", noOcclusion = true, requiresCorrectTool = true)
 public class Helium4Block extends Block {
 
     private static final int[] SQRT_LUT = {0, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 5};

@@ -31,7 +31,7 @@ import appeng.api.orientation.IOrientationStrategy;
 import appeng.api.orientation.OrientationStrategies;
 import appeng.block.AEBaseEntityBlock;
 
-@RegisterBlock(name = "sfp_module", strength = 3.0f, resistance = 3.0f, requiresCorrectTool = true)
+@RegisterBlock(name = "sfp_module", strength = 4.0f, requiresCorrectTool = true)
 public class SfpModuleBlock extends AEBaseEntityBlock<SfpModuleBlockEntity> implements IOrientableBlock {
 
     public static DeferredHolder<Block, SfpModuleBlock> HOLDER;

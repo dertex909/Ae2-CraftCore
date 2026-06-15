@@ -17,7 +17,7 @@ import org.ae2craftcore.registry.annotations.RegisterBlock;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-@RegisterBlock(name = "cryostat", strength = 4.0f, resistance = 4.0f, requiresCorrectTool = true)
+@RegisterBlock(name = "cryostat", strength = 3.0f, resistance = 0.3f, requiresCorrectTool = true)
 public class CryostatBlock extends BaseEntityBlock {
 
     public static DeferredHolder<Block, CryostatBlock> HOLDER;

@@ -21,7 +21,7 @@ import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.Map;
 
-@RegisterBlock(name = "fiber_optic_cable", resistance = 1.0f, noOcclusion = true)
+@RegisterBlock(name = "fiber_optic_cable", strength = 0.3f, noOcclusion = true)
 public class FiberOpticCableBlock extends Block {
     public static final MapCodec<FiberOpticCableBlock> CODEC = simpleCodec(FiberOpticCableBlock::new);
 

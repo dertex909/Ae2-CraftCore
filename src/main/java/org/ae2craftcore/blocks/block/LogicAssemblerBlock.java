@@ -28,7 +28,7 @@ import appeng.api.orientation.IOrientableBlock;
 import appeng.api.orientation.IOrientationStrategy;
 import appeng.api.orientation.OrientationStrategies;
 
-@RegisterBlock(name = "logic_assembler", strength = 3.0f, resistance = 3.0f, requiresCorrectTool = true)
+@RegisterBlock(name = "logic_assembler", strength = 2.2f, resistance = 11.0f, requiresCorrectTool = true)
 public class LogicAssemblerBlock extends BaseEntityBlock implements IOrientableBlock {
 
     public static DeferredHolder<Block, LogicAssemblerBlock> HOLDER;
