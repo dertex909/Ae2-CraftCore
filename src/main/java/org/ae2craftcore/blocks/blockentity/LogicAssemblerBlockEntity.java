@@ -292,7 +292,7 @@ public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity imp
 
     @Override
     public @NotNull Component getDisplayName() {
-        return Component.translatable("container.ae2craftcore.logic_assembler");
+        return Component.translatable("block.ae2craftcore.logic_assembler");
     }
 
     @Nullable

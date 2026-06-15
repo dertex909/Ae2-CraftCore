@@ -10,8 +10,7 @@ import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import net.neoforged.neoforge.client.event.RegisterRecipeBookCategoriesEvent;
 import org.ae2craftcore.Ae2craftcore;
 import org.ae2craftcore.client.renderer.FiberOpticCableBakedModel;
-import org.ae2craftcore.client.screen.LogicAssemblerScreen;
-import org.ae2craftcore.client.screen.SfpModuleScreen;
+import org.ae2craftcore.client.screen.*;
 import org.ae2craftcore.registry.ModMenuTypes;
 import org.ae2craftcore.registry.ModRecipeTypes;
 
@@ -24,6 +23,7 @@ public class ClientSetup {
     public static void registerScreens(RegisterMenuScreensEvent event) {
         event.register(ModMenuTypes.LOGIC_ASSEMBLER.get(), LogicAssemblerScreen::new);
         event.register(ModMenuTypes.SFP_MODULE.get(), SfpModuleScreen::new);
+        event.register(ModMenuTypes.FIS_INJECTOR.get(), FisInjectorScreen::new);
     }
 
     @SubscribeEvent

@@ -1,6 +1,5 @@
 {
-  "block.ae2craftcore.helium_4": "Helium-4",
-  "item.ae2craftcore.helium_4": "Helium-4",
+  "itemGroup.ae2craftcore": "Ae2 CraftCore",
   "item.ae2craftcore.dewar_vessel": "Dewar Vessel",
   "item.ae2craftcore.quantum_processor_press": "Inscriber Quantum Press",
   "item.ae2craftcore.quantum_scrap": "Quantum Scrap",
@@ -17,20 +16,13 @@
   "item.ae2craftcore.luck_card_2": "FC Error Correction Card",
   "item.ae2craftcore.luck_card_3": "ML Error Correction Card",
   "item.ae2craftcore.luck_card_4": "MC Error Correction Card",
-  "itemGroup.ae2craftcore": "Ae2 CraftCore",
+  "block.ae2craftcore.helium_4": "Helium-4",
   "block.ae2craftcore.logic_assembler": "Logic Assembler",
-  "container.ae2craftcore.logic_assembler": "Logic Assembler",
   "block.ae2craftcore.sfp_module": "SFP-Module",
   "block.ae2craftcore.fiber_optic_cable": "Fiber Optic Cable",
-  "container.ae2craftcore.sfp_module": "SFP-Module",
   "block.ae2craftcore.cryostat": "Cryostat",
-  "item.ae2craftcore.cryostat": "Cryostat",
   "block.ae2craftcore.shock_absorbing_spring": "Shock Absorbing Spring",
-  "item.ae2craftcore.shock_absorbing_spring": "Shock Absorbing Spring",
   "block.ae2craftcore.mu_metal": "Mu-Metal",
-  "item.ae2craftcore.mu_metal": "Mu-Metal",
   "block.ae2craftcore.shielded_mesh": "Shielded Mesh",
-  "item.ae2craftcore.shielded_mesh": "Shielded Mesh",
-  "block.ae2craftcore.fis_injector": "FIS Injector",
-  "item.ae2craftcore.fis_injector": "FIS Injector"
+  "block.ae2craftcore.fis_injector": "FIS Injector"
 }
