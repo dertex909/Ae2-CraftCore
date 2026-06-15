@@ -68,7 +68,7 @@ public class ModCommands {
                             if (isFace) {
                                 level.setBlockAndUpdate(currentPos, ShockAbsorberSpringBlock.HOLDER.get().defaultBlockState());
                             } else {
-                                level.setBlockAndUpdate(currentPos, StructuralBlock.HOLDER.get().defaultBlockState());
+                                level.setBlockAndUpdate(currentPos, MuMetalBlock.HOLDER.get().defaultBlockState());
                             }
                         }
                         case 2 -> {

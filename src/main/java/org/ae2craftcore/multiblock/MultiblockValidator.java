@@ -36,12 +36,12 @@ public class MultiblockValidator {
                 boolean isFace = (Math.abs(x) == 1 && y == 0 && z == 0) || (x == 0 && Math.abs(y) == 1 && z == 0) || (x == 0 && y == 0 && Math.abs(z) == 1);
 
                 if (isFace) {
-                    if (block != ShockAbsorberSpringBlock.HOLDER.get() && block != StructuralBlock.HOLDER.get()) {
-                        return new ValidationResult(false, "Expected Shock Absorbing Spring or Structural Block", currentPos, relPos);
+                    if (block != ShockAbsorberSpringBlock.HOLDER.get() && block != MuMetalBlock.HOLDER.get()) {
+                        return new ValidationResult(false, "Expected Shock Absorbing Spring or MuMetal Block", currentPos, relPos);
                     }
                 } else {
-                    if (block != StructuralBlock.HOLDER.get()) {
-                        return new ValidationResult(false, "Expected Structural Block", currentPos, relPos);
+                    if (block != MuMetalBlock.HOLDER.get()) {
+                        return new ValidationResult(false, "Expected MuMetal Block", currentPos, relPos);
                     }
                 }
             }
@@ -49,12 +49,12 @@ public class MultiblockValidator {
                 boolean isInjector = (y == 0) && ((x == 2 && z == 0) || (x == -2 && z == 0) || (x == 0 && z == 2) || (x == 0 && z == -2));
 
                 if (isInjector) {
-                    if (block != FisInjectorBlock.HOLDER.get() && block != StructuralBlock.HOLDER.get()) {
-                        return new ValidationResult(false, "Expected FIS Injector or Structural Block", currentPos, relPos);
+                    if (block != FisInjectorBlock.HOLDER.get() && block != MuMetalBlock.HOLDER.get()) {
+                        return new ValidationResult(false, "Expected FIS Injector or MuMetal Block", currentPos, relPos);
                     }
                 } else {
-                    if (block != MuMetalBlock.HOLDER.get() && block != StructuralBlock.HOLDER.get()) {
-                        return new ValidationResult(false, "Expected Mu-Metal or Structural Block", currentPos, relPos);
+                    if (block != MuMetalBlock.HOLDER.get() && block != MuMetalBlock.HOLDER.get()) {
+                        return new ValidationResult(false, "Expected Mu-Metal or MuMetal Block", currentPos, relPos);
                     }
                 }
             }
@@ -64,8 +64,8 @@ public class MultiblockValidator {
                 }
             }
             case 4 -> {
-                if (block != ShieldedMeshBlock.HOLDER.get() && block != StructuralBlock.HOLDER.get()) {
-                    return new ValidationResult(false, "Expected Shielded Mesh or Structural Block", currentPos, relPos);
+                if (block != ShieldedMeshBlock.HOLDER.get() && block != MuMetalBlock.HOLDER.get()) {
+                    return new ValidationResult(false, "Expected Shielded Mesh or MuMetal Block", currentPos, relPos);
                 }
             }
         }
