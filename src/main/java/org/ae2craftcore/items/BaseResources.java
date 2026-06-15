@@ -22,6 +22,8 @@ import org.ae2craftcore.registry.annotations.RegisterItem;
 @RegisterItem(name = "luck_card_2", stacksTo = 16)
 @RegisterItem(name = "luck_card_3", stacksTo = 16)
 @RegisterItem(name = "luck_card_4", stacksTo = 16)
+
+@RegisterItem(name = "photonic_integrated_circuit", stacksTo = 1)
 public class BaseResources extends Item {
 
     public static DeferredHolder<Item, BaseResources> OBSIDIAN_PLATE;
@@ -42,6 +44,8 @@ public class BaseResources extends Item {
     public static DeferredHolder<Item, BaseResources> LUCK_CARD_2;
     public static DeferredHolder<Item, BaseResources> LUCK_CARD_3;
     public static DeferredHolder<Item, BaseResources> LUCK_CARD_4;
+
+    public static DeferredHolder<Item, BaseResources> PHOTONIC_INTEGRATED_CIRCUIT;
 
     public BaseResources(Properties properties) {
         super(properties);

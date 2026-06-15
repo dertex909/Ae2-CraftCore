@@ -28,7 +28,7 @@ public class FisInjectorMenu extends AbstractContainerMenu {
         this.addSlot(new Slot(container, 0, 80, 26) {
             @Override
             public boolean mayPlace(@NotNull ItemStack stack) {
-                return stack.is(BaseResources.QUANTUM_SCRAP.get());
+                return stack.is(BaseResources.PHOTONIC_INTEGRATED_CIRCUIT.get());
             }
         });
 
@@ -54,7 +54,7 @@ public class FisInjectorMenu extends AbstractContainerMenu {
             if (index < 1) {
                 if (!this.moveItemStackTo(itemstack1, 1, 37, true)) return ItemStack.EMPTY;
             } else {
-                if (itemstack1.is(BaseResources.QUANTUM_SCRAP.get())) {
+                if (itemstack1.is(BaseResources.PHOTONIC_INTEGRATED_CIRCUIT.get())) {
                     if (!this.moveItemStackTo(itemstack1, 0, 1, false)) {
                         return ItemStack.EMPTY;
                     }

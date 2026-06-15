@@ -96,7 +96,7 @@ public class FisInjectorBlockEntity extends BlockEntity implements WorldlyContai
 
     @Override
     public boolean canPlaceItem(int slot, @NotNull ItemStack stack) {
-        return slot == 0 && stack.is(BaseResources.QUANTUM_SCRAP.get());
+        return slot == 0 && stack.is(BaseResources.PHOTONIC_INTEGRATED_CIRCUIT.get());
     }
 
     @Override
