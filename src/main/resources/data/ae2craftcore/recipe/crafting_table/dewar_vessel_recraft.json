@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    {
+      "item": "dewar_vessel"
+    }
+  ],
+  "result": {
+    "count": 1,
+    "id": "dewar_vessel"
+  }
+}
