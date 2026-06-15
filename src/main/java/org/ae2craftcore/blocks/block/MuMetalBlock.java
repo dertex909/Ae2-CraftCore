@@ -4,7 +4,7 @@ import net.minecraft.world.level.block.Block;
 import org.ae2craftcore.registry.annotations.RegisterBlock;
 import net.neoforged.neoforge.registries.DeferredHolder;
 
-@RegisterBlock(name = "mu_metal", strength = 3.0f, resistance = 3.0f, requiresCorrectTool = true)
+@RegisterBlock(name = "mu_metal", strength = 3.0f, resistance = 3.0f, requiresCorrectTool = true, noOcclusion = true)
 public class MuMetalBlock extends Block {
     public static DeferredHolder<Block, MuMetalBlock> HOLDER;
 

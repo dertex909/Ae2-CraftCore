@@ -53,8 +53,8 @@ public class MultiblockValidator {
                         return new ValidationResult(false, "Expected FIS Injector or MuMetal Block", currentPos, relPos);
                     }
                 } else {
-                    if (block != MuMetalBlock.HOLDER.get() && block != MuMetalBlock.HOLDER.get()) {
-                        return new ValidationResult(false, "Expected Mu-Metal or MuMetal Block", currentPos, relPos);
+                    if (block != MuMetalBlock.HOLDER.get()) {
+                        return new ValidationResult(false, "Expected MuMetal Block", currentPos, relPos);
                     }
                 }
             }
