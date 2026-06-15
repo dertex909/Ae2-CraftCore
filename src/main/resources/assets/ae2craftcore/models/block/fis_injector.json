@@ -1,6 +1,12 @@
 {
-  "parent": "minecraft:block/cube_all",
+  "parent": "minecraft:block/cube",
   "textures": {
-    "all": "ae2craftcore:block/fis_injector"
+    "particle": "ae2craftcore:block/fis_injector",
+    "up": "ae2craftcore:block/fis_injector",
+    "down": "ae2craftcore:block/fis_injector",
+    "north": "ae2craftcore:block/fis_injector_front",
+    "south": "ae2craftcore:block/fis_injector",
+    "west": "ae2craftcore:block/fis_injector",
+    "east": "ae2craftcore:block/fis_injector"
   }
 }
