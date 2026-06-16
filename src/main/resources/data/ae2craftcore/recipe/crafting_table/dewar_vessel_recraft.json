@@ -2,11 +2,11 @@
   "type": "minecraft:crafting_shapeless",
   "ingredients": [
     {
-      "item": "dewar_vessel"
+      "item": "ae2craftcore:dewar_vessel"
     }
   ],
   "result": {
     "count": 1,
-    "id": "dewar_vessel"
+    "id": "ae2craftcore:dewar_vessel"
   }
 }
