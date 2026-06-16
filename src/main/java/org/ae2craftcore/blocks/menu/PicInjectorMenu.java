@@ -11,15 +11,15 @@ import org.ae2craftcore.items.BaseResources;
 import org.ae2craftcore.registry.ModMenuTypes;
 import org.jetbrains.annotations.NotNull;
 
-public class FisInjectorMenu extends AbstractContainerMenu {
+public class PicInjectorMenu extends AbstractContainerMenu {
     private final Container container;
 
-    public FisInjectorMenu(int containerId, Inventory playerInventory) {
+    public PicInjectorMenu(int containerId, Inventory playerInventory) {
         this(containerId, playerInventory, new SimpleContainer(1));
     }
 
-    public FisInjectorMenu(int containerId, Inventory playerInventory, Container container) {
-        super(ModMenuTypes.FIS_INJECTOR.get(), containerId);
+    public PicInjectorMenu(int containerId, Inventory playerInventory, Container container) {
+        super(ModMenuTypes.PIC_INJECTOR.get(), containerId);
         checkContainerSize(container, 1);
         this.container = container;
 

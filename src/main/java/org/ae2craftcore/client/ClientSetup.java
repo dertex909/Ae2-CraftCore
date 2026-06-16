@@ -23,7 +23,7 @@ public class ClientSetup {
     public static void registerScreens(RegisterMenuScreensEvent event) {
         event.register(ModMenuTypes.LOGIC_ASSEMBLER.get(), LogicAssemblerScreen::new);
         event.register(ModMenuTypes.SFP_MODULE.get(), SfpModuleScreen::new);
-        event.register(ModMenuTypes.FIS_INJECTOR.get(), FisInjectorScreen::new);
+        event.register(ModMenuTypes.PIC_INJECTOR.get(), PicInjectorScreen::new);
         event.register(ModMenuTypes.CRYOSTAT.get(), CryostatScreen::new);
     }
 

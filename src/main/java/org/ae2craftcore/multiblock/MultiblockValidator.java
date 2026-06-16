@@ -49,8 +49,8 @@ public class MultiblockValidator {
                 boolean isInjector = (y == 0) && ((x == 2 && z == 0) || (x == -2 && z == 0) || (x == 0 && z == 2) || (x == 0 && z == -2));
 
                 if (isInjector) {
-                    if (block != FisInjectorBlock.HOLDER.get() && block != MuMetalBlock.HOLDER.get()) {
-                        return new ValidationResult(false, "Expected FIS Injector or MuMetal Block", currentPos, relPos);
+                    if (block != PicInjectorBlock.HOLDER.get() && block != MuMetalBlock.HOLDER.get()) {
+                        return new ValidationResult(false, "Expected PIC Injector or MuMetal Block", currentPos, relPos);
                     }
                 } else {
                     if (block != MuMetalBlock.HOLDER.get()) {

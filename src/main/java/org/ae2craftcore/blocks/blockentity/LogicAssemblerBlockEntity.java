@@ -351,8 +351,18 @@ public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity imp
 
     @Override
     public int @NotNull [] getSlotsForFace(@NotNull Direction side) {
-        if (side == Direction.DOWN) return new int[]{2};
-        else return new int[]{0, 1};
+        if (side == Direction.UP) {
+            return new int[]{0};
+        } else if (side == Direction.DOWN) {
+            return new int[]{1};
+        } else {
+            try {
+                var facing = this.getBlockState().getValue(LogicAssemblerBlock.FACING);
+                if (side == facing) return new int[]{2};
+            } catch (Exception ignored) {
+            }
+        }
+        return new int[0];
     }
 
     @Override
@@ -364,13 +374,20 @@ public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity imp
 
     @Override
     public boolean canPlaceItemThroughFace(int index, @NotNull ItemStack stack, @Nullable Direction direction) {
-        if (direction == Direction.DOWN) return false;
-        return this.canPlaceItem(index, stack);
+        if (direction == Direction.UP) return index == 0 && this.canPlaceItem(index, stack);
+        if (direction == Direction.DOWN) return index == 1 && this.canPlaceItem(index, stack);
+        return false;
     }
 
     @Override
     public boolean canTakeItemThroughFace(int index, @NotNull ItemStack stack, @NotNull Direction direction) {
-        return index == 2 && direction == Direction.DOWN;
+        if (index == 2) try {
+            var facing = this.getBlockState().getValue(LogicAssemblerBlock.FACING);
+            return direction == facing;
+        } catch (Exception e) {
+            return true;
+        }
+        return false;
     }
 
     @Override

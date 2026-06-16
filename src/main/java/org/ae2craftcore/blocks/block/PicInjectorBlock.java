@@ -18,20 +18,20 @@ import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.phys.BlockHitResult;
 import net.neoforged.neoforge.registries.DeferredHolder;
-import org.ae2craftcore.blocks.blockentity.FisInjectorBlockEntity;
+import org.ae2craftcore.blocks.blockentity.PicInjectorBlockEntity;
 import org.ae2craftcore.registry.annotations.RegisterBlock;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-@RegisterBlock(name = "fis_injector", strength = 3.0f, resistance = 6.0f, sound = "chain", requiresCorrectTool = true)
-public class FisInjectorBlock extends BaseEntityBlock {
+@RegisterBlock(name = "pic_injector", strength = 3.0f, resistance = 6.0f, sound = "chain", requiresCorrectTool = true)
+public class PicInjectorBlock extends BaseEntityBlock {
 
-    public static DeferredHolder<Block, FisInjectorBlock> HOLDER;
+    public static DeferredHolder<Block, PicInjectorBlock> HOLDER;
 
     public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
-    public static final MapCodec<FisInjectorBlock> CODEC = simpleCodec(FisInjectorBlock::new);
+    public static final MapCodec<PicInjectorBlock> CODEC = simpleCodec(PicInjectorBlock::new);
 
-    public FisInjectorBlock(Properties properties) {
+    public PicInjectorBlock(Properties properties) {
         super(properties);
         registerDefaultState(defaultBlockState().setValue(FACING, Direction.NORTH));
     }
@@ -60,7 +60,7 @@ public class FisInjectorBlock extends BaseEntityBlock {
     @Nullable
     @Override
     public BlockEntity newBlockEntity(@NotNull BlockPos pos, @NotNull BlockState state) {
-        return new FisInjectorBlockEntity(pos, state);
+        return new PicInjectorBlockEntity(pos, state);
     }
 
     @Override
@@ -68,7 +68,7 @@ public class FisInjectorBlock extends BaseEntityBlock {
                                                         @NotNull Player player, @NotNull BlockHitResult hitResult) {
         if (!level.isClientSide) {
             var blockEntity = level.getBlockEntity(pos);
-            if (blockEntity instanceof FisInjectorBlockEntity injector) player.openMenu(injector, pos);
+            if (blockEntity instanceof PicInjectorBlockEntity injector) player.openMenu(injector, pos);
         }
         return InteractionResult.sidedSuccess(level.isClientSide);
     }
@@ -78,7 +78,7 @@ public class FisInjectorBlock extends BaseEntityBlock {
                          @NotNull BlockState newState, boolean movedByPiston) {
         if (!state.is(newState.getBlock())) {
             var blockEntity = level.getBlockEntity(pos);
-            if (blockEntity instanceof FisInjectorBlockEntity injector) {
+            if (blockEntity instanceof PicInjectorBlockEntity injector) {
                 Containers.dropContents(level, pos, injector);
                 level.updateNeighbourForOutputSignal(pos, this);
             }

@@ -15,20 +15,20 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
-import org.ae2craftcore.blocks.block.FisInjectorBlock;
-import org.ae2craftcore.blocks.menu.FisInjectorMenu;
+import org.ae2craftcore.blocks.block.PicInjectorBlock;
+import org.ae2craftcore.blocks.menu.PicInjectorMenu;
 import org.ae2craftcore.items.BaseResources;
 import org.ae2craftcore.registry.annotations.RegisterBlockEntity;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-@RegisterBlockEntity(name = "fis_injector", blocks = {FisInjectorBlock.class})
-public class FisInjectorBlockEntity extends BlockEntity implements WorldlyContainer, MenuProvider {
-    public static BlockEntityType<FisInjectorBlockEntity> TYPE;
+@RegisterBlockEntity(name = "pic_injector", blocks = {PicInjectorBlock.class})
+public class PicInjectorBlockEntity extends BlockEntity implements WorldlyContainer, MenuProvider {
+    public static BlockEntityType<PicInjectorBlockEntity> TYPE;
 
     private ItemStack itemStack = ItemStack.EMPTY;
 
-    public FisInjectorBlockEntity(BlockPos pos, BlockState state) {
+    public PicInjectorBlockEntity(BlockPos pos, BlockState state) {
         super(TYPE, pos, state);
     }
 
@@ -111,13 +111,13 @@ public class FisInjectorBlockEntity extends BlockEntity implements WorldlyContai
 
     @Override
     public @NotNull Component getDisplayName() {
-        return Component.translatable("block.ae2craftcore.fis_injector");
+        return Component.translatable("block.ae2craftcore.pic_injector");
     }
 
     @Nullable
     @Override
     public AbstractContainerMenu createMenu(int containerId, @NotNull Inventory playerInventory, @NotNull Player player) {
-        return new FisInjectorMenu(containerId, playerInventory, this);
+        return new PicInjectorMenu(containerId, playerInventory, this);
     }
 
     @Override

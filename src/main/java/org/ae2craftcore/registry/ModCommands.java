@@ -74,7 +74,7 @@ public class ModCommands {
                         case 2 -> {
                             boolean isInjector = (y == 0) && ((x == 2 && z == 0) || (x == -2 && z == 0) || (x == 0 && z == 2) || (x == 0 && z == -2));
                             if (isInjector) {
-                                level.setBlockAndUpdate(currentPos, FisInjectorBlock.HOLDER.get().defaultBlockState());
+                                level.setBlockAndUpdate(currentPos, PicInjectorBlock.HOLDER.get().defaultBlockState());
                             } else {
                                 level.setBlockAndUpdate(currentPos, MuMetalBlock.HOLDER.get().defaultBlockState());
                             }

@@ -7,7 +7,7 @@
       "entries": [
         {
           "type": "minecraft:item",
-          "name": "ae2craftcore:fis_injector"
+          "name": "ae2craftcore:pic_injector"
         }
       ],
       "conditions": [

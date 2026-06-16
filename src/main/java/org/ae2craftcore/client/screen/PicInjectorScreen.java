@@ -4,12 +4,12 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
-import org.ae2craftcore.blocks.menu.FisInjectorMenu;
+import org.ae2craftcore.blocks.menu.PicInjectorMenu;
 import org.jetbrains.annotations.NotNull;
 
-public class FisInjectorScreen extends AbstractContainerScreen<FisInjectorMenu> {
+public class PicInjectorScreen extends AbstractContainerScreen<PicInjectorMenu> {
 
-    public FisInjectorScreen(FisInjectorMenu menu, Inventory playerInventory, Component title) {
+    public PicInjectorScreen(PicInjectorMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
         this.imageWidth = 176;
         this.imageHeight = 144;

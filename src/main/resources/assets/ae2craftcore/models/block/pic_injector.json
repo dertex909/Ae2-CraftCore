@@ -1,0 +1,12 @@
+{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "particle": "ae2craftcore:block/pic_injector",
+    "up": "ae2craftcore:block/pic_injector",
+    "down": "ae2craftcore:block/pic_injector",
+    "north": "ae2craftcore:block/pic_injector_front",
+    "south": "ae2craftcore:block/pic_injector",
+    "west": "ae2craftcore:block/pic_injector",
+    "east": "ae2craftcore:block/pic_injector"
+  }
+}
