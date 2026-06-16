@@ -4,6 +4,7 @@ import com.mojang.brigadier.CommandDispatcher;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Blocks;
@@ -74,13 +75,25 @@ public class ModCommands {
                         case 2 -> {
                             boolean isInjector = (y == 0) && ((x == 2 && z == 0) || (x == -2 && z == 0) || (x == 0 && z == 2) || (x == 0 && z == -2));
                             if (isInjector) {
-                                level.setBlockAndUpdate(currentPos, PicInjectorBlock.HOLDER.get().defaultBlockState());
+                                Direction direction;
+                                if (x == 2) {
+                                    direction = Direction.EAST;
+                                } else if (x == -2) {
+                                    direction = Direction.WEST;
+                                } else if (z == 2) {
+                                    direction = Direction.SOUTH;
+                                } else {
+                                    direction = Direction.NORTH;
+                                }
+                                var state = PicInjectorBlock.HOLDER.get().defaultBlockState().setValue(PicInjectorBlock.FACING, direction);
+                                level.setBlockAndUpdate(currentPos, state);
                             } else {
                                 level.setBlockAndUpdate(currentPos, MuMetalBlock.HOLDER.get().defaultBlockState());
                             }
                         }
                         case 3 -> level.setBlockAndUpdate(currentPos, Blocks.AIR.defaultBlockState());
-                        case 4 -> level.setBlockAndUpdate(currentPos, VacuumCasingBlock.HOLDER.get().defaultBlockState());
+                        case 4 ->
+                                level.setBlockAndUpdate(currentPos, VacuumCasingBlock.HOLDER.get().defaultBlockState());
                     }
                 }
             }

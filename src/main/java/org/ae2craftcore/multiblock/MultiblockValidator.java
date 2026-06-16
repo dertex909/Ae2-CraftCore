@@ -1,9 +1,10 @@
 package org.ae2craftcore.multiblock;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
 import org.ae2craftcore.blocks.block.*;
 
 public class MultiblockValidator {
@@ -19,8 +20,7 @@ public class MultiblockValidator {
                     int dist = Math.max(Math.abs(x), Math.max(Math.abs(y), Math.abs(z)));
                     var currentPos = center.offset(x, y, z);
                     var state = level.getBlockState(currentPos);
-                    var block = state.getBlock();
-                    var res = validatePosition(x, y, z, dist, block, currentPos);
+                    var res = validatePosition(x, y, z, dist, state, currentPos);
                     if (!res.isValid()) return res;
                 }
             }
@@ -28,8 +28,9 @@ public class MultiblockValidator {
         return new ValidationResult(true, "Success", null, null);
     }
 
-    private static ValidationResult validatePosition(int x, int y, int z, int dist, Block block, BlockPos currentPos) {
+    private static ValidationResult validatePosition(int x, int y, int z, int dist, BlockState state, BlockPos currentPos) {
         var relPos = new BlockPos(x, y, z);
+        var block = state.getBlock();
 
         switch (dist) {
             case 1 -> {
@@ -51,6 +52,21 @@ public class MultiblockValidator {
                 if (isInjector) {
                     if (block != PicInjectorBlock.HOLDER.get() && block != MuMetalBlock.HOLDER.get()) {
                         return new ValidationResult(false, "Expected PIC Injector or MuMetal Block", currentPos, relPos);
+                    }
+                    if (block == PicInjectorBlock.HOLDER.get()) {
+                        Direction expectedFacing;
+                        if (x == 2) {
+                            expectedFacing = Direction.EAST;
+                        } else if (x == -2) {
+                            expectedFacing = Direction.WEST;
+                        } else if (z == 2) {
+                            expectedFacing = Direction.SOUTH;
+                        } else {
+                            expectedFacing = Direction.NORTH;
+                        }
+                        if (state.getValue(PicInjectorBlock.FACING) != expectedFacing) {
+                            return new ValidationResult(false, "Expected PIC Injector facing " + expectedFacing.getName() + " (towards vacuum layer)", currentPos, relPos);
+                        }
                     }
                 } else {
                     if (block != MuMetalBlock.HOLDER.get()) {
