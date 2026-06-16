@@ -24,6 +24,7 @@ public class ClientSetup {
         event.register(ModMenuTypes.LOGIC_ASSEMBLER.get(), LogicAssemblerScreen::new);
         event.register(ModMenuTypes.SFP_MODULE.get(), SfpModuleScreen::new);
         event.register(ModMenuTypes.FIS_INJECTOR.get(), FisInjectorScreen::new);
+        event.register(ModMenuTypes.CRYOSTAT.get(), CryostatScreen::new);
     }
 
     @SubscribeEvent

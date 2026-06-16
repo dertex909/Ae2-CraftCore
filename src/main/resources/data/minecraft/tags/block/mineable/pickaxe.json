@@ -1,6 +1,13 @@
 {
   "replace": false,
   "values": [
-    "ae2craftcore:helium_4"
+    "ae2craftcore:helium_4",
+    "ae2craftcore:fiber_optic_cable",
+    "ae2craftcore:sfp_module",
+    "ae2craftcore:cryostat",
+    "ae2craftcore:shock_absorbing_spring",
+    "ae2craftcore:fis_injector",
+    "ae2craftcore:vacuum_casing",
+    "ae2craftcore:mu_metal"
   ]
 }

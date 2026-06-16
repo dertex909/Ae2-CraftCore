@@ -48,8 +48,24 @@ public class CryostatBlock extends BaseEntityBlock {
                                                         @NotNull Player player, @NotNull BlockHitResult hitResult) {
         if (!level.isClientSide) {
             var blockEntity = level.getBlockEntity(pos);
-            if (blockEntity instanceof CryostatBlockEntity cryostat) cryostat.checkStructureAndNotify(player);
+            if (blockEntity instanceof CryostatBlockEntity cryostat) {
+                cryostat.checkStructureAndNotify(player);
+                player.openMenu(cryostat, pos);
+            }
         }
         return InteractionResult.sidedSuccess(level.isClientSide);
+    }
+
+    @Override
+    public void onRemove(@NotNull BlockState state, @NotNull Level level, @NotNull BlockPos pos,
+                         @NotNull BlockState newState, boolean movedByPiston) {
+        if (!state.is(newState.getBlock())) {
+            var blockEntity = level.getBlockEntity(pos);
+            if (blockEntity instanceof CryostatBlockEntity cryostat) {
+                net.minecraft.world.Containers.dropContents(level, pos, cryostat.getContainer());
+                level.updateNeighbourForOutputSignal(pos, this);
+            }
+            super.onRemove(state, level, pos, newState, movedByPiston);
+        }
     }
 }

@@ -7,6 +7,7 @@ import net.neoforged.neoforge.common.extensions.IMenuTypeExtension;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import org.ae2craftcore.Ae2craftcore;
+import org.ae2craftcore.blocks.menu.CryostatMenu;
 import org.ae2craftcore.blocks.menu.FisInjectorMenu;
 import org.ae2craftcore.blocks.menu.LogicAssemblerMenu;
 import org.ae2craftcore.blocks.menu.SfpModuleMenu;
@@ -23,6 +24,9 @@ public class ModMenuTypes {
 
     public static final DeferredHolder<MenuType<?>, MenuType<FisInjectorMenu>> FIS_INJECTOR = MENU_TYPES.register(
             "fis_injector", () -> IMenuTypeExtension.create((containerId, inv, buf) -> new FisInjectorMenu(containerId, inv)));
+
+    public static final DeferredHolder<MenuType<?>, MenuType<CryostatMenu>> CRYOSTAT = MENU_TYPES.register(
+            "cryostat", () -> IMenuTypeExtension.create((containerId, inv, buf) -> new CryostatMenu(containerId, inv)));
 
     public static void register(IEventBus bus) {
         MENU_TYPES.register(bus);
