@@ -1,33 +1,33 @@
 {
   "variants": {
-    "facing=east,is_input=true": {
-      "model": "ae2craftcore:block/sfp_module_input",
+    "facing=east,active=true": {
+      "model": "ae2craftcore:block/sfp_module_active",
       "y": 90
     },
-    "facing=north,is_input=true": {
-      "model": "ae2craftcore:block/sfp_module_input"
+    "facing=north,active=true": {
+      "model": "ae2craftcore:block/sfp_module_active"
     },
-    "facing=south,is_input=true": {
-      "model": "ae2craftcore:block/sfp_module_input",
+    "facing=south,active=true": {
+      "model": "ae2craftcore:block/sfp_module_active",
       "y": 180
     },
-    "facing=west,is_input=true": {
-      "model": "ae2craftcore:block/sfp_module_input",
+    "facing=west,active=true": {
+      "model": "ae2craftcore:block/sfp_module_active",
       "y": 270
     },
-    "facing=east,is_input=false": {
-      "model": "ae2craftcore:block/sfp_module_output",
+    "facing=east,active=false": {
+      "model": "ae2craftcore:block/sfp_module_inactive",
       "y": 90
     },
-    "facing=north,is_input=false": {
-      "model": "ae2craftcore:block/sfp_module_output"
+    "facing=north,active=false": {
+      "model": "ae2craftcore:block/sfp_module_inactive"
     },
-    "facing=south,is_input=false": {
-      "model": "ae2craftcore:block/sfp_module_output",
+    "facing=south,active=false": {
+      "model": "ae2craftcore:block/sfp_module_inactive",
       "y": 180
     },
-    "facing=west,is_input=false": {
-      "model": "ae2craftcore:block/sfp_module_output",
+    "facing=west,active=false": {
+      "model": "ae2craftcore:block/sfp_module_inactive",
       "y": 270
     }
   }

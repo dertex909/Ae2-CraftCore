@@ -168,6 +168,23 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity {
 
             var result = blockEntity.traceConnection();
             boolean currentlyValid = result.isValid;
+            boolean isActive = blockEntity.getMainNode().isActive();
+
+            int usedChannels = 0;
+            if (currentlyValid && isActive) {
+                var grid = blockEntity.getMainNode().getGrid();
+                if (grid != null) {
+                    var pathingService = grid.getService(appeng.api.networking.pathing.IPathingService.class);
+                    if (pathingService != null) usedChannels = pathingService.getUsedChannels();
+                }
+            }
+
+            boolean active = currentlyValid && isActive && usedChannels == 32;
+
+            var currentState = level.getBlockState(pos);
+            if (currentState.hasProperty(SfpModuleBlock.ACTIVE) && currentState.getValue(SfpModuleBlock.ACTIVE) != active) {
+                level.setBlock(pos, currentState.setValue(SfpModuleBlock.ACTIVE, active), 3);
+            }
 
             if (currentlyValid) {
                 var outputBe = level.getBlockEntity(result.outputPos);
