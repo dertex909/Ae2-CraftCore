@@ -37,11 +37,10 @@ public class MultiblockValidator {
                         if (opticalInterfaceCount > 1) {
                             return new ValidationResult(false, "Maximum 1 Optical Interface is allowed", currentPos, new BlockPos(x, y, z));
                         }
-                        boolean isSideFace = (Math.abs(x) == 4 && Math.abs(z) < 4 && Math.abs(y) < 4) || (Math.abs(z) == 4 && Math.abs(x) < 4 && Math.abs(y) < 4);
-                        if (!isSideFace) {
+                        if (!isSideCasingFace(x, y, z)) {
                             return new ValidationResult(false, "Optical Interface can only be placed on side casing faces (not top, bottom, or edges)", currentPos, new BlockPos(x, y, z));
                         }
-                        var expectedFacing = (x == 4) ? Direction.EAST : (x == -4) ? Direction.WEST : (z == 4) ? Direction.SOUTH : Direction.NORTH;
+                        var expectedFacing = getOutwardFacing(x, z);
                         if (state.getValue(OpticalInterfaceBlock.FACING) != expectedFacing) {
                             return new ValidationResult(false, "Optical Interface must face outwards", currentPos, new BlockPos(x, y, z));
                         }
@@ -50,11 +49,10 @@ public class MultiblockValidator {
                         if (monitorCount > 1) {
                             return new ValidationResult(false, "Maximum 1 Multiblock Monitor is allowed", currentPos, new BlockPos(x, y, z));
                         }
-                        boolean isSideFace = (Math.abs(x) == 4 && Math.abs(z) < 4 && Math.abs(y) < 4) || (Math.abs(z) == 4 && Math.abs(x) < 4 && Math.abs(y) < 4);
-                        if (!isSideFace) {
+                        if (!isSideCasingFace(x, y, z)) {
                             return new ValidationResult(false, "Multiblock Monitor can only be placed on side casing faces (not top, bottom, or edges)", currentPos, new BlockPos(x, y, z));
                         }
-                        var expectedFacing = (x == 4) ? Direction.EAST : (x == -4) ? Direction.WEST : (z == 4) ? Direction.SOUTH : Direction.NORTH;
+                        var expectedFacing = getOutwardFacing(x, z);
                         if (state.getValue(MultiblockMonitorBlock.FACING) != expectedFacing) {
                             return new ValidationResult(false, "Multiblock Monitor must face outwards", currentPos, new BlockPos(x, y, z));
                         }
@@ -143,16 +141,7 @@ public class MultiblockValidator {
                         return new ValidationResult(false, "Expected PIC Injector or MuMetal Block", currentPos, relPos);
                     }
                     if (block == PicInjectorBlock.HOLDER.get()) {
-                        Direction expectedFacing;
-                        if (x == 2) {
-                            expectedFacing = Direction.EAST;
-                        } else if (x == -2) {
-                            expectedFacing = Direction.WEST;
-                        } else if (z == 2) {
-                            expectedFacing = Direction.SOUTH;
-                        } else {
-                            expectedFacing = Direction.NORTH;
-                        }
+                        var expectedFacing = getOutwardFacing(x, z);
                         if (state.getValue(PicInjectorBlock.FACING) != expectedFacing) {
                             return new ValidationResult(false, "Expected PIC Injector facing " + expectedFacing.getName() + " (towards vacuum layer)", currentPos, relPos);
                         }
@@ -175,5 +164,16 @@ public class MultiblockValidator {
             }
         }
         return new ValidationResult(true, "Success", null, null);
+    }
+
+    private static boolean isSideCasingFace(int x, int y, int z) {
+        return (Math.abs(x) == 4 && Math.abs(z) < 4 && Math.abs(y) < 4) || (Math.abs(z) == 4 && Math.abs(x) < 4 && Math.abs(y) < 4);
+    }
+
+    private static Direction getOutwardFacing(int x, int z) {
+        if (x > 0) return Direction.EAST;
+        if (x < 0) return Direction.WEST;
+        if (z > 0) return Direction.SOUTH;
+        return Direction.NORTH;
     }
 }
