@@ -17,7 +17,7 @@ import org.ae2craftcore.registry.annotations.RegisterItem;
 @RegisterItem(name = "quantum_scrap")
 
 @RegisterItem(name = "quantum_processor_press", stacksTo = 1)
-@RegisterItem(name = "photonic_integrated_circuit", stacksTo = 1)
+@RegisterItem(name = "photonic_integrated_circuit", stacksTo = 1, durability = 48000)
 public class BaseResources extends Item {
 
     public static DeferredHolder<Item, BaseResources> OBSIDIAN_PLATE;

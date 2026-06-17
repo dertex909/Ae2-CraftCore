@@ -120,7 +120,7 @@ public class CryostatBlockEntity extends BlockEntity implements MenuProvider {
         this.setChanged();
 
         if (this.structureValid) {
-            player.sendSystemMessage(Component.literal("§a[Cryostat] Multiblock structure is valid!"));
+            player.sendSystemMessage(Component.literal("§a[Cryostat] Multiblock computer is launchable and ready for operation!"));
         } else {
             String relCoordStr = String.format("(%d, %d, %d)", result.relativePos().getX(), result.relativePos().getY(), result.relativePos().getZ());
             String absCoordStr = String.format("(%d, %d, %d)", result.absolutePos().getX(), result.absolutePos().getY(), result.absolutePos().getZ());

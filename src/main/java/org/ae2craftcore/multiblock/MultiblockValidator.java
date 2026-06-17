@@ -6,6 +6,13 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import org.ae2craftcore.blocks.block.*;
+import org.ae2craftcore.blocks.blockentity.CryostatBlockEntity;
+import org.ae2craftcore.blocks.blockentity.PicInjectorBlockEntity;
+import org.ae2craftcore.items.DewarVesselItem;
+import org.ae2craftcore.items.BaseResources;
+import org.ae2craftcore.registry.AutoAttachmentRegistry;
+
+import java.util.Objects;
 
 public class MultiblockValidator {
 
@@ -25,6 +32,46 @@ public class MultiblockValidator {
                 }
             }
         }
+
+        var cryoBE = level.getBlockEntity(center);
+        if (cryoBE instanceof CryostatBlockEntity cryo) {
+            var stack0 = cryo.getContainer().getItem(0);
+            if (stack0.isEmpty() || !stack0.is(DewarVesselItem.DEWAR_VESSEL.get()) || Objects.requireNonNullElse(stack0.get(AutoAttachmentRegistry.VESSEL_STATE.get()), 0) != 2) {
+                return new ValidationResult(false, "Cryostat slot 0 must contain a Dewar Vessel with Helium-3", center, BlockPos.ZERO);
+            }
+            for (int i = 1; i <= 3; i++) {
+                var stackI = cryo.getContainer().getItem(i);
+                if (stackI.isEmpty() || !stackI.is(DewarVesselItem.DEWAR_VESSEL.get()) || Objects.requireNonNullElse(stackI.get(AutoAttachmentRegistry.VESSEL_STATE.get()), 0) != 1) {
+                    return new ValidationResult(false, "Cryostat slot " + i + " must contain a Dewar Vessel with Helium-4", center, BlockPos.ZERO);
+                }
+            }
+        } else {
+            return new ValidationResult(false, "Cryostat Block Entity not found", center, BlockPos.ZERO);
+        }
+
+        BlockPos[] injectorOffsets = {
+                new BlockPos(2, 0, 0),
+                new BlockPos(-2, 0, 0),
+                new BlockPos(0, 0, 2),
+                new BlockPos(0, 0, -2)
+        };
+        for (var offset : injectorOffsets) {
+            var injectorPos = center.offset(offset);
+            var state = level.getBlockState(injectorPos);
+            if (state.is(PicInjectorBlock.HOLDER.get())) {
+                var be = level.getBlockEntity(injectorPos);
+                if (be instanceof PicInjectorBlockEntity injectorBE) {
+                    var picStack = injectorBE.getItem(0);
+                    if (picStack.isEmpty() || !picStack.is(BaseResources.PHOTONIC_INTEGRATED_CIRCUIT.get())) {
+                        return new ValidationResult(false, "PIC Injector must contain a Photonic Integrated Circuit", injectorPos, offset);
+                    }
+                    if (picStack.getDamageValue() >= picStack.getMaxDamage()) {
+                        return new ValidationResult(false, "Photonic Integrated Circuit in PIC Injector has 0 durability", injectorPos, offset);
+                    }
+                }
+            }
+        }
+
         return new ValidationResult(true, "Success", null, null);
     }
 
