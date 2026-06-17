@@ -16,8 +16,8 @@ public class ModMenuTypes {
     public static final DeferredHolder<MenuType<?>, MenuType<LogicAssemblerMenu>> LOGIC_ASSEMBLER = MENU_TYPES.register(
             "logic_assembler", () -> IMenuTypeExtension.create((containerId, inv, buf) -> new LogicAssemblerMenu(containerId, inv)));
 
-    public static final DeferredHolder<MenuType<?>, MenuType<SfpModuleMenu>> SFP_MODULE = MENU_TYPES.register(
-            "sfp_module", () -> IMenuTypeExtension.create((containerId, inv, buf) -> new SfpModuleMenu(containerId)));
+    public static final DeferredHolder<MenuType<?>, MenuType<MultiblockMonitorMenu>> MULTIBLOCK_MONITOR = MENU_TYPES.register(
+            "multiblock_monitor", () -> IMenuTypeExtension.create((containerId, inv, buf) -> new MultiblockMonitorMenu(containerId)));
 
     public static final DeferredHolder<MenuType<?>, MenuType<PicInjectorMenu>> PIC_INJECTOR = MENU_TYPES.register(
             "pic_injector", () -> IMenuTypeExtension.create((containerId, inv, buf) -> new PicInjectorMenu(containerId, inv)));

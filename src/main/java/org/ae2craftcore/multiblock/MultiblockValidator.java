@@ -19,7 +19,10 @@ public class MultiblockValidator {
     public record ValidationResult(boolean isValid, String errorReason, BlockPos absolutePos, BlockPos relativePos) {
     }
 
-    public static ValidationResult validate(Level level, BlockPos center) {
+    public static ValidationResult validateStructure(Level level, BlockPos center) {
+        int opticalInterfaceCount = 0;
+        int monitorCount = 0;
+
         for (int x = -4; x <= 4; x++) {
             for (int y = -4; y <= 4; y++) {
                 for (int z = -4; z <= 4; z++) {
@@ -27,12 +30,45 @@ public class MultiblockValidator {
                     int dist = Math.max(Math.abs(x), Math.max(Math.abs(y), Math.abs(z)));
                     var currentPos = center.offset(x, y, z);
                     var state = level.getBlockState(currentPos);
+                    var block = state.getBlock();
+
+                    if (block == OpticalInterfaceBlock.HOLDER.get()) {
+                        opticalInterfaceCount++;
+                        if (opticalInterfaceCount > 1) {
+                            return new ValidationResult(false, "Maximum 1 Optical Interface is allowed", currentPos, new BlockPos(x, y, z));
+                        }
+                        boolean isSideFace = (Math.abs(x) == 4 && Math.abs(z) < 4 && Math.abs(y) < 4) || (Math.abs(z) == 4 && Math.abs(x) < 4 && Math.abs(y) < 4);
+                        if (!isSideFace) {
+                            return new ValidationResult(false, "Optical Interface can only be placed on side casing faces (not top, bottom, or edges)", currentPos, new BlockPos(x, y, z));
+                        }
+                        var expectedFacing = (x == 4) ? Direction.EAST : (x == -4) ? Direction.WEST : (z == 4) ? Direction.SOUTH : Direction.NORTH;
+                        if (state.getValue(OpticalInterfaceBlock.FACING) != expectedFacing) {
+                            return new ValidationResult(false, "Optical Interface must face outwards", currentPos, new BlockPos(x, y, z));
+                        }
+                    } else if (block == MultiblockMonitorBlock.HOLDER.get()) {
+                        monitorCount++;
+                        if (monitorCount > 1) {
+                            return new ValidationResult(false, "Maximum 1 Multiblock Monitor is allowed", currentPos, new BlockPos(x, y, z));
+                        }
+                        boolean isSideFace = (Math.abs(x) == 4 && Math.abs(z) < 4 && Math.abs(y) < 4) || (Math.abs(z) == 4 && Math.abs(x) < 4 && Math.abs(y) < 4);
+                        if (!isSideFace) {
+                            return new ValidationResult(false, "Multiblock Monitor can only be placed on side casing faces (not top, bottom, or edges)", currentPos, new BlockPos(x, y, z));
+                        }
+                        var expectedFacing = (x == 4) ? Direction.EAST : (x == -4) ? Direction.WEST : (z == 4) ? Direction.SOUTH : Direction.NORTH;
+                        if (state.getValue(MultiblockMonitorBlock.FACING) != expectedFacing) {
+                            return new ValidationResult(false, "Multiblock Monitor must face outwards", currentPos, new BlockPos(x, y, z));
+                        }
+                    }
+
                     var res = validatePosition(x, y, z, dist, state, currentPos);
                     if (!res.isValid()) return res;
                 }
             }
         }
+        return new ValidationResult(true, "Success", null, null);
+    }
 
+    public static ValidationResult validateInventories(Level level, BlockPos center) {
         var cryoBE = level.getBlockEntity(center);
         if (cryoBE instanceof CryostatBlockEntity cryo) {
             var stack0 = cryo.getContainer().getItem(0);
@@ -73,6 +109,12 @@ public class MultiblockValidator {
         }
 
         return new ValidationResult(true, "Success", null, null);
+    }
+
+    public static ValidationResult validate(Level level, BlockPos center) {
+        var structRes = validateStructure(level, center);
+        if (!structRes.isValid()) return structRes;
+        return validateInventories(level, center);
     }
 
     private static ValidationResult validatePosition(int x, int y, int z, int dist, BlockState state, BlockPos currentPos) {
@@ -127,8 +169,8 @@ public class MultiblockValidator {
                 }
             }
             case 4 -> {
-                if (block != VacuumCasingBlock.HOLDER.get() && block != MuMetalBlock.HOLDER.get()) {
-                    return new ValidationResult(false, "Expected Vacuum Casing or MuMetal Block", currentPos, relPos);
+                if (block != VacuumCasingBlock.HOLDER.get() && block != MuMetalBlock.HOLDER.get() && block != OpticalInterfaceBlock.HOLDER.get() && block != MultiblockMonitorBlock.HOLDER.get()) {
+                    return new ValidationResult(false, "Expected Vacuum Casing, MuMetal, Optical Interface, or Multiblock Monitor Block", currentPos, relPos);
                 }
             }
         }

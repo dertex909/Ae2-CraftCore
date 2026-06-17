@@ -22,9 +22,9 @@ public class ClientSetup {
     @SubscribeEvent
     public static void registerScreens(RegisterMenuScreensEvent event) {
         event.register(ModMenuTypes.LOGIC_ASSEMBLER.get(), LogicAssemblerScreen::new);
-        event.register(ModMenuTypes.SFP_MODULE.get(), SfpModuleScreen::new);
         event.register(ModMenuTypes.PIC_INJECTOR.get(), PicInjectorScreen::new);
         event.register(ModMenuTypes.CRYOSTAT.get(), CryostatScreen::new);
+        event.register(ModMenuTypes.MULTIBLOCK_MONITOR.get(), MultiblockMonitorScreen::new);
     }
 
     @SubscribeEvent

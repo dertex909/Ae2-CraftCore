@@ -1,27 +1,18 @@
 package org.ae2craftcore.blocks.blockentity;
 
-import appeng.api.networking.GridHelper;
-import appeng.api.networking.IGridConnection;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.chat.Component;
-import net.minecraft.world.MenuProvider;
-import net.minecraft.world.entity.player.Inventory;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.minecraft.world.inventory.ContainerData;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import org.ae2craftcore.blocks.block.FiberOpticCableBlock;
 import org.ae2craftcore.blocks.block.SfpModuleBlock;
-import org.ae2craftcore.blocks.menu.SfpModuleMenu;
+import org.ae2craftcore.blocks.block.OpticalInterfaceBlock;
 import org.ae2craftcore.registry.annotations.RegisterBlockEntity;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import appeng.api.inventories.InternalInventory;
 import appeng.api.networking.GridFlags;
@@ -35,29 +26,14 @@ import java.util.EnumSet;
 import java.util.Set;
 
 import static appeng.api.orientation.RelativeSide.FRONT;
-import static appeng.api.config.Actionable.MODULATE;
-import static appeng.api.config.PowerMultiplier.ONE;
-import static appeng.api.config.PowerUnit.AE;
 
 @RegisterBlockEntity(name = "sfp_module", blocks = {SfpModuleBlock.class})
-public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity implements MenuProvider {
+public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity {
     public static BlockEntityType<SfpModuleBlockEntity> TYPE;
 
     private static final Direction[] DIRECTIONS = Direction.values();
 
-    public enum SFPMode {
-        INPUT,
-        OUTPUT
-    }
-
-    private SFPMode sfpMode;
-    private int channels = 64;
-
     private final AppEngInternalInventory inv = new AppEngInternalInventory(this, 0);
-
-    private IGridConnection activeConnection = null;
-    private SfpModuleBlockEntity connectedOutput = null;
-    private boolean pathValid = false;
 
     private int delayTicks = 100;
     private int checkTimer = 0;
@@ -68,42 +44,9 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity implemen
         this.checkTimer = 0;
     }
 
-    protected final ContainerData dataAccess = new ContainerData() {
-        @Override
-        public int get(int index) {
-            return switch (index) {
-                case 0 -> SfpModuleBlockEntity.this.channels;
-                case 1 -> SfpModuleBlockEntity.this.sfpMode == SFPMode.INPUT ? 1 : 0;
-                case 2 -> SfpModuleBlockEntity.this.pathValid ? 1 : 0;
-                default -> 0;
-            };
-        }
-
-        @Override
-        public void set(int index, int value) {
-            switch (index) {
-                case 0 -> SfpModuleBlockEntity.this.channels = Math.clamp(value, 64, 8192);
-                case 1 -> {
-                }
-                case 2 -> SfpModuleBlockEntity.this.pathValid = value == 1;
-            }
-        }
-
-        @Override
-        public int getCount() {
-            return 3;
-        }
-    };
-
     public SfpModuleBlockEntity(BlockPos pos, BlockState state) {
         super(TYPE, pos, state);
-        this.sfpMode = state.getValue(SfpModuleBlock.IS_INPUT) ? SFPMode.INPUT : SFPMode.OUTPUT;
-
-        if (this.sfpMode == SFPMode.INPUT) {
-            this.getMainNode().setFlags(GridFlags.REQUIRE_CHANNEL, GridFlags.DENSE_CAPACITY).setIdlePowerUsage(5);
-        } else {
-            this.getMainNode().setFlags(GridFlags.DENSE_CAPACITY).setIdlePowerUsage(5);
-        }
+        this.getMainNode().setFlags(GridFlags.REQUIRE_CHANNEL, GridFlags.DENSE_CAPACITY).setIdlePowerUsage(10);
         this.setInternalMaxPower(1000);
     }
 
@@ -112,33 +55,9 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity implemen
         return this.getBlockState().getBlock().asItem();
     }
 
-    public SFPMode getSfpMode() {
-        return this.sfpMode;
-    }
-
-    public void setChannels(int channels) {
-        this.channels = Math.clamp(channels, 64, 8192);
-        this.setChanged();
-    }
-
-    public int getChannels() {
-        return this.channels;
-    }
-
     @Override
     public InternalInventory getInternalInventory() {
         return this.inv;
-    }
-
-    @Override
-    public @NotNull Component getDisplayName() {
-        return Component.literal("SFP Module Configuration");
-    }
-
-    @Nullable
-    @Override
-    public AbstractContainerMenu createMenu(int containerId, @NotNull Inventory playerInventory, @NotNull Player player) {
-        return new SfpModuleMenu(containerId, this.dataAccess, this.worldPosition);
     }
 
     public record TraceResult(boolean isValid, BlockPos outputPos) {
@@ -168,8 +87,8 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity implemen
             currentPos = nextPos;
             BlockPos singleNeighbor = null;
             int neighborsCount = 0;
-            BlockPos singleOutputSfp = null;
-            int outputSfpsCount = 0;
+            BlockPos singleOutputPos = null;
+            int outputCount = 0;
 
             for (var d : DIRECTIONS) {
                 var neighbor = currentPos.relative(d);
@@ -181,14 +100,11 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity implemen
                         singleNeighbor = neighbor.immutable();
                         neighborsCount++;
                     }
-                } else if (state.getBlock() instanceof SfpModuleBlock) {
-                    var be = this.level.getBlockEntity(neighbor);
-                    if (be instanceof SfpModuleBlockEntity sfp && sfp.getSfpMode() == SFPMode.OUTPUT) {
-                        var sfpFacing = state.getValue(SfpModuleBlock.FACING);
-                        if (sfpFacing == d.getOpposite()) {
-                            singleOutputSfp = neighbor.immutable();
-                            outputSfpsCount++;
-                        }
+                } else if (state.getBlock() == OpticalInterfaceBlock.HOLDER.get()) {
+                    var facing = state.getValue(OpticalInterfaceBlock.FACING);
+                    if (facing == d.getOpposite()) {
+                        singleOutputPos = neighbor.immutable();
+                        outputCount++;
                     }
                 }
             }
@@ -199,19 +115,16 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity implemen
                 var state = this.level.getBlockState(neighbor);
                 if (state.getBlock() instanceof FiberOpticCableBlock) {
                     totalConnectionsAtCurrent++;
-                } else if (state.getBlock() instanceof SfpModuleBlock) {
-                    var be = this.level.getBlockEntity(neighbor);
-                    if (be instanceof SfpModuleBlockEntity) {
-                        var sfpFacing = state.getValue(SfpModuleBlock.FACING);
-                        if (sfpFacing == d.getOpposite()) totalConnectionsAtCurrent++;
-                    }
+                } else if (state.getBlock() == OpticalInterfaceBlock.HOLDER.get()) {
+                    var facing = state.getValue(OpticalInterfaceBlock.FACING);
+                    if (facing == d.getOpposite()) totalConnectionsAtCurrent++;
                 }
             }
 
             if (totalConnectionsAtCurrent != 2) return new TraceResult(false, null);
 
-            if (outputSfpsCount > 0) if (outputSfpsCount == 1) {
-                outputPos = singleOutputSfp;
+            if (outputCount > 0) if (outputCount == 1) {
+                outputPos = singleOutputPos;
                 break;
             } else {
                 return new TraceResult(false, null);
@@ -225,17 +138,17 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity implemen
             }
         }
 
-        int outputSfpConnections = 0;
+        int outputInterfaceConnections = 0;
         var outState = this.level.getBlockState(outputPos);
-        if (outState.hasProperty(SfpModuleBlock.FACING)) {
-            var outFacing = outState.getValue(SfpModuleBlock.FACING);
+        if (outState.hasProperty(OpticalInterfaceBlock.FACING)) {
+            var outFacing = outState.getValue(OpticalInterfaceBlock.FACING);
             for (var d : DIRECTIONS) {
                 var neighbor = outputPos.relative(d);
                 var state = this.level.getBlockState(neighbor);
-                if (state.getBlock() instanceof FiberOpticCableBlock) if (d == outFacing) outputSfpConnections++;
+                if (state.getBlock() instanceof FiberOpticCableBlock) if (d == outFacing) outputInterfaceConnections++;
             }
         }
-        if (outputSfpConnections != 1) return new TraceResult(false, null);
+        if (outputInterfaceConnections != 1) return new TraceResult(false, null);
 
         return new TraceResult(true, outputPos);
     }
@@ -248,64 +161,20 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity implemen
             return;
         }
 
-        if (blockEntity.sfpMode == SFPMode.INPUT) {
-            blockEntity.checkTimer--;
-            if (blockEntity.needsTrace || blockEntity.checkTimer <= 0) {
-                blockEntity.needsTrace = false;
-                blockEntity.checkTimer = 40;
+        blockEntity.checkTimer--;
+        if (blockEntity.needsTrace || blockEntity.checkTimer <= 0) {
+            blockEntity.needsTrace = false;
+            blockEntity.checkTimer = 40;
 
-                var result = blockEntity.traceConnection();
+            var result = blockEntity.traceConnection();
+            boolean currentlyValid = result.isValid;
 
-                boolean currentlyValid = result.isValid;
-                blockEntity.pathValid = currentlyValid;
-
-                if (currentlyValid) {
-                    var outputBe = level.getBlockEntity(result.outputPos);
-                    if (outputBe instanceof SfpModuleBlockEntity outSfp) {
-                        var gridA = blockEntity.getMainNode().getGrid();
-                        if (gridA != null) {
-                            double powerNeeded = outSfp.getInternalMaxPower() - outSfp.getInternalCurrentPower();
-                            if (powerNeeded > 0) {
-                                double extracted = gridA.getEnergyService().extractAEPower(powerNeeded, MODULATE, ONE);
-                                if (extracted > 0) outSfp.injectExternalPower(AE, extracted, MODULATE);
-                            }
-                        }
-                        blockEntity.connectGrid(outSfp);
-                    } else {
-                        blockEntity.disconnectGrid();
-                    }
-                } else {
-                    blockEntity.disconnectGrid();
+            if (currentlyValid) {
+                var outputBe = level.getBlockEntity(result.outputPos);
+                if (outputBe instanceof OpticalInterfaceBlockEntity outInterface) {
+                    if (blockEntity.getMainNode().isActive()) outInterface.receivePower();
                 }
             }
-        }
-    }
-
-    private void connectGrid(SfpModuleBlockEntity outputSfp) {
-        if (this.activeConnection != null) return;
-
-        var nodeA = this.getMainNode().getNode();
-        var nodeB = outputSfp.getMainNode().getNode();
-
-        if (nodeA != null && nodeB != null) try {
-            this.activeConnection = GridHelper.createConnection(nodeA, nodeB);
-            this.connectedOutput = outputSfp;
-            this.connectedOutput.pathValid = true;
-        } catch (Throwable ignored) {
-        }
-    }
-
-    private void disconnectGrid() {
-        if (this.activeConnection != null) {
-            try {
-                this.activeConnection.destroy();
-            } catch (Throwable ignored) {
-            }
-            this.activeConnection = null;
-        }
-        if (this.connectedOutput != null) {
-            this.connectedOutput.pathValid = false;
-            this.connectedOutput = null;
         }
     }
 
@@ -327,24 +196,12 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity implemen
     }
 
     @Override
-    public void setRemoved() {
-        disconnectGrid();
-        super.setRemoved();
-    }
-
-    @Override
     public void saveAdditional(@NotNull CompoundTag tag, HolderLookup.@NotNull Provider registries) {
         super.saveAdditional(tag, registries);
-        tag.putInt("Channels", this.channels);
-        tag.putString("SfpMode", this.sfpMode.name());
     }
 
     @Override
     public void loadTag(@NotNull CompoundTag tag, HolderLookup.@NotNull Provider registries) {
         super.loadTag(tag, registries);
-        if (tag.contains("Channels")) this.channels = tag.getInt("Channels");
-        if (tag.contains("SfpMode")) {
-            this.sfpMode = SFPMode.valueOf(tag.getString("SfpMode"));
-        }
     }
 }
