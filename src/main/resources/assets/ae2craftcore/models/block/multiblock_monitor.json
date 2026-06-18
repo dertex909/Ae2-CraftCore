@@ -4,7 +4,7 @@
     "particle": "ae2craftcore:block/vacuum_casing",
     "up": "ae2craftcore:block/vacuum_casing",
     "down": "ae2craftcore:block/vacuum_casing",
-    "north": "ae2craftcore:block/side_m",
+    "north": "ae2craftcore:block/multiblock_monitor",
     "south": "ae2craftcore:block/vacuum_casing",
     "west": "ae2craftcore:block/vacuum_casing",
     "east": "ae2craftcore:block/vacuum_casing"
