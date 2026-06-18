@@ -1,6 +1,8 @@
 package org.ae2craftcore.blocks.blockentity;
 
-import appeng.api.networking.pathing.IPathingService;
+import appeng.api.networking.GridHelper;
+import appeng.api.networking.IGridNodeListener;
+import appeng.api.networking.IManagedGridNode;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
@@ -24,6 +26,7 @@ import appeng.util.inv.AppEngInternalInventory;
 
 import java.util.HashSet;
 import java.util.EnumSet;
+import java.util.Objects;
 import java.util.Set;
 
 import static appeng.api.orientation.RelativeSide.FRONT;
@@ -39,6 +42,12 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity {
     private int delayTicks = 100;
     private int checkTimer = 0;
     private boolean needsTrace = true;
+    private boolean connectionsCreated = false;
+
+    private final IManagedGridNode[] extraNodes = new IManagedGridNode[31];
+
+    private static final IGridNodeListener<SfpModuleBlockEntity> MULTI_CHANNEL_LISTENER = (host, node) -> {
+    };
 
     public void markNeedsTrace() {
         this.needsTrace = true;
@@ -49,6 +58,10 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity {
         super(TYPE, pos, state);
         this.getMainNode().setFlags(GridFlags.REQUIRE_CHANNEL, GridFlags.DENSE_CAPACITY).setIdlePowerUsage(10);
         this.setInternalMaxPower(1000);
+        for (int i = 0; i < 31; i++) {
+            this.extraNodes[i] = GridHelper.createManagedNode(this, MULTI_CHANNEL_LISTENER);
+            this.extraNodes[i].setFlags(GridFlags.REQUIRE_CHANNEL);
+        }
     }
 
     @Override
@@ -162,6 +175,28 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity {
             return;
         }
 
+        for (var node : blockEntity.extraNodes) if (node != null && !node.isReady()) node.create(level, pos);
+
+        if (blockEntity.getMainNode().isReady() && !blockEntity.connectionsCreated) {
+            boolean allExtraReady = true;
+            for (var node : blockEntity.extraNodes) {
+                if (node == null || !node.isReady()) {
+                    allExtraReady = false;
+                    break;
+                }
+            }
+            if (allExtraReady) {
+                blockEntity.connectionsCreated = true;
+                for (var node : blockEntity.extraNodes) {
+                    if (node != null) try {
+                        GridHelper.createConnection(Objects.requireNonNull(blockEntity.getMainNode().getNode()), Objects.requireNonNull(node.getNode()));
+                    } catch (Exception e) {
+                        blockEntity.connectionsCreated = false;
+                    }
+                }
+            }
+        }
+
         blockEntity.checkTimer--;
         if (blockEntity.needsTrace || blockEntity.checkTimer <= 0) {
             blockEntity.needsTrace = false;
@@ -171,16 +206,15 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity {
             boolean currentlyValid = result.isValid;
             boolean isActive = blockEntity.getMainNode().isActive();
 
-            int usedChannels = 0;
-            if (currentlyValid && isActive) {
-                var grid = blockEntity.getMainNode().getGrid();
-                if (grid != null) {
-                    var pathingService = grid.getService(IPathingService.class);
-                    if (pathingService != null) usedChannels = pathingService.getUsedChannels();
+            boolean extraActive = true;
+            for (var node : blockEntity.extraNodes) {
+                if (node == null || !node.isActive()) {
+                    extraActive = false;
+                    break;
                 }
             }
 
-            boolean active = currentlyValid && isActive && usedChannels == 32;
+            boolean active = currentlyValid && isActive && extraActive;
 
             var currentState = level.getBlockState(pos);
             if (currentState.hasProperty(SfpModuleBlock.ACTIVE) && currentState.getValue(SfpModuleBlock.ACTIVE) != active) {
@@ -221,5 +255,17 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity {
     @Override
     public void loadTag(@NotNull CompoundTag tag, HolderLookup.@NotNull Provider registries) {
         super.loadTag(tag, registries);
+    }
+
+    @Override
+    public void setRemoved() {
+        super.setRemoved();
+        for (var node : this.extraNodes) if (node != null) node.destroy();
+    }
+
+    @Override
+    public void onChunkUnloaded() {
+        super.onChunkUnloaded();
+        for (var node : this.extraNodes) if (node != null) node.destroy();
     }
 }
