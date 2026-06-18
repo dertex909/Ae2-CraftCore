@@ -28,14 +28,27 @@ public class PicInjectorBlockEntity extends BlockEntity implements WorldlyContai
     public static BlockEntityType<PicInjectorBlockEntity> TYPE;
 
     private ItemStack itemStack = ItemStack.EMPTY;
-
-    @Override
-    public void updateMultiblockState(CryostatBlockEntity core, boolean isValid) {
-        this.setChanged();
-    }
+    private BlockPos linkedCorePos = null;
 
     public PicInjectorBlockEntity(BlockPos pos, BlockState state) {
         super(TYPE, pos, state);
+    }
+
+    @Override
+    public void updateMultiblockState(CryostatBlockEntity core, boolean isValid) {
+        if (isValid && core != null) {
+            this.linkedCorePos = core.getBlockPos();
+        } else {
+            this.linkedCorePos = null;
+        }
+        this.setChanged();
+    }
+
+    private void notifyCore() {
+        if (this.level != null && !this.level.isClientSide && this.linkedCorePos != null) {
+            var coreBe = this.level.getBlockEntity(this.linkedCorePos);
+            if (coreBe instanceof CryostatBlockEntity core) core.runStructureScanAndUpdates();
+        }
     }
 
     @Override
@@ -59,6 +72,7 @@ public class PicInjectorBlockEntity extends BlockEntity implements WorldlyContai
             ItemStack res = this.itemStack.split(amount);
             if (this.itemStack.isEmpty()) this.itemStack = ItemStack.EMPTY;
             this.setChanged();
+            this.notifyCore();
             return res;
         }
         return ItemStack.EMPTY;
@@ -70,6 +84,7 @@ public class PicInjectorBlockEntity extends BlockEntity implements WorldlyContai
             ItemStack res = this.itemStack;
             this.itemStack = ItemStack.EMPTY;
             this.setChanged();
+            this.notifyCore();
             return res;
         }
         return ItemStack.EMPTY;
@@ -81,6 +96,7 @@ public class PicInjectorBlockEntity extends BlockEntity implements WorldlyContai
             this.itemStack = stack;
             if (stack.getCount() > this.getMaxStackSize()) stack.setCount(this.getMaxStackSize());
             this.setChanged();
+            this.notifyCore();
         }
     }
 
@@ -93,6 +109,7 @@ public class PicInjectorBlockEntity extends BlockEntity implements WorldlyContai
     public void clearContent() {
         this.itemStack = ItemStack.EMPTY;
         this.setChanged();
+        this.notifyCore();
     }
 
     @Override
@@ -130,6 +147,7 @@ public class PicInjectorBlockEntity extends BlockEntity implements WorldlyContai
     protected void saveAdditional(@NotNull CompoundTag tag, HolderLookup.@NotNull Provider registries) {
         super.saveAdditional(tag, registries);
         if (!this.itemStack.isEmpty()) tag.put("ItemSlot", this.itemStack.save(registries));
+        if (this.linkedCorePos != null) tag.putLong("LinkedCorePos", this.linkedCorePos.asLong());
     }
 
     @Override
@@ -139,6 +157,11 @@ public class PicInjectorBlockEntity extends BlockEntity implements WorldlyContai
             this.itemStack = ItemStack.parseOptional(registries, tag.getCompound("ItemSlot"));
         } else {
             this.itemStack = ItemStack.EMPTY;
+        }
+        if (tag.contains("LinkedCorePos")) {
+            this.linkedCorePos = BlockPos.of(tag.getLong("LinkedCorePos"));
+        } else {
+            this.linkedCorePos = null;
         }
     }
 }

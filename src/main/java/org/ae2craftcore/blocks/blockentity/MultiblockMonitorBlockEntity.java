@@ -4,6 +4,9 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.game.ClientGamePacketListener;
+import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -31,6 +34,7 @@ public class MultiblockMonitorBlockEntity extends BlockEntity implements MenuPro
     private boolean coreMePowered = false;
     private final int[] corePicDurabilities = new int[]{-1, -1, -1, -1};
     private int ticksSinceLastUpdate = 0;
+    private BlockPos linkedCorePos = null;
 
     protected final ContainerData dataAccess = new ContainerData() {
         @Override
@@ -61,8 +65,6 @@ public class MultiblockMonitorBlockEntity extends BlockEntity implements MenuPro
         super(TYPE, pos, state);
     }
 
-    private BlockPos linkedCorePos = null;
-
     @Override
     public void updateMultiblockState(CryostatBlockEntity core, boolean isValid) {
         if (isValid && core != null) {
@@ -73,6 +75,7 @@ public class MultiblockMonitorBlockEntity extends BlockEntity implements MenuPro
             System.arraycopy(core.getPicDurabilities(), 0, this.corePicDurabilities, 0, 4);
             this.ticksSinceLastUpdate = 0;
             this.setChanged();
+            this.syncToClient();
         } else {
             if (core != null && (this.linkedCorePos == null || this.linkedCorePos.equals(core.getBlockPos()))) {
                 this.linkedCorePos = null;
@@ -82,6 +85,7 @@ public class MultiblockMonitorBlockEntity extends BlockEntity implements MenuPro
                 Arrays.fill(this.corePicDurabilities, -1);
                 this.ticksSinceLastUpdate = 0;
                 this.setChanged();
+                this.syncToClient();
             }
         }
     }
@@ -97,7 +101,28 @@ public class MultiblockMonitorBlockEntity extends BlockEntity implements MenuPro
             blockEntity.linkedCorePos = null;
             for (int i = 0; i < 4; i++) blockEntity.corePicDurabilities[i] = -1;
             blockEntity.setChanged();
+            blockEntity.syncToClient();
         }
+    }
+
+    private void syncToClient() {
+        if (this.level != null && !this.level.isClientSide) {
+            BlockState state = this.getBlockState();
+            this.level.sendBlockUpdated(this.worldPosition, state, state, 3);
+        }
+    }
+
+    @Nullable
+    @Override
+    public Packet<ClientGamePacketListener> getUpdatePacket() {
+        return ClientboundBlockEntityDataPacket.create(this);
+    }
+
+    @Override
+    public @NotNull CompoundTag getUpdateTag(HolderLookup.@NotNull Provider registries) {
+        CompoundTag tag = new CompoundTag();
+        this.saveAdditional(tag, registries);
+        return tag;
     }
 
     @Override

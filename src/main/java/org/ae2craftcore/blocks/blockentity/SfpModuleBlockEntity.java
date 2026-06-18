@@ -44,6 +44,8 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity {
     private boolean needsTrace = true;
     private boolean connectionsCreated = false;
 
+    private BlockPos lastOutputPos = null;
+
     private final IManagedGridNode[] extraNodes = new IManagedGridNode[31];
 
     private static final IGridNodeListener<SfpModuleBlockEntity> MULTI_CHANNEL_LISTENER = (host, node) -> {
@@ -186,6 +188,48 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity {
         return new TraceResult(true, outputPos);
     }
 
+    public void triggerImmediateTrace() {
+        if (this.level == null || this.level.isClientSide) return;
+
+        var result = this.traceConnection();
+        boolean currentlyValid = result.isValid;
+        boolean isActive = this.getMainNode().isActive();
+
+        boolean extraActive = true;
+        for (var node : this.extraNodes) {
+            if (node == null || !node.isActive()) {
+                extraActive = false;
+                break;
+            }
+        }
+
+        boolean active = currentlyValid && isActive && extraActive;
+
+        var currentState = this.level.getBlockState(this.worldPosition);
+        if (currentState.hasProperty(SfpModuleBlock.ACTIVE) && currentState.getValue(SfpModuleBlock.ACTIVE) != active) {
+            this.level.setBlock(this.worldPosition, currentState.setValue(SfpModuleBlock.ACTIVE, active), 3);
+        }
+
+        if (active) {
+            if (this.lastOutputPos != null && !this.lastOutputPos.equals(result.outputPos)) {
+                this.setOpticalInterfacePower(this.lastOutputPos, false);
+            }
+            this.lastOutputPos = result.outputPos;
+            this.setOpticalInterfacePower(result.outputPos, true);
+        } else {
+            if (this.lastOutputPos != null) {
+                this.setOpticalInterfacePower(this.lastOutputPos, false);
+                this.lastOutputPos = null;
+            }
+        }
+    }
+
+    private void setOpticalInterfacePower(BlockPos pos, boolean power) {
+        if (this.level == null) return;
+        var be = this.level.getBlockEntity(pos);
+        if (be instanceof OpticalInterfaceBlockEntity opt) opt.setPowered(power);
+    }
+
     public static void tick(Level level, BlockPos pos, BlockState state, SfpModuleBlockEntity blockEntity) {
         if (level.isClientSide) return;
 
@@ -220,32 +264,7 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity {
         if (blockEntity.needsTrace || blockEntity.checkTimer <= 0) {
             blockEntity.needsTrace = false;
             blockEntity.checkTimer = 40;
-
-            var result = blockEntity.traceConnection();
-            boolean currentlyValid = result.isValid;
-            boolean isActive = blockEntity.getMainNode().isActive();
-
-            boolean extraActive = true;
-            for (var node : blockEntity.extraNodes) {
-                if (node == null || !node.isActive()) {
-                    extraActive = false;
-                    break;
-                }
-            }
-
-            boolean active = currentlyValid && isActive && extraActive;
-
-            var currentState = level.getBlockState(pos);
-            if (currentState.hasProperty(SfpModuleBlock.ACTIVE) && currentState.getValue(SfpModuleBlock.ACTIVE) != active) {
-                level.setBlock(pos, currentState.setValue(SfpModuleBlock.ACTIVE, active), 3);
-            }
-
-            if (currentlyValid) {
-                var outputBe = level.getBlockEntity(result.outputPos);
-                if (outputBe instanceof OpticalInterfaceBlockEntity outInterface) {
-                    if (blockEntity.getMainNode().isActive()) outInterface.receivePower();
-                }
-            }
+            blockEntity.triggerImmediateTrace();
         }
     }
 
@@ -269,17 +288,27 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity {
     @Override
     public void saveAdditional(@NotNull CompoundTag tag, HolderLookup.@NotNull Provider registries) {
         super.saveAdditional(tag, registries);
+        if (this.lastOutputPos != null) tag.putLong("LastOutputPos", this.lastOutputPos.asLong());
     }
 
     @Override
     public void loadTag(@NotNull CompoundTag tag, HolderLookup.@NotNull Provider registries) {
         super.loadTag(tag, registries);
+        if (tag.contains("LastOutputPos")) {
+            this.lastOutputPos = BlockPos.of(tag.getLong("LastOutputPos"));
+        } else {
+            this.lastOutputPos = null;
+        }
     }
 
     @Override
     public void setRemoved() {
         super.setRemoved();
         for (var node : this.extraNodes) if (node != null) node.destroy();
+        if (this.level != null && !this.level.isClientSide && this.lastOutputPos != null) {
+            this.setOpticalInterfacePower(this.lastOutputPos, false);
+            this.lastOutputPos = null;
+        }
     }
 
     @Override

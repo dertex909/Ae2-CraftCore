@@ -81,6 +81,7 @@ public class CryostatBlockEntity extends BlockEntity implements MenuProvider {
         @Override
         public void setChanged() {
             CryostatBlockEntity.this.setChanged();
+            CryostatBlockEntity.this.runStructureScanAndUpdates();
         }
 
         @Override

@@ -72,9 +72,7 @@ public class OpticalInterfaceBlock extends BaseEntityBlock {
 
     @Nullable
     @Override
-    @SuppressWarnings("unchecked")
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(@NotNull Level level, @NotNull BlockState state, @NotNull BlockEntityType<T> type) {
-        if (level.isClientSide) return null;
-        return type == OpticalInterfaceBlockEntity.TYPE ? (BlockEntityTicker<T>) (BlockEntityTicker<OpticalInterfaceBlockEntity>) OpticalInterfaceBlockEntity::tick : null;
+        return null;
     }
 }

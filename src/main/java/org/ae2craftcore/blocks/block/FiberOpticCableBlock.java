@@ -12,6 +12,7 @@ import net.minecraft.world.level.block.state.properties.IntegerProperty;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
+import org.ae2craftcore.blocks.blockentity.SfpModuleBlockEntity;
 import org.ae2craftcore.registry.annotations.RegisterBlock;
 import org.jetbrains.annotations.NotNull;
 
@@ -207,7 +208,7 @@ public class FiberOpticCableBlock extends Block {
             for (var dir : DIRECTIONS) {
                 var neighborPos = p.relative(dir);
                 var be = level.getBlockEntity(neighborPos);
-                if (be instanceof org.ae2craftcore.blocks.blockentity.SfpModuleBlockEntity sfp) sfp.markNeedsTrace();
+                if (be instanceof SfpModuleBlockEntity sfp) sfp.triggerImmediateTrace();
             }
         }
     }
