@@ -107,6 +107,9 @@ public class FiberOpticCableBlock extends Block {
     private boolean canConnectToNeighbor(Level level, BlockPos myPos, Direction dir) {
         var neighborPos = myPos.relative(dir);
         var state = level.getBlockState(neighborPos);
+        if (state.getBlock() == OpticalInterfaceBlock.HOLDER.get()) {
+            return state.getValue(OpticalInterfaceBlock.FACING) == dir.getOpposite();
+        }
         if (!(state.getBlock() instanceof FiberOpticCableBlock || state.getBlock() instanceof SfpModuleBlock)) {
             return false;
         }
