@@ -216,7 +216,7 @@ public class FiberOpticCableBlock extends Block {
 
         while (!queue.isEmpty()) {
             var current = queue.poll();
-            if (!visited.add(current)) continue;
+            if (!visited.add(current) || !level.isLoaded(current)) continue;
 
             var state = level.getBlockState(current);
             if (state.getBlock() instanceof FiberOpticCableBlock) {
