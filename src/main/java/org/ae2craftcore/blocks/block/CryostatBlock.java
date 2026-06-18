@@ -50,10 +50,7 @@ public class CryostatBlock extends BaseEntityBlock {
                                                         @NotNull Player player, @NotNull BlockHitResult hitResult) {
         if (!level.isClientSide) {
             var blockEntity = level.getBlockEntity(pos);
-            if (blockEntity instanceof CryostatBlockEntity cryostat) {
-                cryostat.checkStructureAndNotify(player);
-                player.openMenu(cryostat, pos);
-            }
+            if (blockEntity instanceof CryostatBlockEntity cryostat) player.openMenu(cryostat, pos);
         }
         return InteractionResult.sidedSuccess(level.isClientSide);
     }

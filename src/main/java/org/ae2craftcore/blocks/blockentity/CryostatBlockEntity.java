@@ -202,28 +202,6 @@ public class CryostatBlockEntity extends BlockEntity implements MenuProvider {
         }
     }
 
-    public void checkStructureAndNotify(Player player) {
-        if (this.level == null) return;
-
-        this.runStructureScanAndUpdates();
-
-        var structResult = MultiblockValidator.validateStructure(this.level, this.worldPosition);
-        if (!structResult.isValid()) {
-            String relCoordStr = String.format("(%d, %d, %d)", structResult.relativePos().getX(), structResult.relativePos().getY(), structResult.relativePos().getZ());
-            String absCoordStr = String.format("(%d, %d, %d)", structResult.absolutePos().getX(), structResult.absolutePos().getY(), structResult.absolutePos().getZ());
-            player.sendSystemMessage(Component.literal(String.format("§c[Cryostat] Structure invalid at relative %s, absolute %s: %s",
-                    relCoordStr, absCoordStr, structResult.errorReason())));
-            return;
-        }
-
-        var invResult = MultiblockValidator.validateInventories(this.level, this.worldPosition);
-        if (invResult.isValid()) {
-            player.sendSystemMessage(Component.literal("§a[Cryostat] Multiblock computer is launchable and ready for operation!"));
-        } else {
-            player.sendSystemMessage(Component.literal("§e[Cryostat] Structure is valid, but initialization is incomplete: " + invResult.errorReason()));
-        }
-    }
-
     @Override
     public @NotNull Component getDisplayName() {
         return Component.translatable("block.ae2craftcore.cryostat");

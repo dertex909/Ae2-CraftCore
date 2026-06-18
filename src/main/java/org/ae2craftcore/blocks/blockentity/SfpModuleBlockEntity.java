@@ -77,6 +77,17 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity {
     public record TraceResult(boolean isValid, BlockPos outputPos) {
     }
 
+    private static int getDirectionBit(Direction dir) {
+        return switch (dir) {
+            case NORTH -> 1;
+            case EAST -> 2;
+            case SOUTH -> 4;
+            case WEST -> 8;
+            case UP -> 16;
+            case DOWN -> 32;
+        };
+    }
+
     public TraceResult traceConnection() {
         if (this.level == null) return new TraceResult(false, null);
 
@@ -104,7 +115,11 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity {
             BlockPos singleOutputPos = null;
             int outputCount = 0;
 
+            var currentState = this.level.getBlockState(currentPos);
+            if (!(currentState.getBlock() instanceof FiberOpticCableBlock)) return new TraceResult(false, null);
+            int currentMask = currentState.getValue(FiberOpticCableBlock.CONNECTION_MASK);
             for (var d : DIRECTIONS) {
+                if ((currentMask & getDirectionBit(d)) == 0) continue;
                 var neighbor = currentPos.relative(d);
                 if (neighbor.equals(this.worldPosition)) continue;
 
@@ -125,6 +140,7 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity {
 
             int totalConnectionsAtCurrent = 0;
             for (var d : DIRECTIONS) {
+                if ((currentMask & getDirectionBit(d)) == 0) continue;
                 var neighbor = currentPos.relative(d);
                 var state = this.level.getBlockState(neighbor);
                 if (state.getBlock() instanceof FiberOpticCableBlock) {

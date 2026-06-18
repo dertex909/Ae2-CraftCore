@@ -175,8 +175,8 @@ public class FiberOpticCableBlock extends Block {
         if (IS_UPDATING.get()) return;
 
         IS_UPDATING.set(true);
+        var visited = new HashSet<BlockPos>();
         try {
-            var visited = new HashSet<BlockPos>();
             while (!queue.isEmpty()) {
                 var task = queue.pollFirst();
                 if (!visited.add(task.pos)) continue;
@@ -201,6 +201,14 @@ public class FiberOpticCableBlock extends Block {
         } finally {
             IS_UPDATING.set(false);
             queue.clear();
+        }
+
+        for (var p : visited) {
+            for (var dir : DIRECTIONS) {
+                var neighborPos = p.relative(dir);
+                var be = level.getBlockEntity(neighborPos);
+                if (be instanceof org.ae2craftcore.blocks.blockentity.SfpModuleBlockEntity sfp) sfp.markNeedsTrace();
+            }
         }
     }
 
