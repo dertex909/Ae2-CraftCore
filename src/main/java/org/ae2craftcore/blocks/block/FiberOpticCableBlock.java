@@ -204,10 +204,28 @@ public class FiberOpticCableBlock extends Block {
             queue.clear();
         }
 
-        for (var p : visited) {
-            for (var dir : DIRECTIONS) {
-                var neighborPos = p.relative(dir);
-                var be = level.getBlockEntity(neighborPos);
+        notifyConnectedSfps(level, pos);
+    }
+
+    private static void notifyConnectedSfps(Level level, BlockPos pos) {
+        var visited = new HashSet<BlockPos>();
+        var queue = new ArrayDeque<BlockPos>();
+
+        queue.add(pos);
+        for (var dir : DIRECTIONS) queue.add(pos.relative(dir));
+
+        while (!queue.isEmpty()) {
+            var current = queue.poll();
+            if (!visited.add(current)) continue;
+
+            var state = level.getBlockState(current);
+            if (state.getBlock() instanceof FiberOpticCableBlock) {
+                for (var dir : DIRECTIONS) {
+                    var neighborPos = current.relative(dir);
+                    if (!visited.contains(neighborPos)) queue.add(neighborPos);
+                }
+            } else {
+                var be = level.getBlockEntity(current);
                 if (be instanceof SfpModuleBlockEntity sfp) sfp.triggerImmediateTrace();
             }
         }
