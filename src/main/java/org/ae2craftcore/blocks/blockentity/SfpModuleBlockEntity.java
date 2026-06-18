@@ -226,8 +226,11 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity {
 
     private void setOpticalInterfacePower(BlockPos pos, boolean power) {
         if (this.level == null) return;
-        var be = this.level.getBlockEntity(pos);
-        if (be instanceof OpticalInterfaceBlockEntity opt) opt.setPowered(power);
+
+        if (this.level.isLoaded(pos)) {
+            var be = this.level.getBlockEntity(pos);
+            if (be instanceof OpticalInterfaceBlockEntity opt) opt.setPowered(power);
+        }
     }
 
     public static void tick(Level level, BlockPos pos, BlockState state, SfpModuleBlockEntity blockEntity) {

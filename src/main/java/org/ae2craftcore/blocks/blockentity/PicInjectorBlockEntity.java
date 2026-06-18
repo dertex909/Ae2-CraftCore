@@ -17,11 +17,12 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import org.ae2craftcore.blocks.block.PicInjectorBlock;
 import org.ae2craftcore.blocks.menu.PicInjectorMenu;
-import org.ae2craftcore.items.BaseResources;
 import org.ae2craftcore.multiblock.IMultiblockComponent;
 import org.ae2craftcore.registry.annotations.RegisterBlockEntity;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import static org.ae2craftcore.items.BaseResources.PHOTONIC_INTEGRATED_CIRCUIT;
 
 @RegisterBlockEntity(name = "pic_injector", blocks = {PicInjectorBlock.class})
 public class PicInjectorBlockEntity extends BlockEntity implements WorldlyContainer, MenuProvider, IMultiblockComponent {
@@ -46,8 +47,23 @@ public class PicInjectorBlockEntity extends BlockEntity implements WorldlyContai
 
     private void notifyCore() {
         if (this.level != null && !this.level.isClientSide && this.linkedCorePos != null) {
-            var coreBe = this.level.getBlockEntity(this.linkedCorePos);
-            if (coreBe instanceof CryostatBlockEntity core) core.runStructureScanAndUpdates();
+            if (this.level.isLoaded(this.linkedCorePos)) {
+                var coreBe = this.level.getBlockEntity(this.linkedCorePos);
+                if (coreBe instanceof CryostatBlockEntity core) {
+                    int durability = -1;
+                    var stack = this.getItem(0);
+                    if (!stack.isEmpty() && stack.is(PHOTONIC_INTEGRATED_CIRCUIT.get())) {
+                        int maxDamage = stack.getMaxDamage();
+                        if (maxDamage <= 0) {
+                            durability = 100;
+                        } else {
+                            int currentDurability = maxDamage - stack.getDamageValue();
+                            durability = Math.clamp((int) ((currentDurability * 100L) / maxDamage), 0, 100);
+                        }
+                    }
+                    core.onInjectorChanged(this.worldPosition, durability);
+                }
+            }
         }
     }
 
@@ -119,7 +135,7 @@ public class PicInjectorBlockEntity extends BlockEntity implements WorldlyContai
 
     @Override
     public boolean canPlaceItem(int slot, @NotNull ItemStack stack) {
-        return slot == 0 && stack.is(BaseResources.PHOTONIC_INTEGRATED_CIRCUIT.get());
+        return slot == 0 && stack.is(PHOTONIC_INTEGRATED_CIRCUIT.get());
     }
 
     @Override

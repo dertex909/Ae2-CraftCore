@@ -40,6 +40,8 @@ public class CryostatBlockEntity extends BlockEntity implements MenuProvider {
     private int tickTimer = 0;
     private final NonNullList<ItemStack> items = NonNullList.withSize(4, ItemStack.EMPTY);
 
+    private final ArrayList<BlockPos> registeredComponents = new ArrayList<>();
+
     private final Container container = new Container() {
         @Override
         public int getContainerSize() {
@@ -132,6 +134,42 @@ public class CryostatBlockEntity extends BlockEntity implements MenuProvider {
         return picDurabilities;
     }
 
+    public void onInterfacePowerChanged(boolean powered) {
+        if (this.mePowered != powered) {
+            this.mePowered = powered;
+            this.setChanged();
+            this.pushStatesToComponents();
+        }
+    }
+
+    public void onInjectorChanged(BlockPos injectorPos, int durability) {
+        var offset = injectorPos.subtract(this.worldPosition);
+        int index = -1;
+        if (offset.getX() == 2 && offset.getY() == 0 && offset.getZ() == 0) index = 0;
+        else if (offset.getX() == -2 && offset.getY() == 0 && offset.getZ() == 0) index = 1;
+        else if (offset.getX() == 0 && offset.getY() == 0 && offset.getZ() == 2) index = 2;
+        else if (offset.getX() == 0 && offset.getY() == 0 && offset.getZ() == -2) index = 3;
+
+        if (index != -1 && this.picDurabilities[index] != durability) {
+            this.picDurabilities[index] = durability;
+            this.setChanged();
+            this.pushStatesToComponents();
+        }
+    }
+
+    public void pushStatesToComponents() {
+        if (this.level == null || this.level.isClientSide) return;
+
+        for (var pos : this.registeredComponents) {
+            if (this.level.isLoaded(pos)) {
+                var be = this.level.getBlockEntity(pos);
+                if (be instanceof IMultiblockComponent component) {
+                    component.updateMultiblockState(this, this.structureValid);
+                }
+            }
+        }
+    }
+
     public void runStructureScanAndUpdates() {
         if (this.level == null || this.level.isClientSide) return;
 
@@ -145,8 +183,8 @@ public class CryostatBlockEntity extends BlockEntity implements MenuProvider {
             this.inventoriesValid = false;
         }
 
+        this.registeredComponents.clear();
         boolean isMePowered = false;
-        var foundComponents = new ArrayList<IMultiblockComponent>();
 
         for (int x = -4; x <= 4; x++) {
             for (int y = -4; y <= 4; y++) {
@@ -155,7 +193,7 @@ public class CryostatBlockEntity extends BlockEntity implements MenuProvider {
                     var currentPos = this.worldPosition.offset(x, y, z);
                     if (this.level.isLoaded(currentPos)) {
                         var be = this.level.getBlockEntity(currentPos);
-                        if (be instanceof IMultiblockComponent component) foundComponents.add(component);
+                        if (be instanceof IMultiblockComponent) this.registeredComponents.add(currentPos);
                         if (be instanceof OpticalInterfaceBlockEntity opt) if (opt.isPowered()) isMePowered = true;
                     }
                 }
@@ -195,8 +233,7 @@ public class CryostatBlockEntity extends BlockEntity implements MenuProvider {
             }
         }
 
-        for (var component : foundComponents) component.updateMultiblockState(this, this.structureValid);
-
+        this.pushStatesToComponents();
         this.setChanged();
     }
 
@@ -225,20 +262,8 @@ public class CryostatBlockEntity extends BlockEntity implements MenuProvider {
     public void setRemoved() {
         if (this.level != null && !this.level.isClientSide) {
             this.structureValid = false;
-            for (int x = -4; x <= 4; x++) {
-                for (int y = -4; y <= 4; y++) {
-                    for (int z = -4; z <= 4; z++) {
-                        if (x == 0 && y == 0 && z == 0) continue;
-                        var currentPos = this.worldPosition.offset(x, y, z);
-                        if (this.level.isLoaded(currentPos)) {
-                            var be = this.level.getBlockEntity(currentPos);
-                            if (be instanceof IMultiblockComponent component) {
-                                component.updateMultiblockState(this, false);
-                            }
-                        }
-                    }
-                }
-            }
+            this.pushStatesToComponents();
+            this.registeredComponents.clear();
         }
         super.setRemoved();
     }

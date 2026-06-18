@@ -46,8 +46,10 @@ public class OpticalInterfaceBlockEntity extends BlockEntity implements IMultibl
 
     private void notifyCore() {
         if (this.level != null && !this.level.isClientSide && this.linkedCorePos != null) {
-            var coreBe = this.level.getBlockEntity(this.linkedCorePos);
-            if (coreBe instanceof CryostatBlockEntity core) core.runStructureScanAndUpdates();
+            if (this.level.isLoaded(this.linkedCorePos)) {
+                var coreBe = this.level.getBlockEntity(this.linkedCorePos);
+                if (coreBe instanceof CryostatBlockEntity core) core.onInterfacePowerChanged(this.powered);
+            }
         }
     }
 
