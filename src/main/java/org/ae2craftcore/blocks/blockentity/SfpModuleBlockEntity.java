@@ -132,6 +132,9 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity {
                 } else if (state.getBlock() == OpticalInterfaceBlock.HOLDER.get()) {
                     var facing = state.getValue(OpticalInterfaceBlock.FACING);
                     if (facing == d.getOpposite()) totalConnectionsAtCurrent++;
+                } else if (state.getBlock() instanceof SfpModuleBlock) {
+                    var facing = state.getValue(SfpModuleBlock.FACING);
+                    if (facing == d.getOpposite()) totalConnectionsAtCurrent++;
                 }
             }
 
