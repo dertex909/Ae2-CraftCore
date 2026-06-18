@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=east": {
+      "model": "ae2craftcore:block/optical_interface",
+      "y": 90
+    },
+    "facing=north": {
+      "model": "ae2craftcore:block/optical_interface"
+    },
+    "facing=south": {
+      "model": "ae2craftcore:block/optical_interface",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "ae2craftcore:block/optical_interface",
+      "y": 270
+    }
+  }
+}

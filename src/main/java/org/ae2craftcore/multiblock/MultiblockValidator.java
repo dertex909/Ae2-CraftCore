@@ -20,6 +20,22 @@ public class MultiblockValidator {
     }
 
     public static ValidationResult validateStructure(Level level, BlockPos center) {
+        for (int dx = -8; dx <= 8; dx++) {
+            for (int dy = -8; dy <= 8; dy++) {
+                for (int dz = -8; dz <= 8; dz++) {
+                    if (dx == 0 && dy == 0 && dz == 0) continue;
+                    var otherPos = center.offset(dx, dy, dz);
+                    var otherState = level.getBlockState(otherPos);
+                    if (otherState.getBlock() == CryostatBlock.HOLDER.get()) {
+                        var be = level.getBlockEntity(otherPos);
+                        if (be instanceof CryostatBlockEntity otherCore) if (otherCore.isStructureValid()) {
+                            return new ValidationResult(false, "Overlap with another valid Cryostat core", otherPos, new BlockPos(dx, dy, dz));
+                        }
+                    }
+                }
+            }
+        }
+
         int opticalInterfaceCount = 0;
         int monitorCount = 0;
 
@@ -107,12 +123,6 @@ public class MultiblockValidator {
         }
 
         return new ValidationResult(true, "Success", null, null);
-    }
-
-    public static ValidationResult validate(Level level, BlockPos center) {
-        var structRes = validateStructure(level, center);
-        if (!structRes.isValid()) return structRes;
-        return validateInventories(level, center);
     }
 
     private static ValidationResult validatePosition(int x, int y, int z, int dist, BlockState state, BlockPos currentPos) {

@@ -8,14 +8,20 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import org.ae2craftcore.blocks.block.OpticalInterfaceBlock;
+import org.ae2craftcore.multiblock.IMultiblockComponent;
 import org.ae2craftcore.registry.annotations.RegisterBlockEntity;
 import org.jetbrains.annotations.NotNull;
 
 @RegisterBlockEntity(name = "optical_interface", blocks = {OpticalInterfaceBlock.class})
-public class OpticalInterfaceBlockEntity extends BlockEntity {
+public class OpticalInterfaceBlockEntity extends BlockEntity implements IMultiblockComponent {
     public static BlockEntityType<OpticalInterfaceBlockEntity> TYPE;
 
     private int powerTicks = 0;
+
+    @Override
+    public void updateMultiblockState(CryostatBlockEntity core, boolean isValid) {
+        this.setChanged();
+    }
 
     public OpticalInterfaceBlockEntity(BlockPos pos, BlockState state) {
         super(TYPE, pos, state);

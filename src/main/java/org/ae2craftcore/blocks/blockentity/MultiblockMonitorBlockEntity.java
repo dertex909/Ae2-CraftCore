@@ -1,43 +1,48 @@
 package org.ae2craftcore.blocks.blockentity;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ContainerData;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import org.ae2craftcore.blocks.block.MultiblockMonitorBlock;
-import org.ae2craftcore.blocks.block.OpticalInterfaceBlock;
 import org.ae2craftcore.blocks.menu.MultiblockMonitorMenu;
-import org.ae2craftcore.multiblock.MultiblockValidator;
+import org.ae2craftcore.multiblock.IMultiblockComponent;
 import org.ae2craftcore.registry.annotations.RegisterBlockEntity;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Arrays;
+
 @RegisterBlockEntity(name = "multiblock_monitor", blocks = {MultiblockMonitorBlock.class})
-public class MultiblockMonitorBlockEntity extends BlockEntity implements MenuProvider {
+public class MultiblockMonitorBlockEntity extends BlockEntity implements MenuProvider, IMultiblockComponent {
     public static BlockEntityType<MultiblockMonitorBlockEntity> TYPE;
+
+    private boolean coreStructureValid = false;
+    private boolean coreInventoriesValid = false;
+    private boolean coreMePowered = false;
+    private final int[] corePicDurabilities = new int[]{-1, -1, -1, -1};
+    private int ticksSinceLastUpdate = 0;
 
     protected final ContainerData dataAccess = new ContainerData() {
         @Override
         public int get(int index) {
-            if (MultiblockMonitorBlockEntity.this.level == null) return -1;
-            var state = MultiblockMonitorBlockEntity.this.getBlockState();
-            if (!state.hasProperty(MultiblockMonitorBlock.FACING)) return -1;
-
-            var center = MultiblockMonitorBlockEntity.this.worldPosition.relative(state.getValue(MultiblockMonitorBlock.FACING).getOpposite(), 4);
             return switch (index) {
-                case 0 -> MultiblockMonitorBlockEntity.this.checkStructureValid(center) ? 1 : 0;
-                case 1 -> MultiblockMonitorBlockEntity.this.checkInventoriesValid(center) ? 1 : 0;
-                case 2 -> MultiblockMonitorBlockEntity.this.checkMePowered(center) ? 1 : 0;
-                case 3 -> MultiblockMonitorBlockEntity.this.getPicDurability(center.offset(2, 0, 0)); // East Injector
-                case 4 -> MultiblockMonitorBlockEntity.this.getPicDurability(center.offset(-2, 0, 0)); // West Injector
-                case 5 -> MultiblockMonitorBlockEntity.this.getPicDurability(center.offset(0, 0, 2)); // South Injector
-                case 6 -> MultiblockMonitorBlockEntity.this.getPicDurability(center.offset(0, 0, -2)); // North Injector
+                case 0 -> MultiblockMonitorBlockEntity.this.coreStructureValid ? 1 : 0;
+                case 1 -> MultiblockMonitorBlockEntity.this.coreInventoriesValid ? 1 : 0;
+                case 2 -> MultiblockMonitorBlockEntity.this.coreMePowered ? 1 : 0;
+                case 3 -> MultiblockMonitorBlockEntity.this.corePicDurabilities[0];
+                case 4 -> MultiblockMonitorBlockEntity.this.corePicDurabilities[1];
+                case 5 -> MultiblockMonitorBlockEntity.this.corePicDurabilities[2];
+                case 6 -> MultiblockMonitorBlockEntity.this.corePicDurabilities[3];
                 default -> -1;
             };
         }
@@ -56,61 +61,56 @@ public class MultiblockMonitorBlockEntity extends BlockEntity implements MenuPro
         super(TYPE, pos, state);
     }
 
-    private boolean checkStructureValid(BlockPos center) {
-        if (this.level == null) return false;
-        var r = MultiblockValidator.validateStructure(this.level, center);
-        return r.isValid();
-    }
-
-    private boolean checkInventoriesValid(BlockPos center) {
-        if (this.level == null) return false;
-        var r = MultiblockValidator.validateInventories(this.level, center);
-        return r.isValid();
-    }
-
-    private boolean checkMePowered(BlockPos center) {
-        if (this.level == null) return false;
-        for (int y = -3; y <= 3; y++) {
-            for (int i = -3; i <= 3; i++) {
-                var pos1 = center.offset(4, y, i);
-                if (this.level.getBlockState(pos1).is(OpticalInterfaceBlock.HOLDER.get())) {
-                    var be = this.level.getBlockEntity(pos1);
-                    if (be instanceof OpticalInterfaceBlockEntity opt && opt.isPowered()) return true;
-                }
-                var pos2 = center.offset(-4, y, i);
-                if (this.level.getBlockState(pos2).is(OpticalInterfaceBlock.HOLDER.get())) {
-                    var be = this.level.getBlockEntity(pos2);
-                    if (be instanceof OpticalInterfaceBlockEntity opt && opt.isPowered()) return true;
-                }
-                var pos3 = center.offset(i, y, 4);
-                if (this.level.getBlockState(pos3).is(OpticalInterfaceBlock.HOLDER.get())) {
-                    var be = this.level.getBlockEntity(pos3);
-                    if (be instanceof OpticalInterfaceBlockEntity opt && opt.isPowered()) return true;
-                }
-                var pos4 = center.offset(i, y, -4);
-                if (this.level.getBlockState(pos4).is(OpticalInterfaceBlock.HOLDER.get())) {
-                    var be = this.level.getBlockEntity(pos4);
-                    if (be instanceof OpticalInterfaceBlockEntity opt && opt.isPowered()) return true;
-                }
-            }
+    @Override
+    public void updateMultiblockState(CryostatBlockEntity core, boolean isValid) {
+        this.coreStructureValid = isValid;
+        if (isValid && core != null) {
+            this.coreInventoriesValid = core.areInventoriesValid();
+            this.coreMePowered = core.isMePowered();
+            System.arraycopy(core.getPicDurabilities(), 0, this.corePicDurabilities, 0, 4);
+        } else {
+            this.coreInventoriesValid = false;
+            this.coreMePowered = false;
+            Arrays.fill(this.corePicDurabilities, -1);
         }
-        return false;
+        this.ticksSinceLastUpdate = 0;
+        this.setChanged();
     }
 
-    private int getPicDurability(BlockPos injectorPos) {
-        if (this.level == null) return -1;
-        var be = this.level.getBlockEntity(injectorPos);
-        if (be instanceof PicInjectorBlockEntity injector) {
-            var stack = injector.getItem(0);
-            if (stack.isEmpty() || !stack.is(org.ae2craftcore.items.BaseResources.PHOTONIC_INTEGRATED_CIRCUIT.get())) {
-                return -1;
-            }
-            int maxDamage = stack.getMaxDamage();
-            if (maxDamage <= 0) return 100;
-            int currentDurability = maxDamage - stack.getDamageValue();
-            return Math.clamp((int) ((currentDurability * 100L) / maxDamage), 0, 100);
+    public static void tick(Level level, BlockPos pos, BlockState state, MultiblockMonitorBlockEntity blockEntity) {
+        if (level.isClientSide) return;
+
+        blockEntity.ticksSinceLastUpdate++;
+        if ((blockEntity.ticksSinceLastUpdate > 40) && (blockEntity.coreStructureValid || blockEntity.coreInventoriesValid || blockEntity.coreMePowered)) {
+            blockEntity.coreStructureValid = false;
+            blockEntity.coreInventoriesValid = false;
+            blockEntity.coreMePowered = false;
+            for (int i = 0; i < 4; i++) blockEntity.corePicDurabilities[i] = -1;
+            blockEntity.setChanged();
         }
-        return -1;
+    }
+
+    @Override
+    protected void loadAdditional(@NotNull CompoundTag tag, HolderLookup.@NotNull Provider registries) {
+        super.loadAdditional(tag, registries);
+        this.coreStructureValid = tag.getBoolean("CoreStructureValid");
+        this.coreInventoriesValid = tag.getBoolean("CoreInventoriesValid");
+        this.coreMePowered = tag.getBoolean("CoreMePowered");
+        if (tag.contains("CorePicDurabilities", 11)) {
+            int[] src = tag.getIntArray("CorePicDurabilities");
+            if (src.length == 4) System.arraycopy(src, 0, this.corePicDurabilities, 0, 4);
+        }
+        this.ticksSinceLastUpdate = tag.getInt("TicksSinceLastUpdate");
+    }
+
+    @Override
+    protected void saveAdditional(@NotNull CompoundTag tag, HolderLookup.@NotNull Provider registries) {
+        super.saveAdditional(tag, registries);
+        tag.putBoolean("CoreStructureValid", this.coreStructureValid);
+        tag.putBoolean("CoreInventoriesValid", this.coreInventoriesValid);
+        tag.putBoolean("CoreMePowered", this.coreMePowered);
+        tag.putIntArray("CorePicDurabilities", this.corePicDurabilities);
+        tag.putInt("TicksSinceLastUpdate", this.ticksSinceLastUpdate);
     }
 
     @Override

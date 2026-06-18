@@ -12,6 +12,8 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.HorizontalDirectionalBlock;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityTicker;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
@@ -70,5 +72,12 @@ public class MultiblockMonitorBlock extends BaseEntityBlock {
             if (blockEntity instanceof MultiblockMonitorBlockEntity monitor) player.openMenu(monitor, pos);
         }
         return InteractionResult.sidedSuccess(level.isClientSide);
+    }
+
+    @Nullable
+    @Override
+    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(@NotNull Level level, @NotNull BlockState state,
+                                                                  @NotNull BlockEntityType<T> type) {
+        return createTickerHelper(type, MultiblockMonitorBlockEntity.TYPE, MultiblockMonitorBlockEntity::tick);
     }
 }

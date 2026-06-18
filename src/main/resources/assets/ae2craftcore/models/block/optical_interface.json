@@ -1,0 +1,12 @@
+{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "particle": "ae2craftcore:block/vacuum_casing",
+    "up": "ae2craftcore:block/vacuum_casing",
+    "down": "ae2craftcore:block/vacuum_casing",
+    "north": "ae2craftcore:block/fiber_optic_cable",
+    "south": "ae2craftcore:block/vacuum_casing",
+    "west": "ae2craftcore:block/vacuum_casing",
+    "east": "ae2craftcore:block/vacuum_casing"
+  }
+}
