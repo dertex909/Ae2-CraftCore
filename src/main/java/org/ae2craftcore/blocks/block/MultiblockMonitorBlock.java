@@ -20,6 +20,7 @@ import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.phys.BlockHitResult;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import org.ae2craftcore.blocks.blockentity.MultiblockMonitorBlockEntity;
+import org.ae2craftcore.multiblock.MultiblockValidator;
 import org.ae2craftcore.registry.annotations.RegisterBlock;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -72,6 +73,20 @@ public class MultiblockMonitorBlock extends BaseEntityBlock {
             if (blockEntity instanceof MultiblockMonitorBlockEntity monitor) player.openMenu(monitor, pos);
         }
         return InteractionResult.sidedSuccess(level.isClientSide);
+    }
+
+    @Override
+    protected void onPlace(@NotNull BlockState state, @NotNull Level level, @NotNull BlockPos pos, @NotNull BlockState oldState, boolean isMoving) {
+        super.onPlace(state, level, pos, oldState, isMoving);
+        if (!level.isClientSide) MultiblockValidator.notifyCryostat(level, pos);
+    }
+
+    @Override
+    protected void onRemove(@NotNull BlockState state, @NotNull Level level, @NotNull BlockPos pos, @NotNull BlockState newState, boolean isMoving) {
+        if (!state.is(newState.getBlock())) {
+            super.onRemove(state, level, pos, newState, isMoving);
+            if (!level.isClientSide) MultiblockValidator.notifyCryostat(level, pos);
+        }
     }
 
     @Nullable

@@ -19,6 +19,7 @@ import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.phys.BlockHitResult;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import org.ae2craftcore.blocks.blockentity.PicInjectorBlockEntity;
+import org.ae2craftcore.multiblock.MultiblockValidator;
 import org.ae2craftcore.registry.annotations.RegisterBlock;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -74,8 +75,14 @@ public class PicInjectorBlock extends BaseEntityBlock {
     }
 
     @Override
-    public void onRemove(@NotNull BlockState state, @NotNull Level level, @NotNull BlockPos pos,
-                         @NotNull BlockState newState, boolean movedByPiston) {
+    protected void onPlace(@NotNull BlockState state, @NotNull Level level, @NotNull BlockPos pos, @NotNull BlockState oldState, boolean isMoving) {
+        super.onPlace(state, level, pos, oldState, isMoving);
+        if (!level.isClientSide) MultiblockValidator.notifyCryostat(level, pos);
+    }
+
+    @Override
+    protected void onRemove(@NotNull BlockState state, @NotNull Level level, @NotNull BlockPos pos,
+                            @NotNull BlockState newState, boolean movedByPiston) {
         if (!state.is(newState.getBlock())) {
             var blockEntity = level.getBlockEntity(pos);
             if (blockEntity instanceof PicInjectorBlockEntity injector) {
@@ -83,6 +90,7 @@ public class PicInjectorBlock extends BaseEntityBlock {
                 level.updateNeighbourForOutputSignal(pos, this);
             }
             super.onRemove(state, level, pos, newState, movedByPiston);
+            if (!level.isClientSide) MultiblockValidator.notifyCryostat(level, pos);
         }
     }
 }

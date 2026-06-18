@@ -16,6 +16,24 @@ import java.util.Objects;
 
 public class MultiblockValidator {
 
+    public static void notifyCryostat(Level level, BlockPos pos) {
+        if (level.isClientSide()) return;
+        for (int x = -4; x <= 4; x++) {
+            for (int y = -4; y <= 4; y++) {
+                for (int z = -4; z <= 4; z++) {
+                    var corePos = pos.offset(x, y, z);
+                    if (level.isLoaded(corePos)) {
+                        var be = level.getBlockEntity(corePos);
+                        if (be instanceof CryostatBlockEntity cryo) {
+                            cryo.runStructureScanAndUpdates();
+                            return;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     public record ValidationResult(boolean isValid, String errorReason, BlockPos absolutePos, BlockPos relativePos) {
     }
 
