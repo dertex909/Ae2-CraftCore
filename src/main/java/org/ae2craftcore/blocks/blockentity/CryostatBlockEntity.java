@@ -153,9 +153,11 @@ public class CryostatBlockEntity extends BlockEntity implements MenuProvider {
                 for (int z = -4; z <= 4; z++) {
                     if (x == 0 && y == 0 && z == 0) continue;
                     var currentPos = this.worldPosition.offset(x, y, z);
-                    var be = this.level.getBlockEntity(currentPos);
-                    if (be instanceof IMultiblockComponent component) foundComponents.add(component);
-                    if (be instanceof OpticalInterfaceBlockEntity opt) if (opt.isPowered()) isMePowered = true;
+                    if (this.level.isLoaded(currentPos)) {
+                        var be = this.level.getBlockEntity(currentPos);
+                        if (be instanceof IMultiblockComponent component) foundComponents.add(component);
+                        if (be instanceof OpticalInterfaceBlockEntity opt) if (opt.isPowered()) isMePowered = true;
+                    }
                 }
             }
         }
@@ -169,16 +171,21 @@ public class CryostatBlockEntity extends BlockEntity implements MenuProvider {
         };
         for (int i = 0; i < 4; i++) {
             var injectorPos = this.worldPosition.offset(injectorOffsets[i]);
-            var be = this.level.getBlockEntity(injectorPos);
-            if (be instanceof PicInjectorBlockEntity injector) {
-                var stack = injector.getItem(0);
-                if (!stack.isEmpty() && stack.is(org.ae2craftcore.items.BaseResources.PHOTONIC_INTEGRATED_CIRCUIT.get())) {
-                    int maxDamage = stack.getMaxDamage();
-                    if (maxDamage <= 0) {
-                        this.picDurabilities[i] = 100;
+
+            if (this.level.isLoaded(injectorPos)) {
+                var be = this.level.getBlockEntity(injectorPos);
+                if (be instanceof PicInjectorBlockEntity injector) {
+                    var stack = injector.getItem(0);
+                    if (!stack.isEmpty() && stack.is(org.ae2craftcore.items.BaseResources.PHOTONIC_INTEGRATED_CIRCUIT.get())) {
+                        int maxDamage = stack.getMaxDamage();
+                        if (maxDamage <= 0) {
+                            this.picDurabilities[i] = 100;
+                        } else {
+                            int currentDurability = maxDamage - stack.getDamageValue();
+                            this.picDurabilities[i] = Math.clamp((int) ((currentDurability * 100L) / maxDamage), 0, 100);
+                        }
                     } else {
-                        int currentDurability = maxDamage - stack.getDamageValue();
-                        this.picDurabilities[i] = Math.clamp((int) ((currentDurability * 100L) / maxDamage), 0, 100);
+                        this.picDurabilities[i] = -1;
                     }
                 } else {
                     this.picDurabilities[i] = -1;
@@ -223,9 +230,11 @@ public class CryostatBlockEntity extends BlockEntity implements MenuProvider {
                     for (int z = -4; z <= 4; z++) {
                         if (x == 0 && y == 0 && z == 0) continue;
                         var currentPos = this.worldPosition.offset(x, y, z);
-                        var be = this.level.getBlockEntity(currentPos);
-                        if (be instanceof IMultiblockComponent component) {
-                            component.updateMultiblockState(this, false);
+                        if (this.level.isLoaded(currentPos)) {
+                            var be = this.level.getBlockEntity(currentPos);
+                            if (be instanceof IMultiblockComponent component) {
+                                component.updateMultiblockState(this, false);
+                            }
                         }
                     }
                 }
