@@ -181,6 +181,8 @@ public class MultiblockValidator {
     }
 
     private static Direction getOutwardFacing(int x, int z) {
+        if (Math.abs(x) == 4) return x > 0 ? Direction.EAST : Direction.WEST;
+        if (Math.abs(z) == 4) return z > 0 ? Direction.SOUTH : Direction.NORTH;
         if (x > 0) return Direction.EAST;
         if (x < 0) return Direction.WEST;
         if (z > 0) return Direction.SOUTH;

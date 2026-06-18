@@ -1,5 +1,6 @@
 package org.ae2craftcore.blocks.blockentity;
 
+import appeng.api.networking.pathing.IPathingService;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
@@ -174,7 +175,7 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity {
             if (currentlyValid && isActive) {
                 var grid = blockEntity.getMainNode().getGrid();
                 if (grid != null) {
-                    var pathingService = grid.getService(appeng.api.networking.pathing.IPathingService.class);
+                    var pathingService = grid.getService(IPathingService.class);
                     if (pathingService != null) usedChannels = pathingService.getUsedChannels();
                 }
             }
