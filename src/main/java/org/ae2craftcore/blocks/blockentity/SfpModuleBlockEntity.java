@@ -3,6 +3,7 @@ package org.ae2craftcore.blocks.blockentity;
 import appeng.api.networking.GridHelper;
 import appeng.api.networking.IGridNodeListener;
 import appeng.api.networking.IManagedGridNode;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
@@ -24,7 +25,6 @@ import appeng.api.util.AECableType;
 import appeng.blockentity.grid.AENetworkedPoweredBlockEntity;
 import appeng.util.inv.AppEngInternalInventory;
 
-import java.util.HashSet;
 import java.util.EnumSet;
 import java.util.Objects;
 import java.util.Set;
@@ -37,6 +37,21 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity {
 
     private static final Direction[] DIRECTIONS = Direction.values();
 
+    private static final int[] DIR_BITS = new int[6];
+
+    static {
+        for (var dir : DIRECTIONS) {
+            DIR_BITS[dir.ordinal()] = switch (dir) {
+                case NORTH -> 1;
+                case EAST -> 2;
+                case SOUTH -> 4;
+                case WEST -> 8;
+                case UP -> 16;
+                case DOWN -> 32;
+            };
+        }
+    }
+
     private final AppEngInternalInventory inv = new AppEngInternalInventory(this, 0);
 
     private int delayTicks = 100;
@@ -44,7 +59,11 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity {
     private boolean needsTrace = true;
     private boolean connectionsCreated = false;
 
-    private BlockPos lastOutputPos = null;
+    private long lastOutputPacked = 0L;
+    private boolean hasLastOutput = false;
+
+    private static final ThreadLocal<LongOpenHashSet> VISITED_SET = ThreadLocal.withInitial(LongOpenHashSet::new);
+    private static final ThreadLocal<BlockPos.MutableBlockPos> MUTABLE_POS = ThreadLocal.withInitial(BlockPos.MutableBlockPos::new);
 
     private final IManagedGridNode[] extraNodes = new IManagedGridNode[31];
 
@@ -79,62 +98,67 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity {
     public record TraceResult(boolean isValid, BlockPos outputPos) {
     }
 
-    private static int getDirectionBit(Direction dir) {
-        return switch (dir) {
-            case NORTH -> 1;
-            case EAST -> 2;
-            case SOUTH -> 4;
-            case WEST -> 8;
-            case UP -> 16;
-            case DOWN -> 32;
-        };
-    }
-
     public TraceResult traceConnection() {
         if (this.level == null) return new TraceResult(false, null);
 
-        var visitedCables = new HashSet<BlockPos>();
-        var currentPos = this.worldPosition;
+        var visitedCables = VISITED_SET.get();
+        visitedCables.clear();
+        var tempPos = MUTABLE_POS.get();
+        long worldPosPacked = this.worldPosition.asLong();
+        long currentPacked = worldPosPacked;
         BlockPos outputPos;
 
-        BlockPos nextPos = null;
+        long nextPacked = 0L;
+        boolean hasNext = false;
+
         var blockState = getBlockState();
         if (blockState.hasProperty(SfpModuleBlock.FACING)) {
-            var neighbor = currentPos.relative(blockState.getValue(SfpModuleBlock.FACING));
-            var state = this.level.getBlockState(neighbor);
-            if (state.getBlock() instanceof FiberOpticCableBlock) nextPos = neighbor.immutable();
+            var facing = blockState.getValue(SfpModuleBlock.FACING);
+            long neighborPacked = BlockPos.offset(currentPacked, facing);
+            tempPos.set(neighborPacked);
+            var state = this.level.getBlockState(tempPos);
+            if (state.getBlock() instanceof FiberOpticCableBlock) {
+                nextPacked = neighborPacked;
+                hasNext = true;
+            }
         }
 
-        if (nextPos == null) return new TraceResult(false, null);
+        if (!hasNext) return new TraceResult(false, null);
 
-        visitedCables.add(nextPos);
+        visitedCables.add(nextPacked);
 
         while (true) {
             if (visitedCables.size() > 8192) return new TraceResult(false, null);
-            currentPos = nextPos;
-            BlockPos singleNeighbor = null;
+            currentPacked = nextPacked;
+
+            long singleNeighbor = 0L;
             int neighborsCount = 0;
-            BlockPos singleOutputPos = null;
+
+            long singleOutputPos = 0L;
             int outputCount = 0;
 
-            var currentState = this.level.getBlockState(currentPos);
+            tempPos.set(currentPacked);
+            var currentState = this.level.getBlockState(tempPos);
             if (!(currentState.getBlock() instanceof FiberOpticCableBlock)) return new TraceResult(false, null);
+
             int currentMask = currentState.getValue(FiberOpticCableBlock.CONNECTION_MASK);
             for (var d : DIRECTIONS) {
-                if ((currentMask & getDirectionBit(d)) == 0) continue;
-                var neighbor = currentPos.relative(d);
-                if (neighbor.equals(this.worldPosition)) continue;
+                if ((currentMask & DIR_BITS[d.ordinal()]) == 0) continue;
 
-                var state = this.level.getBlockState(neighbor);
+                long neighborPacked = BlockPos.offset(currentPacked, d);
+                if (neighborPacked == worldPosPacked) continue;
+
+                tempPos.set(neighborPacked);
+                var state = this.level.getBlockState(tempPos);
                 if (state.getBlock() instanceof FiberOpticCableBlock) {
-                    if (!visitedCables.contains(neighbor)) {
-                        singleNeighbor = neighbor.immutable();
+                    if (!visitedCables.contains(neighborPacked)) {
+                        singleNeighbor = neighborPacked;
                         neighborsCount++;
                     }
                 } else if (state.getBlock() == OpticalInterfaceBlock.HOLDER.get()) {
                     var facing = state.getValue(OpticalInterfaceBlock.FACING);
                     if (facing == d.getOpposite()) {
-                        singleOutputPos = neighbor.immutable();
+                        singleOutputPos = neighborPacked;
                         outputCount++;
                     }
                 }
@@ -142,9 +166,11 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity {
 
             int totalConnectionsAtCurrent = 0;
             for (var d : DIRECTIONS) {
-                if ((currentMask & getDirectionBit(d)) == 0) continue;
-                var neighbor = currentPos.relative(d);
-                var state = this.level.getBlockState(neighbor);
+                if ((currentMask & DIR_BITS[d.ordinal()]) == 0) continue;
+
+                long neighborPacked = BlockPos.offset(currentPacked, d);
+                tempPos.set(neighborPacked);
+                var state = this.level.getBlockState(tempPos);
                 if (state.getBlock() instanceof FiberOpticCableBlock) {
                     totalConnectionsAtCurrent++;
                 } else if (state.getBlock() == OpticalInterfaceBlock.HOLDER.get()) {
@@ -159,15 +185,15 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity {
             if (totalConnectionsAtCurrent != 2) return new TraceResult(false, null);
 
             if (outputCount > 0) if (outputCount == 1) {
-                outputPos = singleOutputPos;
+                outputPos = BlockPos.of(singleOutputPos);
                 break;
             } else {
                 return new TraceResult(false, null);
             }
 
             if (neighborsCount == 1) {
-                nextPos = singleNeighbor;
-                visitedCables.add(nextPos);
+                nextPacked = singleNeighbor;
+                visitedCables.add(nextPacked);
             } else {
                 return new TraceResult(false, null);
             }
@@ -178,8 +204,9 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity {
         if (outState.hasProperty(OpticalInterfaceBlock.FACING)) {
             var outFacing = outState.getValue(OpticalInterfaceBlock.FACING);
             for (var d : DIRECTIONS) {
-                var neighbor = outputPos.relative(d);
-                var state = this.level.getBlockState(neighbor);
+                long neighborPacked = BlockPos.offset(outputPos.asLong(), d);
+                tempPos.set(neighborPacked);
+                var state = this.level.getBlockState(tempPos);
                 if (state.getBlock() instanceof FiberOpticCableBlock) if (d == outFacing) outputInterfaceConnections++;
             }
         }
@@ -211,15 +238,18 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity {
         }
 
         if (active) {
-            if (this.lastOutputPos != null && !this.lastOutputPos.equals(result.outputPos)) {
-                this.setOpticalInterfacePower(this.lastOutputPos, false);
+            long resultOutputPacked = result.outputPos.asLong();
+            if (this.hasLastOutput && this.lastOutputPacked != resultOutputPacked) {
+                this.setOpticalInterfacePower(BlockPos.of(this.lastOutputPacked), false);
             }
-            this.lastOutputPos = result.outputPos;
+            this.lastOutputPacked = resultOutputPacked;
+            this.hasLastOutput = true;
             this.setOpticalInterfacePower(result.outputPos, true);
         } else {
-            if (this.lastOutputPos != null) {
-                this.setOpticalInterfacePower(this.lastOutputPos, false);
-                this.lastOutputPos = null;
+            if (this.hasLastOutput) {
+                this.setOpticalInterfacePower(BlockPos.of(this.lastOutputPacked), false);
+                this.lastOutputPacked = 0L;
+                this.hasLastOutput = false;
             }
         }
     }
@@ -291,16 +321,18 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity {
     @Override
     public void saveAdditional(@NotNull CompoundTag tag, HolderLookup.@NotNull Provider registries) {
         super.saveAdditional(tag, registries);
-        if (this.lastOutputPos != null) tag.putLong("LastOutputPos", this.lastOutputPos.asLong());
+        if (this.hasLastOutput) tag.putLong("LastOutputPos", this.lastOutputPacked);
     }
 
     @Override
     public void loadTag(@NotNull CompoundTag tag, HolderLookup.@NotNull Provider registries) {
         super.loadTag(tag, registries);
         if (tag.contains("LastOutputPos")) {
-            this.lastOutputPos = BlockPos.of(tag.getLong("LastOutputPos"));
+            this.lastOutputPacked = tag.getLong("LastOutputPos");
+            this.hasLastOutput = true;
         } else {
-            this.lastOutputPos = null;
+            this.lastOutputPacked = 0L;
+            this.hasLastOutput = false;
         }
     }
 
@@ -308,9 +340,10 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity {
     public void setRemoved() {
         super.setRemoved();
         for (var node : this.extraNodes) if (node != null) node.destroy();
-        if (this.level != null && !this.level.isClientSide && this.lastOutputPos != null) {
-            this.setOpticalInterfacePower(this.lastOutputPos, false);
-            this.lastOutputPos = null;
+        if (this.level != null && !this.level.isClientSide && this.hasLastOutput) {
+            this.setOpticalInterfacePower(BlockPos.of(this.lastOutputPacked), false);
+            this.lastOutputPacked = 0L;
+            this.hasLastOutput = false;
         }
     }
 

@@ -34,7 +34,9 @@ public class MultiblockMonitorBlockEntity extends BlockEntity implements MenuPro
     private boolean coreMePowered = false;
     private final int[] corePicDurabilities = new int[]{-1, -1, -1, -1};
     private int ticksSinceLastUpdate = 0;
-    private BlockPos linkedCorePos = null;
+
+    private long linkedCorePacked = 0L;
+    private boolean hasLinkedCore = false;
 
     protected final ContainerData dataAccess = new ContainerData() {
         @Override
@@ -68,7 +70,8 @@ public class MultiblockMonitorBlockEntity extends BlockEntity implements MenuPro
     @Override
     public void updateMultiblockState(CryostatBlockEntity core, boolean isValid) {
         if (isValid && core != null) {
-            this.linkedCorePos = core.getBlockPos();
+            this.linkedCorePacked = core.getBlockPos().asLong();
+            this.hasLinkedCore = true;
             this.coreStructureValid = true;
             this.coreInventoriesValid = core.areInventoriesValid();
             this.coreMePowered = core.isMePowered();
@@ -77,8 +80,9 @@ public class MultiblockMonitorBlockEntity extends BlockEntity implements MenuPro
             this.setChanged();
             this.syncToClient();
         } else {
-            if (core != null && (this.linkedCorePos == null || this.linkedCorePos.equals(core.getBlockPos()))) {
-                this.linkedCorePos = null;
+            if (core != null && (!this.hasLinkedCore || this.linkedCorePacked == core.getBlockPos().asLong())) {
+                this.linkedCorePacked = 0L;
+                this.hasLinkedCore = false;
                 this.coreStructureValid = false;
                 this.coreInventoriesValid = false;
                 this.coreMePowered = false;
@@ -98,7 +102,8 @@ public class MultiblockMonitorBlockEntity extends BlockEntity implements MenuPro
             blockEntity.coreStructureValid = false;
             blockEntity.coreInventoriesValid = false;
             blockEntity.coreMePowered = false;
-            blockEntity.linkedCorePos = null;
+            blockEntity.linkedCorePacked = 0L;
+            blockEntity.hasLinkedCore = false;
             for (int i = 0; i < 4; i++) blockEntity.corePicDurabilities[i] = -1;
             blockEntity.setChanged();
             blockEntity.syncToClient();
@@ -136,9 +141,11 @@ public class MultiblockMonitorBlockEntity extends BlockEntity implements MenuPro
             if (src.length == 4) System.arraycopy(src, 0, this.corePicDurabilities, 0, 4);
         }
         if (tag.contains("LinkedCorePos")) {
-            this.linkedCorePos = BlockPos.of(tag.getLong("LinkedCorePos"));
+            this.linkedCorePacked = tag.getLong("LinkedCorePos");
+            this.hasLinkedCore = true;
         } else {
-            this.linkedCorePos = null;
+            this.linkedCorePacked = 0L;
+            this.hasLinkedCore = false;
         }
         this.ticksSinceLastUpdate = tag.getInt("TicksSinceLastUpdate");
     }
@@ -150,7 +157,7 @@ public class MultiblockMonitorBlockEntity extends BlockEntity implements MenuPro
         tag.putBoolean("CoreInventoriesValid", this.coreInventoriesValid);
         tag.putBoolean("CoreMePowered", this.coreMePowered);
         tag.putIntArray("CorePicDurabilities", this.corePicDurabilities);
-        if (this.linkedCorePos != null) tag.putLong("LinkedCorePos", this.linkedCorePos.asLong());
+        if (this.hasLinkedCore) tag.putLong("LinkedCorePos", this.linkedCorePacked);
         tag.putInt("TicksSinceLastUpdate", this.ticksSinceLastUpdate);
     }
 

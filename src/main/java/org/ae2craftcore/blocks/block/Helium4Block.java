@@ -22,6 +22,9 @@ public class Helium4Block extends Block {
 
     private static final int[] SQRT_LUT = {0, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 5};
 
+    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+    private static final Optional<Float> ZERO_EXPLOSION_RESISTANCE = Optional.of(0.0F);
+
     public Helium4Block(Properties properties) {
         super(properties);
     }
@@ -39,6 +42,8 @@ public class Helium4Block extends Block {
 
     private void explode(Level level, BlockPos pos) {
         var vec3 = pos.getCenter();
+        long targetPacked = pos.asLong();
+
         var explosionDamageCalculator = new ExplosionDamageCalculator() {
             @Override
             public @NotNull Optional<Float> getBlockExplosionResistance(@NotNull Explosion explosion,
@@ -46,7 +51,7 @@ public class Helium4Block extends Block {
                                                                         BlockPos blockPos,
                                                                         @NotNull BlockState blockState,
                                                                         @NotNull FluidState fluidState) {
-                return blockPos.equals(pos) && blockState.is(Helium4Block.this) ? Optional.of(0.0F)
+                return blockPos.asLong() == targetPacked && blockState.is(Helium4Block.this) ? ZERO_EXPLOSION_RESISTANCE
                         : super.getBlockExplosionResistance(explosion, blockGetter, blockPos, blockState, fluidState);
             }
         };
@@ -82,11 +87,14 @@ public class Helium4Block extends Block {
                         int tz = originZ + z;
 
                         spawnPos.set(tx, ty, tz);
-                        belowPos.set(tx, ty - 1, tz);
 
-                        var belowState = level.getBlockState(belowPos);
-                        if (level.getBlockState(spawnPos).isAir() && !belowState.isAir() && belowState.isFaceSturdy(level, belowPos, UP)) {
-                            level.setBlockAndUpdate(spawnPos.immutable(), SNOW.defaultBlockState());
+                        var spawnState = level.getBlockState(spawnPos);
+                        if (spawnState.isAir()) {
+                            belowPos.set(tx, ty - 1, tz);
+                            var belowState = level.getBlockState(belowPos);
+                            if (!belowState.isAir() && belowState.isFaceSturdy(level, belowPos, UP)) {
+                                level.setBlockAndUpdate(spawnPos.immutable(), SNOW.defaultBlockState());
+                            }
                         }
                     }
                 }

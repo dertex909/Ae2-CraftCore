@@ -1,5 +1,6 @@
 package org.ae2craftcore.blocks.blockentity;
 
+import it.unimi.dsi.fastutil.longs.LongArrayList;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.NonNullList;
@@ -16,6 +17,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.chunk.LevelChunk;
 import org.ae2craftcore.blocks.block.CryostatBlock;
 import org.ae2craftcore.blocks.menu.CryostatMenu;
 import org.ae2craftcore.items.DewarVesselItem;
@@ -26,12 +28,18 @@ import org.ae2craftcore.registry.annotations.RegisterBlockEntity;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
 import java.util.Objects;
 
 @RegisterBlockEntity(name = "cryostat", blocks = {CryostatBlock.class})
 public class CryostatBlockEntity extends BlockEntity implements MenuProvider {
     public static BlockEntityType<CryostatBlockEntity> TYPE;
+
+    private static final BlockPos[] INJECTOR_OFFSETS = {
+            new BlockPos(2, 0, 0),
+            new BlockPos(-2, 0, 0),
+            new BlockPos(0, 0, 2),
+            new BlockPos(0, 0, -2)
+    };
 
     private boolean structureValid = false;
     private boolean inventoriesValid = false;
@@ -40,7 +48,7 @@ public class CryostatBlockEntity extends BlockEntity implements MenuProvider {
     private int tickTimer = 0;
     private final NonNullList<ItemStack> items = NonNullList.withSize(4, ItemStack.EMPTY);
 
-    private final ArrayList<BlockPos> registeredComponents = new ArrayList<>();
+    private final LongArrayList registeredComponents = new LongArrayList();
 
     private final Container container = new Container() {
         @Override
@@ -143,12 +151,15 @@ public class CryostatBlockEntity extends BlockEntity implements MenuProvider {
     }
 
     public void onInjectorChanged(BlockPos injectorPos, int durability) {
-        var offset = injectorPos.subtract(this.worldPosition);
+        int dx = injectorPos.getX() - this.worldPosition.getX();
+        int dy = injectorPos.getY() - this.worldPosition.getY();
+        int dz = injectorPos.getZ() - this.worldPosition.getZ();
+
         int index = -1;
-        if (offset.getX() == 2 && offset.getY() == 0 && offset.getZ() == 0) index = 0;
-        else if (offset.getX() == -2 && offset.getY() == 0 && offset.getZ() == 0) index = 1;
-        else if (offset.getX() == 0 && offset.getY() == 0 && offset.getZ() == 2) index = 2;
-        else if (offset.getX() == 0 && offset.getY() == 0 && offset.getZ() == -2) index = 3;
+        if (dx == 2 && dy == 0 && dz == 0) index = 0;
+        else if (dx == -2 && dy == 0 && dz == 0) index = 1;
+        else if (dx == 0 && dy == 0 && dz == 2) index = 2;
+        else if (dx == 0 && dy == 0 && dz == -2) index = 3;
 
         if (index != -1 && this.picDurabilities[index] != durability) {
             this.picDurabilities[index] = durability;
@@ -160,9 +171,27 @@ public class CryostatBlockEntity extends BlockEntity implements MenuProvider {
     public void pushStatesToComponents() {
         if (this.level == null || this.level.isClientSide) return;
 
-        for (var pos : this.registeredComponents) {
-            if (this.level.isLoaded(pos)) {
-                var be = this.level.getBlockEntity(pos);
+        int lastChunkX = Integer.MIN_VALUE;
+        int lastChunkZ = Integer.MIN_VALUE;
+        LevelChunk lastChunk = null;
+
+        var tempPos = new BlockPos.MutableBlockPos();
+
+        for (int i = 0; i < this.registeredComponents.size(); i++) {
+            long packedPos = this.registeredComponents.getLong(i);
+            tempPos.set(packedPos);
+
+            int chunkX = tempPos.getX() >> 4;
+            int chunkZ = tempPos.getZ() >> 4;
+
+            if (lastChunk == null || lastChunkX != chunkX || lastChunkZ != chunkZ) {
+                lastChunkX = chunkX;
+                lastChunkZ = chunkZ;
+                lastChunk = this.level.getChunkSource().getChunk(chunkX, chunkZ, false) instanceof LevelChunk c ? c : null;
+            }
+
+            if (lastChunk != null) {
+                var be = lastChunk.getBlockEntity(tempPos);
                 if (be instanceof IMultiblockComponent component) {
                     component.updateMultiblockState(this, this.structureValid);
                 }
@@ -186,14 +215,35 @@ public class CryostatBlockEntity extends BlockEntity implements MenuProvider {
         this.registeredComponents.clear();
         boolean isMePowered = false;
 
+        int originX = this.worldPosition.getX();
+        int originY = this.worldPosition.getY();
+        int originZ = this.worldPosition.getZ();
+
+        int lastChunkX = Integer.MIN_VALUE;
+        int lastChunkZ = Integer.MIN_VALUE;
+        LevelChunk lastChunk = null;
+
+        var currentPos = new BlockPos.MutableBlockPos();
+
         for (int x = -4; x <= 4; x++) {
             for (int y = -4; y <= 4; y++) {
                 for (int z = -4; z <= 4; z++) {
                     if (x == 0 && y == 0 && z == 0) continue;
-                    var currentPos = this.worldPosition.offset(x, y, z);
-                    if (this.level.isLoaded(currentPos)) {
-                        var be = this.level.getBlockEntity(currentPos);
-                        if (be instanceof IMultiblockComponent) this.registeredComponents.add(currentPos);
+
+                    currentPos.set(originX + x, originY + y, originZ + z);
+
+                    int chunkX = currentPos.getX() >> 4;
+                    int chunkZ = currentPos.getZ() >> 4;
+
+                    if (lastChunk == null || lastChunkX != chunkX || lastChunkZ != chunkZ) {
+                        lastChunkX = chunkX;
+                        lastChunkZ = chunkZ;
+                        lastChunk = this.level.getChunkSource().getChunk(chunkX, chunkZ, false) instanceof LevelChunk c ? c : null;
+                    }
+
+                    if (lastChunk != null) {
+                        var be = lastChunk.getBlockEntity(currentPos);
+                        if (be instanceof IMultiblockComponent) this.registeredComponents.add(currentPos.asLong());
                         if (be instanceof OpticalInterfaceBlockEntity opt) if (opt.isPowered()) isMePowered = true;
                     }
                 }
@@ -201,17 +251,21 @@ public class CryostatBlockEntity extends BlockEntity implements MenuProvider {
         }
         this.mePowered = isMePowered;
 
-        BlockPos[] injectorOffsets = {
-                new BlockPos(2, 0, 0),
-                new BlockPos(-2, 0, 0),
-                new BlockPos(0, 0, 2),
-                new BlockPos(0, 0, -2)
-        };
         for (int i = 0; i < 4; i++) {
-            var injectorPos = this.worldPosition.offset(injectorOffsets[i]);
+            var offset = INJECTOR_OFFSETS[i];
+            currentPos.set(originX + offset.getX(), originY + offset.getY(), originZ + offset.getZ());
 
-            if (this.level.isLoaded(injectorPos)) {
-                var be = this.level.getBlockEntity(injectorPos);
+            int chunkX = currentPos.getX() >> 4;
+            int chunkZ = currentPos.getZ() >> 4;
+
+            if (lastChunk == null || lastChunkX != chunkX || lastChunkZ != chunkZ) {
+                lastChunkX = chunkX;
+                lastChunkZ = chunkZ;
+                lastChunk = this.level.getChunkSource().getChunk(chunkX, chunkZ, false) instanceof LevelChunk c ? c : null;
+            }
+
+            if (lastChunk != null) {
+                var be = lastChunk.getBlockEntity(currentPos);
                 if (be instanceof PicInjectorBlockEntity injector) {
                     var stack = injector.getItem(0);
                     if (!stack.isEmpty() && stack.is(org.ae2craftcore.items.BaseResources.PHOTONIC_INTEGRATED_CIRCUIT.get())) {

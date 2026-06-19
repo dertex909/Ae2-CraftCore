@@ -28,8 +28,10 @@ import static org.ae2craftcore.items.BaseResources.PHOTONIC_INTEGRATED_CIRCUIT;
 public class PicInjectorBlockEntity extends BlockEntity implements WorldlyContainer, MenuProvider, IMultiblockComponent {
     public static BlockEntityType<PicInjectorBlockEntity> TYPE;
 
+    private static final int[] SLOTS = {0};
     private ItemStack itemStack = ItemStack.EMPTY;
-    private BlockPos linkedCorePos = null;
+    private long linkedCorePacked = 0L;
+    private boolean hasLinkedCore = false;
 
     public PicInjectorBlockEntity(BlockPos pos, BlockState state) {
         super(TYPE, pos, state);
@@ -38,17 +40,20 @@ public class PicInjectorBlockEntity extends BlockEntity implements WorldlyContai
     @Override
     public void updateMultiblockState(CryostatBlockEntity core, boolean isValid) {
         if (isValid && core != null) {
-            this.linkedCorePos = core.getBlockPos();
+            this.linkedCorePacked = core.getBlockPos().asLong();
+            this.hasLinkedCore = true;
         } else {
-            this.linkedCorePos = null;
+            this.linkedCorePacked = 0L;
+            this.hasLinkedCore = false;
         }
         this.setChanged();
     }
 
     private void notifyCore() {
-        if (this.level != null && !this.level.isClientSide && this.linkedCorePos != null) {
-            if (this.level.isLoaded(this.linkedCorePos)) {
-                var coreBe = this.level.getBlockEntity(this.linkedCorePos);
+        if (this.level != null && !this.level.isClientSide && this.hasLinkedCore) {
+            var targetPos = BlockPos.of(this.linkedCorePacked);
+            if (this.level.isLoaded(targetPos)) {
+                var coreBe = this.level.getBlockEntity(targetPos);
                 if (coreBe instanceof CryostatBlockEntity core) {
                     int durability = -1;
                     var stack = this.getItem(0);
@@ -130,7 +135,7 @@ public class PicInjectorBlockEntity extends BlockEntity implements WorldlyContai
 
     @Override
     public int @NotNull [] getSlotsForFace(@NotNull Direction side) {
-        return new int[]{0};
+        return SLOTS;
     }
 
     @Override
@@ -163,7 +168,7 @@ public class PicInjectorBlockEntity extends BlockEntity implements WorldlyContai
     protected void saveAdditional(@NotNull CompoundTag tag, HolderLookup.@NotNull Provider registries) {
         super.saveAdditional(tag, registries);
         if (!this.itemStack.isEmpty()) tag.put("ItemSlot", this.itemStack.save(registries));
-        if (this.linkedCorePos != null) tag.putLong("LinkedCorePos", this.linkedCorePos.asLong());
+        if (this.hasLinkedCore) tag.putLong("LinkedCorePos", this.linkedCorePacked);
     }
 
     @Override
@@ -175,9 +180,11 @@ public class PicInjectorBlockEntity extends BlockEntity implements WorldlyContai
             this.itemStack = ItemStack.EMPTY;
         }
         if (tag.contains("LinkedCorePos")) {
-            this.linkedCorePos = BlockPos.of(tag.getLong("LinkedCorePos"));
+            this.linkedCorePacked = tag.getLong("LinkedCorePos");
+            this.hasLinkedCore = true;
         } else {
-            this.linkedCorePos = null;
+            this.linkedCorePacked = 0L;
+            this.hasLinkedCore = false;
         }
     }
 }

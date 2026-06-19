@@ -16,7 +16,9 @@ public class OpticalInterfaceBlockEntity extends BlockEntity implements IMultibl
     public static BlockEntityType<OpticalInterfaceBlockEntity> TYPE;
 
     private boolean powered = false;
-    private BlockPos linkedCorePos = null;
+
+    private long linkedCorePacked = 0L;
+    private boolean hasLinkedCore = false;
 
     public OpticalInterfaceBlockEntity(BlockPos pos, BlockState state) {
         super(TYPE, pos, state);
@@ -25,9 +27,11 @@ public class OpticalInterfaceBlockEntity extends BlockEntity implements IMultibl
     @Override
     public void updateMultiblockState(CryostatBlockEntity core, boolean isValid) {
         if (isValid && core != null) {
-            this.linkedCorePos = core.getBlockPos();
+            this.linkedCorePacked = core.getBlockPos().asLong();
+            this.hasLinkedCore = true;
         } else {
-            this.linkedCorePos = null;
+            this.linkedCorePacked = 0L;
+            this.hasLinkedCore = false;
         }
         this.setChanged();
     }
@@ -45,9 +49,10 @@ public class OpticalInterfaceBlockEntity extends BlockEntity implements IMultibl
     }
 
     private void notifyCore() {
-        if (this.level != null && !this.level.isClientSide && this.linkedCorePos != null) {
-            if (this.level.isLoaded(this.linkedCorePos)) {
-                var coreBe = this.level.getBlockEntity(this.linkedCorePos);
+        if (this.level != null && !this.level.isClientSide && this.hasLinkedCore) {
+            var targetPos = BlockPos.of(this.linkedCorePacked);
+            if (this.level.isLoaded(targetPos)) {
+                var coreBe = this.level.getBlockEntity(targetPos);
                 if (coreBe instanceof CryostatBlockEntity core) core.onInterfacePowerChanged(this.powered);
             }
         }
@@ -57,7 +62,7 @@ public class OpticalInterfaceBlockEntity extends BlockEntity implements IMultibl
     protected void saveAdditional(@NotNull CompoundTag tag, HolderLookup.@NotNull Provider registries) {
         super.saveAdditional(tag, registries);
         tag.putBoolean("PoweredState", this.powered);
-        if (this.linkedCorePos != null) tag.putLong("LinkedCorePos", this.linkedCorePos.asLong());
+        if (this.hasLinkedCore) tag.putLong("LinkedCorePos", this.linkedCorePacked);
     }
 
     @Override
@@ -65,9 +70,11 @@ public class OpticalInterfaceBlockEntity extends BlockEntity implements IMultibl
         super.loadAdditional(tag, registries);
         this.powered = tag.getBoolean("PoweredState");
         if (tag.contains("LinkedCorePos")) {
-            this.linkedCorePos = BlockPos.of(tag.getLong("LinkedCorePos"));
+            this.linkedCorePacked = tag.getLong("LinkedCorePos");
+            this.hasLinkedCore = true;
         } else {
-            this.linkedCorePos = null;
+            this.linkedCorePacked = 0L;
+            this.hasLinkedCore = false;
         }
     }
 }

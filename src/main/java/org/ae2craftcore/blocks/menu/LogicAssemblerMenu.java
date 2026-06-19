@@ -19,6 +19,10 @@ import org.jetbrains.annotations.NotNull;
 public class LogicAssemblerMenu extends AbstractContainerMenu {
     private final Container container;
     private final ContainerData data;
+    private ItemStack lastCheckedSlot0 = ItemStack.EMPTY;
+    private ItemStack lastCheckedSlot1 = ItemStack.EMPTY;
+    private boolean lastResultSlot0 = false;
+    private boolean lastResultSlot1 = false;
 
     public static boolean canInstallUpgradeCard(Container inv, int slot, ItemStack stack) {
         int maxAllowed = Upgrades.getMaxInstallable(stack.getItem(), LogicAssemblerBlock.HOLDER.get());
@@ -60,14 +64,14 @@ public class LogicAssemblerMenu extends AbstractContainerMenu {
         this.addSlot(new Slot(container, 0, 39, 23) {
             @Override
             public boolean mayPlace(@NotNull ItemStack stack) {
-                return isValidInputForSlot(level, container, 0, stack);
+                return LogicAssemblerMenu.this.isValidInputForSlot(level, 0, stack);
             }
         });
 
         this.addSlot(new Slot(container, 1, 39, 55) {
             @Override
             public boolean mayPlace(@NotNull ItemStack stack) {
-                return isValidInputForSlot(level, container, 1, stack);
+                return LogicAssemblerMenu.this.isValidInputForSlot(level, 1, stack);
             }
         });
 
@@ -105,30 +109,63 @@ public class LogicAssemblerMenu extends AbstractContainerMenu {
         this.addDataSlots(data);
     }
 
-    private static boolean isValidInputForSlot(Level level, Container container, int slot, ItemStack stack) {
+    private boolean isValidInputForSlot(Level level, int slot, ItemStack stack) {
         if (level == null) return true;
 
-        var otherStack = container.getItem(slot ^ 1);
+        var otherStack = this.container.getItem(slot ^ 1);
+
+        if (slot == 0) {
+            if (ItemStack.isSameItemSameComponents(stack, this.lastCheckedSlot0)
+                    && ItemStack.isSameItemSameComponents(otherStack, this.lastCheckedSlot1)) {
+                return this.lastResultSlot0;
+            }
+        } else {
+            if (ItemStack.isSameItemSameComponents(stack, this.lastCheckedSlot1)
+                    && ItemStack.isSameItemSameComponents(otherStack, this.lastCheckedSlot0)) {
+                return this.lastResultSlot1;
+            }
+        }
+
         var recipes = level.getRecipeManager().getAllRecipesFor(ModRecipeTypes.LOGIC_ASSEMBLING_TYPE.get());
+        boolean result = false;
 
         if (slot == 0) {
             for (var holder : recipes) {
                 var recipe = holder.value();
                 if (recipe.getTop().test(stack)) {
-                    if (otherStack.isEmpty()) return true;
-                    if (recipe.getBottom().test(otherStack)) return true;
+                    if (otherStack.isEmpty()) {
+                        result = true;
+                        break;
+                    }
+                    if (recipe.getBottom().test(otherStack)) {
+                        result = true;
+                        break;
+                    }
                 }
             }
+            this.lastCheckedSlot0 = stack.copy();
+            this.lastCheckedSlot1 = otherStack.copy();
+            this.lastResultSlot0 = result;
         } else {
             for (var holder : recipes) {
                 var recipe = holder.value();
                 if (recipe.getBottom().test(stack)) {
-                    if (otherStack.isEmpty()) return true;
-                    if (recipe.getTop().test(otherStack)) return true;
+                    if (otherStack.isEmpty()) {
+                        result = true;
+                        break;
+                    }
+                    if (recipe.getTop().test(otherStack)) {
+                        result = true;
+                        break;
+                    }
                 }
             }
+            this.lastCheckedSlot1 = stack.copy();
+            this.lastCheckedSlot0 = otherStack.copy();
+            this.lastResultSlot1 = result;
         }
-        return false;
+
+        return result;
     }
 
     public int getProgress() {

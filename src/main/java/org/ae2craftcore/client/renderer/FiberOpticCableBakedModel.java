@@ -63,9 +63,12 @@ public class FiberOpticCableBakedModel implements IDynamicBakedModel {
         }
 
         var quads = cache[mask];
-        if (quads == null) {
-            quads = generateQuads(mask, rand);
-            cache[mask] = quads;
+        if (quads == null) synchronized (cache) {
+            quads = cache[mask];
+            if (quads == null) {
+                quads = generateQuads(mask, rand);
+                cache[mask] = quads;
+            }
         }
         return quads;
     }

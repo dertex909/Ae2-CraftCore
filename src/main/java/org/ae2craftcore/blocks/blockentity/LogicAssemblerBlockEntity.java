@@ -14,6 +14,7 @@ import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ContainerData;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
@@ -45,6 +46,11 @@ import static appeng.core.definitions.AEItems.SPEED_CARD;
 public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity implements WorldlyContainer, MenuProvider {
     public static BlockEntityType<LogicAssemblerBlockEntity> TYPE;
 
+    private static final int[] SLOTS_UP = {0};
+    private static final int[] SLOTS_DOWN = {1};
+    private static final int[] SLOTS_OUTPUT = {2};
+    private static final int[] SLOTS_EMPTY = {};
+
     private final AppEngInternalInventory inv = new AppEngInternalInventory(this, 7, 64, new IAEItemFilter() {
         @Override
         public boolean allowInsert(InternalInventory inventory, int slot, ItemStack stack) {
@@ -60,21 +66,41 @@ public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity imp
     private int maxProgress = 100;
     private int activeRecipeChance = 0;
 
+    private ItemStack lastCheckedTop = ItemStack.EMPTY;
+    private ItemStack lastCheckedBottom = ItemStack.EMPTY;
+    private RecipeHolder<LogicAssemblerRecipe> cachedRecipe = null;
+
     public int getPotentialOrActiveChance() {
         if (!this.rolledResult.isEmpty()) return this.activeRecipeChance;
         if (this.level != null) {
             var top = this.getItem(0);
             var bottom = this.getItem(1);
             if (!top.isEmpty() && !bottom.isEmpty()) {
-                var input = new LogicAssemblerRecipe.LogicAssemblerInput(top, bottom);
-                var optionalRecipe = this.level.getRecipeManager().getRecipeFor(ModRecipeTypes.LOGIC_ASSEMBLING_TYPE.get(), input, this.level);
-                if (optionalRecipe.isPresent()) {
-                    var recipe = optionalRecipe.get().value();
+                if (!ItemStack.isSameItemSameComponents(top, this.lastCheckedTop)
+                        || !ItemStack.isSameItemSameComponents(bottom, this.lastCheckedBottom)) {
+
+                    this.lastCheckedTop = top.copy();
+                    this.lastCheckedBottom = bottom.copy();
+
+                    var input = new LogicAssemblerRecipe.LogicAssemblerInput(top, bottom);
+                    this.cachedRecipe = this.level.getRecipeManager()
+                            .getRecipeFor(ModRecipeTypes.LOGIC_ASSEMBLING_TYPE.get(), input, this.level)
+                            .orElse(null);
+                }
+
+                if (this.cachedRecipe != null) {
+                    var recipe = this.cachedRecipe.value();
                     float recipeBonus = this.calculateRecipeBonus(recipe);
                     int speedCards = this.getSpeedCardsCount();
                     float penalty = speedCards * 0.01f;
                     float finalChance = Math.clamp(recipe.getChance() + recipeBonus - penalty, 0.0f, 1.0f);
                     return Math.round(finalChance * 100);
+                }
+            } else {
+                if (!this.lastCheckedTop.isEmpty() || !this.lastCheckedBottom.isEmpty()) {
+                    this.lastCheckedTop = ItemStack.EMPTY;
+                    this.lastCheckedBottom = ItemStack.EMPTY;
+                    this.cachedRecipe = null;
                 }
             }
         }
@@ -193,12 +219,19 @@ public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity imp
             var bottom = blockEntity.getItem(1);
 
             if (!top.isEmpty() && !bottom.isEmpty()) {
-                var input = new LogicAssemblerRecipe.LogicAssemblerInput(top, bottom);
-                var optionalRecipe = level.getRecipeManager().getRecipeFor(ModRecipeTypes.LOGIC_ASSEMBLING_TYPE.get(), input, level);
+                if (!ItemStack.isSameItemSameComponents(top, blockEntity.lastCheckedTop)
+                        || !ItemStack.isSameItemSameComponents(bottom, blockEntity.lastCheckedBottom)) {
 
-                if (optionalRecipe.isPresent()) {
-                    var holder = optionalRecipe.get();
-                    var recipe = holder.value();
+                    blockEntity.lastCheckedTop = top.copy();
+                    blockEntity.lastCheckedBottom = bottom.copy();
+
+                    var input = new LogicAssemblerRecipe.LogicAssemblerInput(top, bottom);
+                    blockEntity.cachedRecipe = level.getRecipeManager()
+                            .getRecipeFor(ModRecipeTypes.LOGIC_ASSEMBLING_TYPE.get(), input, level).orElse(null);
+                }
+
+                if (blockEntity.cachedRecipe != null) {
+                    var recipe = blockEntity.cachedRecipe.value();
                     var recipeResult = recipe.getResultItem(level.registryAccess());
 
                     top.shrink(1);
@@ -217,7 +250,16 @@ public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity imp
 
                     blockEntity.activeRecipeChance = Math.round(finalChance * 100);
                     blockEntity.progress = 0;
+                    blockEntity.lastCheckedTop = ItemStack.EMPTY;
+                    blockEntity.lastCheckedBottom = ItemStack.EMPTY;
+                    blockEntity.cachedRecipe = null;
                     blockEntity.setChanged();
+                }
+            } else {
+                if (!blockEntity.lastCheckedTop.isEmpty() || !blockEntity.lastCheckedBottom.isEmpty()) {
+                    blockEntity.lastCheckedTop = ItemStack.EMPTY;
+                    blockEntity.lastCheckedBottom = ItemStack.EMPTY;
+                    blockEntity.cachedRecipe = null;
                 }
             }
         }
@@ -352,17 +394,17 @@ public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity imp
     @Override
     public int @NotNull [] getSlotsForFace(@NotNull Direction side) {
         if (side == Direction.UP) {
-            return new int[]{0};
+            return SLOTS_UP;
         } else if (side == Direction.DOWN) {
-            return new int[]{1};
+            return SLOTS_DOWN;
         } else {
             try {
                 var facing = this.getBlockState().getValue(LogicAssemblerBlock.FACING);
-                if (side == facing) return new int[]{2};
+                if (side == facing) return SLOTS_OUTPUT;
             } catch (Exception ignored) {
             }
         }
-        return new int[0];
+        return SLOTS_EMPTY;
     }
 
     @Override

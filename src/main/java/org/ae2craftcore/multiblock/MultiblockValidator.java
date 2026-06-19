@@ -5,6 +5,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.chunk.LevelChunk;
 import org.ae2craftcore.blocks.block.*;
 import org.ae2craftcore.blocks.blockentity.CryostatBlockEntity;
 import org.ae2craftcore.blocks.blockentity.PicInjectorBlockEntity;
@@ -16,14 +17,42 @@ import java.util.Objects;
 
 public class MultiblockValidator {
 
+    private static final BlockPos[] INJECTOR_OFFSETS = {
+            new BlockPos(2, 0, 0),
+            new BlockPos(-2, 0, 0),
+            new BlockPos(0, 0, 2),
+            new BlockPos(0, 0, -2)
+    };
+
     public static void notifyCryostat(Level level, BlockPos pos) {
         if (level.isClientSide()) return;
+
+        int originX = pos.getX();
+        int originY = pos.getY();
+        int originZ = pos.getZ();
+
+        int lastChunkX = Integer.MIN_VALUE;
+        int lastChunkZ = Integer.MIN_VALUE;
+        LevelChunk lastChunk = null;
+
+        var tempPos = new BlockPos.MutableBlockPos();
+
         for (int x = -4; x <= 4; x++) {
             for (int y = -4; y <= 4; y++) {
                 for (int z = -4; z <= 4; z++) {
-                    var corePos = pos.offset(x, y, z);
-                    if (level.isLoaded(corePos)) {
-                        var be = level.getBlockEntity(corePos);
+                    tempPos.set(originX + x, originY + y, originZ + z);
+
+                    int chunkX = tempPos.getX() >> 4;
+                    int chunkZ = tempPos.getZ() >> 4;
+
+                    if (lastChunk == null || lastChunkX != chunkX || lastChunkZ != chunkZ) {
+                        lastChunkX = chunkX;
+                        lastChunkZ = chunkZ;
+                        lastChunk = level.getChunkSource().getChunk(chunkX, chunkZ, false) instanceof LevelChunk c ? c : null;
+                    }
+
+                    if (lastChunk != null) {
+                        var be = lastChunk.getBlockEntity(tempPos);
                         if (be instanceof CryostatBlockEntity cryo) {
                             cryo.runStructureScanAndUpdates();
                             return;
@@ -38,16 +67,39 @@ public class MultiblockValidator {
     }
 
     public static ValidationResult validateStructure(Level level, BlockPos center) {
+        int originX = center.getX();
+        int originY = center.getY();
+        int originZ = center.getZ();
+
+        int lastChunkX = Integer.MIN_VALUE;
+        int lastChunkZ = Integer.MIN_VALUE;
+        LevelChunk lastChunk = null;
+
+        var tempPos = new BlockPos.MutableBlockPos();
+
         for (int dx = -8; dx <= 8; dx++) {
             for (int dy = -8; dy <= 8; dy++) {
                 for (int dz = -8; dz <= 8; dz++) {
                     if (dx == 0 && dy == 0 && dz == 0) continue;
-                    var otherPos = center.offset(dx, dy, dz);
-                    var otherState = level.getBlockState(otherPos);
-                    if (otherState.getBlock() == CryostatBlock.HOLDER.get()) {
-                        var be = level.getBlockEntity(otherPos);
-                        if (be instanceof CryostatBlockEntity otherCore) if (otherCore.isStructureValid()) {
-                            return new ValidationResult(false, "Overlap with another valid Cryostat core", otherPos, new BlockPos(dx, dy, dz));
+
+                    tempPos.set(originX + dx, originY + dy, originZ + dz);
+
+                    int chunkX = tempPos.getX() >> 4;
+                    int chunkZ = tempPos.getZ() >> 4;
+
+                    if (lastChunk == null || lastChunkX != chunkX || lastChunkZ != chunkZ) {
+                        lastChunkX = chunkX;
+                        lastChunkZ = chunkZ;
+                        lastChunk = level.getChunkSource().getChunk(chunkX, chunkZ, false) instanceof LevelChunk c ? c : null;
+                    }
+
+                    if (lastChunk != null) {
+                        var otherState = lastChunk.getBlockState(tempPos);
+                        if (otherState.getBlock() == CryostatBlock.HOLDER.get()) {
+                            var be = lastChunk.getBlockEntity(tempPos);
+                            if (be instanceof CryostatBlockEntity otherCore) if (otherCore.isStructureValid()) {
+                                return new ValidationResult(false, "Overlap with another valid Cryostat core", tempPos.immutable(), new BlockPos(dx, dy, dz));
+                            }
                         }
                     }
                 }
@@ -62,38 +114,53 @@ public class MultiblockValidator {
                 for (int z = -4; z <= 4; z++) {
                     if (x == 0 && y == 0 && z == 0) continue;
                     int dist = Math.max(Math.abs(x), Math.max(Math.abs(y), Math.abs(z)));
-                    var currentPos = center.offset(x, y, z);
-                    var state = level.getBlockState(currentPos);
-                    var block = state.getBlock();
 
-                    if (block == OpticalInterfaceBlock.HOLDER.get()) {
-                        opticalInterfaceCount++;
-                        if (opticalInterfaceCount > 1) {
-                            return new ValidationResult(false, "Maximum 1 Optical Interface is allowed", currentPos, new BlockPos(x, y, z));
-                        }
-                        if (!isSideCasingFace(x, y, z)) {
-                            return new ValidationResult(false, "Optical Interface can only be placed on side casing faces (not top, bottom, or edges)", currentPos, new BlockPos(x, y, z));
-                        }
-                        var expectedFacing = getOutwardFacing(x, z);
-                        if (state.getValue(OpticalInterfaceBlock.FACING) != expectedFacing) {
-                            return new ValidationResult(false, "Optical Interface must face outwards", currentPos, new BlockPos(x, y, z));
-                        }
-                    } else if (block == MultiblockMonitorBlock.HOLDER.get()) {
-                        monitorCount++;
-                        if (monitorCount > 1) {
-                            return new ValidationResult(false, "Maximum 1 Multiblock Monitor is allowed", currentPos, new BlockPos(x, y, z));
-                        }
-                        if (!isSideCasingFace(x, y, z)) {
-                            return new ValidationResult(false, "Multiblock Monitor can only be placed on side casing faces (not top, bottom, or edges)", currentPos, new BlockPos(x, y, z));
-                        }
-                        var expectedFacing = getOutwardFacing(x, z);
-                        if (state.getValue(MultiblockMonitorBlock.FACING) != expectedFacing) {
-                            return new ValidationResult(false, "Multiblock Monitor must face outwards", currentPos, new BlockPos(x, y, z));
-                        }
+                    tempPos.set(originX + x, originY + y, originZ + z);
+
+                    int chunkX = tempPos.getX() >> 4;
+                    int chunkZ = tempPos.getZ() >> 4;
+
+                    if (lastChunk == null || lastChunkX != chunkX || lastChunkZ != chunkZ) {
+                        lastChunkX = chunkX;
+                        lastChunkZ = chunkZ;
+                        lastChunk = level.getChunkSource().getChunk(chunkX, chunkZ, false) instanceof LevelChunk c ? c : null;
                     }
 
-                    var res = validatePosition(x, y, z, dist, state, currentPos);
-                    if (!res.isValid()) return res;
+                    if (lastChunk != null) {
+                        var state = lastChunk.getBlockState(tempPos);
+                        var block = state.getBlock();
+
+                        if (block == OpticalInterfaceBlock.HOLDER.get()) {
+                            opticalInterfaceCount++;
+                            if (opticalInterfaceCount > 1) {
+                                return new ValidationResult(false, "Maximum 1 Optical Interface is allowed", tempPos.immutable(), new BlockPos(x, y, z));
+                            }
+                            if (!isSideCasingFace(x, y, z)) {
+                                return new ValidationResult(false, "Optical Interface can only be placed on side casing faces (not top, bottom, or edges)", tempPos.immutable(), new BlockPos(x, y, z));
+                            }
+                            var expectedFacing = getOutwardFacing(x, z);
+                            if (state.getValue(OpticalInterfaceBlock.FACING) != expectedFacing) {
+                                return new ValidationResult(false, "Optical Interface must face outwards", tempPos.immutable(), new BlockPos(x, y, z));
+                            }
+                        } else if (block == MultiblockMonitorBlock.HOLDER.get()) {
+                            monitorCount++;
+                            if (monitorCount > 1) {
+                                return new ValidationResult(false, "Maximum 1 Multiblock Monitor is allowed", tempPos.immutable(), new BlockPos(x, y, z));
+                            }
+                            if (!isSideCasingFace(x, y, z)) {
+                                return new ValidationResult(false, "Multiblock Monitor can only be placed on side casing faces (not top, bottom, or edges)", tempPos.immutable(), new BlockPos(x, y, z));
+                            }
+                            var expectedFacing = getOutwardFacing(x, z);
+                            if (state.getValue(MultiblockMonitorBlock.FACING) != expectedFacing) {
+                                return new ValidationResult(false, "Multiblock Monitor must face outwards", tempPos.immutable(), new BlockPos(x, y, z));
+                            }
+                        }
+
+                        var res = validatePosition(x, y, z, dist, state, tempPos);
+                        if (!res.isValid()) return res;
+                    } else {
+                        return new ValidationResult(false, "Structure chunk is not loaded", tempPos.immutable(), new BlockPos(x, y, z));
+                    }
                 }
             }
         }
@@ -117,24 +184,24 @@ public class MultiblockValidator {
             return new ValidationResult(false, "Cryostat Block Entity not found", center, BlockPos.ZERO);
         }
 
-        BlockPos[] injectorOffsets = {
-                new BlockPos(2, 0, 0),
-                new BlockPos(-2, 0, 0),
-                new BlockPos(0, 0, 2),
-                new BlockPos(0, 0, -2)
-        };
-        for (var offset : injectorOffsets) {
-            var injectorPos = center.offset(offset);
-            var state = level.getBlockState(injectorPos);
+        int originX = center.getX();
+        int originY = center.getY();
+        int originZ = center.getZ();
+
+        var tempPos = new BlockPos.MutableBlockPos();
+
+        for (var offset : INJECTOR_OFFSETS) {
+            tempPos.set(originX + offset.getX(), originY + offset.getY(), originZ + offset.getZ());
+            var state = level.getBlockState(tempPos);
             if (state.is(PicInjectorBlock.HOLDER.get())) {
-                var be = level.getBlockEntity(injectorPos);
+                var be = level.getBlockEntity(tempPos);
                 if (be instanceof PicInjectorBlockEntity injectorBE) {
                     var picStack = injectorBE.getItem(0);
                     if (picStack.isEmpty() || !picStack.is(BaseResources.PHOTONIC_INTEGRATED_CIRCUIT.get())) {
-                        return new ValidationResult(false, "PIC Injector must contain a Photonic Integrated Circuit", injectorPos, offset);
+                        return new ValidationResult(false, "PIC Injector must contain a Photonic Integrated Circuit", tempPos.immutable(), offset);
                     }
                     if (picStack.getDamageValue() >= picStack.getMaxDamage()) {
-                        return new ValidationResult(false, "Photonic Integrated Circuit in PIC Injector has 0 durability", injectorPos, offset);
+                        return new ValidationResult(false, "Photonic Integrated Circuit in PIC Injector has 0 durability", tempPos.immutable(), offset);
                     }
                 }
             }
@@ -143,8 +210,7 @@ public class MultiblockValidator {
         return new ValidationResult(true, "Success", null, null);
     }
 
-    private static ValidationResult validatePosition(int x, int y, int z, int dist, BlockState state, BlockPos currentPos) {
-        var relPos = new BlockPos(x, y, z);
+    private static ValidationResult validatePosition(int x, int y, int z, int dist, BlockState state, BlockPos.MutableBlockPos currentPos) {
         var block = state.getBlock();
 
         switch (dist) {
@@ -153,11 +219,11 @@ public class MultiblockValidator {
 
                 if (isFace) {
                     if (block != ShockAbsorberSpringBlock.HOLDER.get() && block != MuMetalBlock.HOLDER.get()) {
-                        return new ValidationResult(false, "Expected Shock Absorbing Spring or MuMetal Block", currentPos, relPos);
+                        return new ValidationResult(false, "Expected Shock Absorbing Spring or MuMetal Block", currentPos.immutable(), new BlockPos(x, y, z));
                     }
                 } else {
                     if (block != MuMetalBlock.HOLDER.get()) {
-                        return new ValidationResult(false, "Expected MuMetal Block", currentPos, relPos);
+                        return new ValidationResult(false, "Expected MuMetal Block", currentPos.immutable(), new BlockPos(x, y, z));
                     }
                 }
             }
@@ -166,28 +232,28 @@ public class MultiblockValidator {
 
                 if (isInjector) {
                     if (block != PicInjectorBlock.HOLDER.get() && block != MuMetalBlock.HOLDER.get()) {
-                        return new ValidationResult(false, "Expected PIC Injector or MuMetal Block", currentPos, relPos);
+                        return new ValidationResult(false, "Expected PIC Injector or MuMetal Block", currentPos.immutable(), new BlockPos(x, y, z));
                     }
                     if (block == PicInjectorBlock.HOLDER.get()) {
                         var expectedFacing = getOutwardFacing(x, z);
                         if (state.getValue(PicInjectorBlock.FACING) != expectedFacing) {
-                            return new ValidationResult(false, "Expected PIC Injector facing " + expectedFacing.getName() + " (towards vacuum layer)", currentPos, relPos);
+                            return new ValidationResult(false, "Expected PIC Injector facing " + expectedFacing.getName() + " (towards vacuum layer)", currentPos.immutable(), new BlockPos(x, y, z));
                         }
                     }
                 } else {
                     if (block != MuMetalBlock.HOLDER.get()) {
-                        return new ValidationResult(false, "Expected MuMetal Block", currentPos, relPos);
+                        return new ValidationResult(false, "Expected MuMetal Block", currentPos.immutable(), new BlockPos(x, y, z));
                     }
                 }
             }
             case 3 -> {
                 if (block != Blocks.AIR) {
-                    return new ValidationResult(false, "Expected Air (this layer must be empty)", currentPos, relPos);
+                    return new ValidationResult(false, "Expected Air (this layer must be empty)", currentPos.immutable(), new BlockPos(x, y, z));
                 }
             }
             case 4 -> {
                 if (block != VacuumCasingBlock.HOLDER.get() && block != MuMetalBlock.HOLDER.get() && block != OpticalInterfaceBlock.HOLDER.get() && block != MultiblockMonitorBlock.HOLDER.get()) {
-                    return new ValidationResult(false, "Expected Vacuum Casing, MuMetal, Optical Interface, or Multiblock Monitor Block", currentPos, relPos);
+                    return new ValidationResult(false, "Expected Vacuum Casing, MuMetal, Optical Interface, or Multiblock Monitor Block", currentPos.immutable(), new BlockPos(x, y, z));
                 }
             }
         }
