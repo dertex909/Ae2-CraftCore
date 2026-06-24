@@ -8,6 +8,7 @@ import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import org.ae2craftcore.Ae2craftcore;
 
+import java.util.List;
 import java.util.function.Supplier;
 
 public final class AttachmentRegistry {
@@ -22,8 +23,8 @@ public final class AttachmentRegistry {
             "vessel_state", builder -> builder.persistent(Codec.INT).networkSynchronized(ByteBufCodecs.INT)
     );
 
-    public static final Supplier<DataComponentType<String>> CELL_UUID = DATA_COMPONENTS.registerComponentType(
-            "cell_uuid", builder -> builder.persistent(Codec.STRING).networkSynchronized(ByteBufCodecs.STRING_UTF8)
+    public static final Supplier<DataComponentType<List<String>>> RECIPES = DATA_COMPONENTS.registerComponentType(
+            "recipes", builder -> builder.persistent(Codec.list(Codec.STRING)).networkSynchronized(ByteBufCodecs.STRING_UTF8.apply(ByteBufCodecs.list()))
     );
 
     public static final Supplier<DataComponentType<Integer>> RECIPE_COUNT = DATA_COMPONENTS.registerComponentType(

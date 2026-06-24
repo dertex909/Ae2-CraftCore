@@ -5,18 +5,20 @@ import appeng.api.storage.cells.ICellHandler;
 import appeng.api.storage.cells.ISaveProvider;
 import appeng.api.storage.cells.StorageCell;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
-import org.ae2craftcore.recipe.RecipeStorageCellData;
+import net.minecraft.world.item.crafting.RecipeType;
 import org.ae2craftcore.registry.annotations.RegisterItem;
 import org.ae2craftcore.registry.AttachmentRegistry;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
-import java.util.UUID;
 
 @RegisterItem(name = "recipe_storage_cell", stacksTo = 1)
 public class RecipeStorageCellItem extends Item {
@@ -25,54 +27,70 @@ public class RecipeStorageCellItem extends Item {
         super(properties);
     }
 
-    public static UUID getOrAndInitUuid(ItemStack stack) {
-        if (stack.has(AttachmentRegistry.CELL_UUID.get())) try {
-            String uuidStr = stack.get(AttachmentRegistry.CELL_UUID.get());
-            if (uuidStr != null) return UUID.fromString(uuidStr);
-        } catch (Exception ignored) {
-        }
-        var uuid = UUID.randomUUID();
-        stack.set(AttachmentRegistry.CELL_UUID.get(), uuid.toString());
-        return uuid;
-    }
-
     @Override
     public void appendHoverText(@NotNull ItemStack stack, @NotNull TooltipContext context, @NotNull List<Component> tooltipComponents, @NotNull TooltipFlag tooltipFlag) {
-        var uuid = getOrAndInitUuid(stack);
         int count = stack.getOrDefault(AttachmentRegistry.RECIPE_COUNT.get(), 0);
-        tooltipComponents.add(Component.literal("§7ID: §b" + uuid.toString().substring(0, 8) + "..."));
         tooltipComponents.add(Component.literal("§7Recipes: §e" + count + " §8/ §7128"));
-        tooltipComponents.add(Component.literal("§8Holds encoded machine recipes in World Saved Data."));
     }
 
     public static void addRecipeToCell(ItemStack stack, ServerLevel level, String recipeId) {
-        var uuid = getOrAndInitUuid(stack);
-        var data = RecipeStorageCellData.get(level);
-        data.addRecipe(uuid, recipeId);
-        stack.set(AttachmentRegistry.RECIPE_COUNT.get(), data.getRecipes(uuid).size());
+        var resLoc = ResourceLocation.tryParse(recipeId);
+        if (resLoc == null) return;
+
+        var recipeOpt = level.getRecipeManager().byKey(resLoc);
+        if (recipeOpt.isEmpty()) return;
+
+        var newType = recipeOpt.get().value().getType();
+        var recipes = new ArrayList<>(stack.getOrDefault(AttachmentRegistry.RECIPES.get(), List.of()));
+        if (recipes.contains(recipeId)) return;
+
+        if (recipes.size() >= 128) return;
+
+        var uniqueTypes = new HashSet<RecipeType<?>>();
+        for (var rid : recipes) {
+            var rLoc = ResourceLocation.tryParse(rid);
+            if (rLoc != null) {
+                var rOpt = level.getRecipeManager().byKey(rLoc);
+                rOpt.ifPresent(recipeHolder -> uniqueTypes.add(recipeHolder.value().getType()));
+            }
+        }
+
+        if (!uniqueTypes.contains(newType) && uniqueTypes.size() >= 16) return;
+
+        recipes.add(recipeId);
+        stack.set(AttachmentRegistry.RECIPES.get(), recipes);
+        stack.set(AttachmentRegistry.RECIPE_COUNT.get(), recipes.size());
     }
 
-    public static void removeRecipeFromCell(ItemStack stack, ServerLevel level, String recipeId) {
-        var uuid = getOrAndInitUuid(stack);
-        var data = RecipeStorageCellData.get(level);
-        data.removeRecipe(uuid, recipeId);
-        stack.set(AttachmentRegistry.RECIPE_COUNT.get(), data.getRecipes(uuid).size());
+    public static void removeRecipeFromCell(ItemStack stack, String recipeId) {
+        var recipes = new ArrayList<>(stack.getOrDefault(AttachmentRegistry.RECIPES.get(), List.of()));
+        if (recipes.remove(recipeId)) {
+            stack.set(AttachmentRegistry.RECIPES.get(), recipes);
+            stack.set(AttachmentRegistry.RECIPE_COUNT.get(), recipes.size());
+        }
     }
 
-    public static List<String> getRecipesFromCell(ItemStack stack, ServerLevel level) {
-        var uuid = getOrAndInitUuid(stack);
-        var data = RecipeStorageCellData.get(level);
-        return data.getRecipes(uuid);
+    public static List<String> getRecipesFromCell(ItemStack stack) {
+        return stack.getOrDefault(AttachmentRegistry.RECIPES.get(), List.of());
     }
 
     public static class RecipeStorageCell implements StorageCell {
+        private final ItemStack stack;
+
         public RecipeStorageCell(ItemStack stack) {
-            getOrAndInitUuid(stack);
+            this.stack = stack;
         }
 
         @Override
         public CellState getStatus() {
-            return CellState.EMPTY;
+            int count = stack.getOrDefault(AttachmentRegistry.RECIPE_COUNT.get(), 0);
+            if (count == 0) {
+                return CellState.EMPTY;
+            } else if (count >= 128) {
+                return CellState.TYPES_FULL;
+            } else {
+                return CellState.NOT_EMPTY;
+            }
         }
 
         @Override
