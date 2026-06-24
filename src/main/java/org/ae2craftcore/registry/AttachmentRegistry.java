@@ -31,6 +31,10 @@ public final class AttachmentRegistry {
             "recipe_count", builder -> builder.persistent(Codec.INT).networkSynchronized(ByteBufCodecs.INT)
     );
 
+    public static final Supplier<DataComponentType<Integer>> MACHINE_COUNT = DATA_COMPONENTS.registerComponentType(
+            "machine_count", builder -> builder.persistent(Codec.INT).networkSynchronized(ByteBufCodecs.INT)
+    );
+
     public static void register(IEventBus bus) {
         DATA_COMPONENTS.register(bus);
         Ae2craftcore.LOGGER.info("AutoAttachmentRegistry: Data component types registered");

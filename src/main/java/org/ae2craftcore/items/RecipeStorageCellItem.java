@@ -30,7 +30,9 @@ public class RecipeStorageCellItem extends Item {
     @Override
     public void appendHoverText(@NotNull ItemStack stack, @NotNull TooltipContext context, @NotNull List<Component> tooltipComponents, @NotNull TooltipFlag tooltipFlag) {
         int count = stack.getOrDefault(AttachmentRegistry.RECIPE_COUNT.get(), 0);
+        int machineCount = stack.getOrDefault(AttachmentRegistry.MACHINE_COUNT.get(), 0);
         tooltipComponents.add(Component.literal("§7Recipes: §e" + count + " §8/ §7128"));
+        tooltipComponents.add(Component.literal("§7Machines: §e" + machineCount + " §8/ §716"));
     }
 
     public static void addRecipeToCell(ItemStack stack, ServerLevel level, String recipeId) {
@@ -60,13 +62,25 @@ public class RecipeStorageCellItem extends Item {
         recipes.add(recipeId);
         stack.set(AttachmentRegistry.RECIPES.get(), recipes);
         stack.set(AttachmentRegistry.RECIPE_COUNT.get(), recipes.size());
+        uniqueTypes.add(newType);
+        stack.set(AttachmentRegistry.MACHINE_COUNT.get(), uniqueTypes.size());
     }
 
-    public static void removeRecipeFromCell(ItemStack stack, String recipeId) {
+    public static void removeRecipeFromCell(ItemStack stack, ServerLevel level, String recipeId) {
         var recipes = new ArrayList<>(stack.getOrDefault(AttachmentRegistry.RECIPES.get(), List.of()));
         if (recipes.remove(recipeId)) {
             stack.set(AttachmentRegistry.RECIPES.get(), recipes);
             stack.set(AttachmentRegistry.RECIPE_COUNT.get(), recipes.size());
+
+            var uniqueTypes = new HashSet<RecipeType<?>>();
+            for (var rid : recipes) {
+                var rLoc = ResourceLocation.tryParse(rid);
+                if (rLoc != null) {
+                    var rOpt = level.getRecipeManager().byKey(rLoc);
+                    rOpt.ifPresent(recipeHolder -> uniqueTypes.add(recipeHolder.value().getType()));
+                }
+            }
+            stack.set(AttachmentRegistry.MACHINE_COUNT.get(), uniqueTypes.size());
         }
     }
 
