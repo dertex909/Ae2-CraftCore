@@ -16,7 +16,7 @@ import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.neoforged.neoforge.registries.DeferredHolder;
-import org.ae2craftcore.registry.AutoAttachmentRegistry;
+import org.ae2craftcore.registry.AttachmentRegistry;
 import org.ae2craftcore.registry.annotations.RegisterItem;
 import org.jetbrains.annotations.NotNull;
 
@@ -48,11 +48,11 @@ public class DewarVesselItem extends Item implements IAEItemPowerStorage {
     }
 
     private int getVesselState(ItemStack stack) {
-        return Objects.requireNonNullElse(stack.get(AutoAttachmentRegistry.VESSEL_STATE.get()), 0);
+        return Objects.requireNonNullElse(stack.get(AttachmentRegistry.VESSEL_STATE.get()), 0);
     }
 
     private double getVesselEnergy(ItemStack stack) {
-        return Objects.requireNonNullElse(stack.get(AutoAttachmentRegistry.VESSEL_ENERGY.get()), 0.0);
+        return Objects.requireNonNullElse(stack.get(AttachmentRegistry.VESSEL_ENERGY.get()), 0.0);
     }
 
     @Override
@@ -71,8 +71,8 @@ public class DewarVesselItem extends Item implements IAEItemPowerStorage {
         if (helium4Block != Blocks.AIR && state.is(helium4Block)) {
             if (!level.isClientSide) {
                 level.setBlockAndUpdate(pos, Blocks.END_STONE.defaultBlockState());
-                stack.set(AutoAttachmentRegistry.VESSEL_STATE.get(), 1);
-                stack.set(AutoAttachmentRegistry.VESSEL_ENERGY.get(), 0.0);
+                stack.set(AttachmentRegistry.VESSEL_STATE.get(), 1);
+                stack.set(AttachmentRegistry.VESSEL_ENERGY.get(), 0.0);
                 level.playSound(null, pos, SoundEvents.BOTTLE_FILL, SoundSource.BLOCKS, 1.0F, 1.0F);
             }
             return InteractionResult.sidedSuccess(level.isClientSide);
@@ -102,10 +102,10 @@ public class DewarVesselItem extends Item implements IAEItemPowerStorage {
         if (mode == Actionable.MODULATE && injected > 0) {
             double next = current + injected;
             if (next >= MAX_POWER) {
-                stack.set(AutoAttachmentRegistry.VESSEL_STATE.get(), 2);
-                stack.set(AutoAttachmentRegistry.VESSEL_ENERGY.get(), 0.0);
+                stack.set(AttachmentRegistry.VESSEL_STATE.get(), 2);
+                stack.set(AttachmentRegistry.VESSEL_ENERGY.get(), 0.0);
             } else {
-                stack.set(AutoAttachmentRegistry.VESSEL_ENERGY.get(), next);
+                stack.set(AttachmentRegistry.VESSEL_ENERGY.get(), next);
             }
         }
         return amount - injected;

@@ -10,7 +10,7 @@ import org.ae2craftcore.Ae2craftcore;
 
 import java.util.function.Supplier;
 
-public final class AutoAttachmentRegistry {
+public final class AttachmentRegistry {
     public static final DeferredRegister.DataComponents DATA_COMPONENTS =
             DeferredRegister.createDataComponents(Registries.DATA_COMPONENT_TYPE, Ae2craftcore.MODID);
 
@@ -20,6 +20,14 @@ public final class AutoAttachmentRegistry {
 
     public static final Supplier<DataComponentType<Integer>> VESSEL_STATE = DATA_COMPONENTS.registerComponentType(
             "vessel_state", builder -> builder.persistent(Codec.INT).networkSynchronized(ByteBufCodecs.INT)
+    );
+
+    public static final Supplier<DataComponentType<String>> CELL_UUID = DATA_COMPONENTS.registerComponentType(
+            "cell_uuid", builder -> builder.persistent(Codec.STRING).networkSynchronized(ByteBufCodecs.STRING_UTF8)
+    );
+
+    public static final Supplier<DataComponentType<Integer>> RECIPE_COUNT = DATA_COMPONENTS.registerComponentType(
+            "recipe_count", builder -> builder.persistent(Codec.INT).networkSynchronized(ByteBufCodecs.INT)
     );
 
     public static void register(IEventBus bus) {

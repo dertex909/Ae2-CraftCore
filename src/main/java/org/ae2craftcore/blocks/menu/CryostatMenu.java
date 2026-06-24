@@ -8,7 +8,7 @@ import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import org.ae2craftcore.items.DewarVesselItem;
-import org.ae2craftcore.registry.AutoAttachmentRegistry;
+import org.ae2craftcore.registry.AttachmentRegistry;
 import org.ae2craftcore.registry.ModMenuTypes;
 import org.jetbrains.annotations.NotNull;
 
@@ -32,7 +32,7 @@ public class CryostatMenu extends AbstractContainerMenu {
             @Override
             public boolean mayPlace(@NotNull ItemStack stack) {
                 if (!stack.is(DewarVesselItem.DEWAR_VESSEL.get())) return false;
-                int state = Objects.requireNonNullElse(stack.get(AutoAttachmentRegistry.VESSEL_STATE.get()), 0);
+                int state = Objects.requireNonNullElse(stack.get(AttachmentRegistry.VESSEL_STATE.get()), 0);
                 return state == 2;
             }
         });
@@ -42,7 +42,7 @@ public class CryostatMenu extends AbstractContainerMenu {
                 @Override
                 public boolean mayPlace(@NotNull ItemStack stack) {
                     if (!stack.is(DewarVesselItem.DEWAR_VESSEL.get())) return false;
-                    int state = Objects.requireNonNullElse(stack.get(AutoAttachmentRegistry.VESSEL_STATE.get()), 0);
+                    int state = Objects.requireNonNullElse(stack.get(AttachmentRegistry.VESSEL_STATE.get()), 0);
                     return state == 1;
                 }
             });
@@ -71,7 +71,7 @@ public class CryostatMenu extends AbstractContainerMenu {
                 if (!this.moveItemStackTo(itemstack1, 4, 40, true)) return ItemStack.EMPTY;
             } else {
                 if (itemstack1.is(DewarVesselItem.DEWAR_VESSEL.get())) {
-                    int state = Objects.requireNonNullElse(itemstack1.get(AutoAttachmentRegistry.VESSEL_STATE.get()), 0);
+                    int state = Objects.requireNonNullElse(itemstack1.get(AttachmentRegistry.VESSEL_STATE.get()), 0);
                     if (state == 2) {
                         if (!this.moveItemStackTo(itemstack1, 0, 1, false)) {
                             return ItemStack.EMPTY;

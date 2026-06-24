@@ -23,7 +23,7 @@ import org.ae2craftcore.blocks.menu.CryostatMenu;
 import org.ae2craftcore.items.DewarVesselItem;
 import org.ae2craftcore.multiblock.IMultiblockComponent;
 import org.ae2craftcore.multiblock.MultiblockValidator;
-import org.ae2craftcore.registry.AutoAttachmentRegistry;
+import org.ae2craftcore.registry.AttachmentRegistry;
 import org.ae2craftcore.registry.annotations.RegisterBlockEntity;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -102,7 +102,7 @@ public class CryostatBlockEntity extends BlockEntity implements MenuProvider {
         @Override
         public boolean canPlaceItem(int slot, @NotNull ItemStack stack) {
             if (!stack.is(DewarVesselItem.DEWAR_VESSEL.get())) return false;
-            int state = Objects.requireNonNullElse(stack.get(AutoAttachmentRegistry.VESSEL_STATE.get()), 0);
+            int state = Objects.requireNonNullElse(stack.get(AttachmentRegistry.VESSEL_STATE.get()), 0);
             if (slot == 0) {
                 return state == 2;
             } else if (slot >= 1 && slot <= 3) {

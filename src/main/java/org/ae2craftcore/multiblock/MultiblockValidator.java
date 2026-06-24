@@ -11,7 +11,7 @@ import org.ae2craftcore.blocks.blockentity.CryostatBlockEntity;
 import org.ae2craftcore.blocks.blockentity.PicInjectorBlockEntity;
 import org.ae2craftcore.items.DewarVesselItem;
 import org.ae2craftcore.items.BaseResources;
-import org.ae2craftcore.registry.AutoAttachmentRegistry;
+import org.ae2craftcore.registry.AttachmentRegistry;
 
 import java.util.Objects;
 
@@ -171,12 +171,12 @@ public class MultiblockValidator {
         var cryoBE = level.getBlockEntity(center);
         if (cryoBE instanceof CryostatBlockEntity cryo) {
             var stack0 = cryo.getContainer().getItem(0);
-            if (stack0.isEmpty() || !stack0.is(DewarVesselItem.DEWAR_VESSEL.get()) || Objects.requireNonNullElse(stack0.get(AutoAttachmentRegistry.VESSEL_STATE.get()), 0) != 2) {
+            if (stack0.isEmpty() || !stack0.is(DewarVesselItem.DEWAR_VESSEL.get()) || Objects.requireNonNullElse(stack0.get(AttachmentRegistry.VESSEL_STATE.get()), 0) != 2) {
                 return new ValidationResult(false, "Cryostat slot 0 must contain a Dewar Vessel with Helium-3", center, BlockPos.ZERO);
             }
             for (int i = 1; i <= 3; i++) {
                 var stackI = cryo.getContainer().getItem(i);
-                if (stackI.isEmpty() || !stackI.is(DewarVesselItem.DEWAR_VESSEL.get()) || Objects.requireNonNullElse(stackI.get(AutoAttachmentRegistry.VESSEL_STATE.get()), 0) != 1) {
+                if (stackI.isEmpty() || !stackI.is(DewarVesselItem.DEWAR_VESSEL.get()) || Objects.requireNonNullElse(stackI.get(AttachmentRegistry.VESSEL_STATE.get()), 0) != 1) {
                     return new ValidationResult(false, "Cryostat slot " + i + " must contain a Dewar Vessel with Helium-4", center, BlockPos.ZERO);
                 }
             }
