@@ -1,0 +1,27 @@
+{
+  "variants": {
+    "facing=down": {
+      "model": "ae2craftcore:block/recipe_terminal",
+      "x": 90
+    },
+    "facing=up": {
+      "model": "ae2craftcore:block/recipe_terminal",
+      "x": 270
+    },
+    "facing=north": {
+      "model": "ae2craftcore:block/recipe_terminal"
+    },
+    "facing=south": {
+      "model": "ae2craftcore:block/recipe_terminal",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "ae2craftcore:block/recipe_terminal",
+      "y": 270
+    },
+    "facing=east": {
+      "model": "ae2craftcore:block/recipe_terminal",
+      "y": 90
+    }
+  }
+}

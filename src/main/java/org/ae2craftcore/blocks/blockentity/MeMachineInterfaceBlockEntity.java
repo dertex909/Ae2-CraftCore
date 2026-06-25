@@ -13,6 +13,7 @@ import appeng.util.inv.AppEngInternalInventory;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.MenuProvider;
@@ -114,7 +115,22 @@ public class MeMachineInterfaceBlockEntity extends AENetworkedPoweredBlockEntity
         var machinePos = this.worldPosition.relative(this.machineDirection);
         var machineState = this.level.getBlockState(machinePos);
         if (!machineState.isAir()) for (var pattern : allPatterns) {
-            if (this.canMachineProcessPattern(machineState, pattern, this.level)) filtered.add(pattern);
+            if (this.canMachineProcessPattern(machineState, pattern, this.level)) {
+                var definition = pattern.getDefinition();
+                boolean matchesGroup = true;
+                if (definition != null) {
+                    var stack = definition.toStack();
+                    var customData = stack.get(DataComponents.CUSTOM_DATA);
+                    if (customData != null) {
+                        var tag = customData.copyTag();
+                        if (tag.contains("RecipeMachineGroup")) {
+                            String patternGroup = tag.getString("RecipeMachineGroup");
+                            matchesGroup = patternGroup.equalsIgnoreCase(this.getInterfaceName());
+                        }
+                    }
+                }
+                if (matchesGroup) filtered.add(pattern);
+            }
         }
         return filtered;
     }

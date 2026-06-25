@@ -28,6 +28,9 @@ public class ModMenuTypes {
     public static final DeferredHolder<MenuType<?>, MenuType<MeMachineInterfaceMenu>> ME_MACHINE_INTERFACE = MENU_TYPES.register(
             "me_machine_interface", () -> IMenuTypeExtension.create(MeMachineInterfaceMenu::new));
 
+    public static final DeferredHolder<MenuType<?>, MenuType<RecipeTerminalMenu>> RECIPE_TERMINAL = MENU_TYPES.register(
+            "recipe_terminal", () -> IMenuTypeExtension.create(RecipeTerminalMenu::new));
+
     public static void register(IEventBus bus) {
         MENU_TYPES.register(bus);
         Ae2craftcore.LOGGER.info("Menu types registered");

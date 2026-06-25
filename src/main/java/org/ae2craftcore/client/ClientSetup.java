@@ -26,6 +26,7 @@ public class ClientSetup {
         event.register(ModMenuTypes.CRYOSTAT.get(), CryostatScreen::new);
         event.register(ModMenuTypes.MULTIBLOCK_MONITOR.get(), MultiblockMonitorScreen::new);
         event.register(ModMenuTypes.ME_MACHINE_INTERFACE.get(), MeMachineInterfaceScreen::new);
+        event.register(ModMenuTypes.RECIPE_TERMINAL.get(), RecipeTerminalScreen::new);
     }
 
     @SubscribeEvent

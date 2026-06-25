@@ -27,5 +27,6 @@
   "block.ae2craftcore.pic_injector": "PIC Injector",
   "block.ae2craftcore.multiblock_monitor": "Multiblock Monitor",
   "block.ae2craftcore.optical_interface": "Optical Interface",
-  "block.ae2craftcore.me_machine_interface": "ME Machine Interface"
+  "block.ae2craftcore.me_machine_interface": "ME Machine Interface",
+  "block.ae2craftcore.recipe_terminal": "Recipe Terminal"
 }
