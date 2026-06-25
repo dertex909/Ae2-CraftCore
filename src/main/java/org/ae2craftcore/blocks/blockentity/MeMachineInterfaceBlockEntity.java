@@ -14,6 +14,10 @@ import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.MenuProvider;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntityType;
@@ -21,6 +25,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.items.ItemHandlerHelper;
 import org.ae2craftcore.blocks.block.MeMachineInterfaceBlock;
+import org.ae2craftcore.blocks.menu.MeMachineInterfaceMenu;
 import org.ae2craftcore.items.RecipeStorageCellItem;
 import org.ae2craftcore.registry.annotations.RegisterBlockEntity;
 import org.jetbrains.annotations.NotNull;
@@ -31,7 +36,7 @@ import java.util.List;
 import java.util.Set;
 
 @RegisterBlockEntity(name = "me_machine_interface", blocks = {MeMachineInterfaceBlock.class})
-public class MeMachineInterfaceBlockEntity extends AENetworkedPoweredBlockEntity implements ICraftingProvider {
+public class MeMachineInterfaceBlockEntity extends AENetworkedPoweredBlockEntity implements ICraftingProvider, MenuProvider {
     public static BlockEntityType<MeMachineInterfaceBlockEntity> TYPE;
 
     private final AppEngInternalInventory inv = new AppEngInternalInventory(this, 0);
@@ -160,7 +165,33 @@ public class MeMachineInterfaceBlockEntity extends AENetworkedPoweredBlockEntity
 
     @Override
     public @NotNull Component getDisplayName() {
-        return Component.literal(this.customName);
+        return Component.translatable("block.ae2craftcore.me_machine_interface");
+    }
+
+    public String getInterfaceName() {
+        return this.customName;
+    }
+
+    public void setCustomName(String name) {
+        this.customName = name;
+        this.setChanged();
+        if (this.level != null && !this.level.isClientSide) {
+            var state = this.getBlockState();
+            this.level.sendBlockUpdated(this.worldPosition, state, state, 3);
+            ICraftingProvider.requestUpdate(this.getMainNode());
+        }
+    }
+
+    @Override
+    public AbstractContainerMenu createMenu(int containerId, @NotNull Inventory playerInventory, @NotNull Player player) {
+        return new MeMachineInterfaceMenu(containerId, this);
+    }
+
+    @Override
+    public @NotNull CompoundTag getUpdateTag(HolderLookup.@NotNull Provider registries) {
+        var tag = new CompoundTag();
+        this.saveAdditional(tag, registries);
+        return tag;
     }
 
     @Override

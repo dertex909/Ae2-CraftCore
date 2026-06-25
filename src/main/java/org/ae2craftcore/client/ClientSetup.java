@@ -25,6 +25,7 @@ public class ClientSetup {
         event.register(ModMenuTypes.PIC_INJECTOR.get(), PicInjectorScreen::new);
         event.register(ModMenuTypes.CRYOSTAT.get(), CryostatScreen::new);
         event.register(ModMenuTypes.MULTIBLOCK_MONITOR.get(), MultiblockMonitorScreen::new);
+        event.register(ModMenuTypes.ME_MACHINE_INTERFACE.get(), MeMachineInterfaceScreen::new);
     }
 
     @SubscribeEvent

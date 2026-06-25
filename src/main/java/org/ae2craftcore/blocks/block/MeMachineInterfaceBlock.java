@@ -2,12 +2,15 @@ package org.ae2craftcore.blocks.block;
 
 import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BaseEntityBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.BlockHitResult;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import org.ae2craftcore.blocks.blockentity.MeMachineInterfaceBlockEntity;
 import org.ae2craftcore.registry.annotations.RegisterBlock;
@@ -40,6 +43,16 @@ public class MeMachineInterfaceBlock extends BaseEntityBlock {
     @Override
     public BlockEntity newBlockEntity(@NotNull BlockPos pos, @NotNull BlockState state) {
         return new MeMachineInterfaceBlockEntity(pos, state);
+    }
+
+    @Override
+    protected @NotNull InteractionResult useWithoutItem(@NotNull BlockState state, @NotNull Level level, @NotNull BlockPos pos,
+                                                        @NotNull Player player, @NotNull BlockHitResult hitResult) {
+        if (!level.isClientSide) {
+            var blockEntity = level.getBlockEntity(pos);
+            if (blockEntity instanceof MeMachineInterfaceBlockEntity inter) player.openMenu(inter, pos);
+        }
+        return InteractionResult.sidedSuccess(level.isClientSide);
     }
 
     @Override
