@@ -1,6 +1,7 @@
 package org.ae2craftcore.blocks.blockentity;
 
 import appeng.api.crafting.IPatternDetails;
+import appeng.api.networking.GridFlags;
 import appeng.api.networking.crafting.ICraftingProvider;
 import appeng.api.stacks.AEItemKey;
 import appeng.api.stacks.KeyCounter;
@@ -46,7 +47,7 @@ public class MeMachineInterfaceBlockEntity extends AENetworkedPoweredBlockEntity
 
     public MeMachineInterfaceBlockEntity(BlockPos pos, BlockState state) {
         super(TYPE, pos, state);
-        this.getMainNode().setFlags().setIdlePowerUsage(10);
+        this.getMainNode().setFlags(GridFlags.REQUIRE_CHANNEL).setIdlePowerUsage(100);
         this.setInternalMaxPower(1000);
         this.setPowerSides(getGridConnectableSides(getOrientation()));
     }
@@ -68,12 +69,18 @@ public class MeMachineInterfaceBlockEntity extends AENetworkedPoweredBlockEntity
             }
         }
 
+        var oldDir = this.machineDirection;
         this.machineDirection = foundDir != null ? foundDir : Direction.NORTH;
         this.customName = foundName;
 
         this.setChanged();
         var state = this.getBlockState();
         this.level.sendBlockUpdated(this.worldPosition, state, state, 3);
+
+        if (oldDir != this.machineDirection) {
+            this.onGridConnectableSidesChanged();
+            this.setPowerSides(getGridConnectableSides(getOrientation()));
+        }
     }
 
     private boolean canMachineProcessPattern(BlockState machineState, IPatternDetails pattern, Level level) {
@@ -151,15 +158,7 @@ public class MeMachineInterfaceBlockEntity extends AENetworkedPoweredBlockEntity
     }
 
     @Override
-    public Set<Direction> getGridConnectableSides(BlockOrientation orientation) {
-        var dir = this.machineDirection != null ? this.machineDirection : Direction.NORTH;
-        return EnumSet.complementOf(EnumSet.of(dir));
-    }
-
-    @Override
     public AECableType getCableConnectionType(Direction dir) {
-        var targetDir = this.machineDirection != null ? this.machineDirection : Direction.NORTH;
-        if (dir == targetDir) return AECableType.NONE;
         return AECableType.COVERED;
     }
 
@@ -222,5 +221,6 @@ public class MeMachineInterfaceBlockEntity extends AENetworkedPoweredBlockEntity
         super.loadTag(tag, registries);
         this.machineDirection = Direction.values()[tag.getInt("MachineDirection")];
         this.customName = tag.getString("CustomName");
+        this.setPowerSides(getGridConnectableSides(getOrientation()));
     }
 }
