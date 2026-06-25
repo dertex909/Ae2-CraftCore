@@ -147,12 +147,14 @@ public class MeMachineInterfaceBlockEntity extends AENetworkedPoweredBlockEntity
 
     @Override
     public Set<Direction> getGridConnectableSides(BlockOrientation orientation) {
-        return EnumSet.complementOf(EnumSet.of(this.machineDirection));
+        var dir = this.machineDirection != null ? this.machineDirection : Direction.NORTH;
+        return EnumSet.complementOf(EnumSet.of(dir));
     }
 
     @Override
     public AECableType getCableConnectionType(Direction dir) {
-        if (dir == this.machineDirection) return AECableType.NONE;
+        var targetDir = this.machineDirection != null ? this.machineDirection : Direction.NORTH;
+        if (dir == targetDir) return AECableType.NONE;
         return AECableType.COVERED;
     }
 
