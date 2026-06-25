@@ -81,14 +81,6 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
         guiGraphics.fill(144, 84, 172, 102, saveBtnCol);
         guiGraphics.drawString(this.font, "Save", 147, 89, hasSelectedGroup ? 0xFFFFFF : 0x777777, false);
 
-        if (!this.menu.isQuantumValid()) {
-            guiGraphics.fill(80, 106, 177, 120, 0xFF5C1E1E);
-            guiGraphics.drawString(this.font, "QC OFFLINE", 102, 110, 0xFFFFAAAA, false);
-        } else {
-            guiGraphics.fill(80, 106, 177, 120, 0xFF1D5C1E);
-            guiGraphics.drawString(this.font, "QC ONLINE", 105, 110, 0xFFAAFFAA, false);
-        }
-
         var filtered = getFilteredRecipes();
         for (int i = 0; i < 5; i++) {
             int actualIndex = i + recipeScrollOffset;
@@ -311,11 +303,14 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
             if (group.equalsIgnoreCase(selected)) {
                 var outputStack = ItemStack.EMPTY;
                 try {
-                    var details = AEPatternDecoder.INSTANCE.decodePattern(AEItemKey.of(p), this.minecraft.level);
-                    if (details != null && !details.getOutputs().isEmpty()) {
-                        var firstOutput = details.getOutputs().getFirst();
-                        if (firstOutput.what() instanceof AEItemKey itemKey) {
-                            outputStack = itemKey.toStack((int) firstOutput.amount());
+                    var level = this.minecraft != null ? this.minecraft.level : null;
+                    if (level != null) {
+                        var details = AEPatternDecoder.INSTANCE.decodePattern(AEItemKey.of(p), level);
+                        if (details != null && !details.getOutputs().isEmpty()) {
+                            var firstOutput = details.getOutputs().getFirst();
+                            if (firstOutput.what() instanceof AEItemKey itemKey) {
+                                outputStack = itemKey.toStack((int) firstOutput.amount());
+                            }
                         }
                     }
                 } catch (Exception ignored) {
@@ -328,6 +323,7 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
 
     private List<GroupInfo> getGroups() {
         var map = new LinkedHashMap<String, Integer>();
+        for (var group : this.menu.getClientGroups()) if (!group.isEmpty()) map.put(group, 0);
         for (var p : this.menu.getClientRecipes()) {
             var customData = p.get(DataComponents.CUSTOM_DATA);
             String group = "";

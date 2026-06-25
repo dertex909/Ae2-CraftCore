@@ -34,7 +34,7 @@ import java.util.*;
 @RegisterItem(name = "recipe_storage_cell", stacksTo = 1)
 public class RecipeStorageCellItem extends Item {
 
-    public static final Map<IGrid, Set<RecipeStorageCell>> GRID_CELLS = Collections.synchronizedMap(new WeakHashMap<>());
+    public static final Set<RecipeStorageCell> ACTIVE_CELLS = Collections.synchronizedSet(Collections.newSetFromMap(new WeakHashMap<>()));
 
     public RecipeStorageCellItem(Properties properties) {
         super(properties);
@@ -76,9 +76,9 @@ public class RecipeStorageCellItem extends Item {
 
     public static List<ItemStack> getAllPatternsForGrid(IGrid grid) {
         var list = new ArrayList<ItemStack>();
-        synchronized (GRID_CELLS) {
-            var cells = GRID_CELLS.get(grid);
-            if (cells != null) for (var cell : cells) list.addAll(cell.getPatterns());
+        if (grid == null) return list;
+        synchronized (ACTIVE_CELLS) {
+            for (var cell : ACTIVE_CELLS) if (cell != null && cell.getGrid() == grid) list.addAll(cell.getPatterns());
         }
         return list;
     }
@@ -86,13 +86,11 @@ public class RecipeStorageCellItem extends Item {
     public static List<IPatternDetails> getPatternsForGrid(IGrid grid, Level level) {
         if (!isQuantumComputerValidForGrid(grid, level)) return List.of();
         var list = new ArrayList<IPatternDetails>();
-        synchronized (GRID_CELLS) {
-            for (var cells : GRID_CELLS.values()) {
-                for (var cell : cells) {
-                    if (cell.getGrid() == grid) for (var patternStack : cell.getPatterns()) {
-                        var details = AEPatternDecoder.INSTANCE.decodePattern(AEItemKey.of(patternStack), level);
-                        if (details != null) list.add(details);
-                    }
+        synchronized (ACTIVE_CELLS) {
+            for (var cell : ACTIVE_CELLS) {
+                if (cell != null && cell.getGrid() == grid) for (var patternStack : cell.getPatterns()) {
+                    var details = AEPatternDecoder.INSTANCE.decodePattern(AEItemKey.of(patternStack), level);
+                    if (details != null) list.add(details);
                 }
             }
         }
@@ -108,6 +106,7 @@ public class RecipeStorageCellItem extends Item {
             this.cellStack = cellStack;
             this.host = host;
             this.load();
+            ACTIVE_CELLS.add(this);
         }
 
         private void load() {
@@ -225,19 +224,7 @@ public class RecipeStorageCellItem extends Item {
 
         @Override
         public @Nullable StorageCell getCellInventory(ItemStack is, @Nullable ISaveProvider host) {
-            if (isCell(is)) {
-                var cell = new RecipeStorageCell(is, host);
-                if (host instanceof IActionHost actionHost) {
-                    var node = actionHost.getActionableNode();
-                    if (node != null) {
-                        var grid = node.getGrid();
-                        if (grid != null) {
-                            GRID_CELLS.computeIfAbsent(grid, g -> Collections.newSetFromMap(new WeakHashMap<>())).add(cell);
-                        }
-                    }
-                }
-                return cell;
-            }
+            if (isCell(is)) return new RecipeStorageCell(is, host);
             return null;
         }
     }

@@ -10,6 +10,7 @@ import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.network.PacketDistributor;
+import org.ae2craftcore.blocks.blockentity.MeMachineInterfaceBlockEntity;
 import org.ae2craftcore.network.packet.RecipeTerminalSyncPacket;
 import org.ae2craftcore.parts.RecipeTerminalPart;
 import org.ae2craftcore.registry.ModMenuTypes;
@@ -24,6 +25,7 @@ public class RecipeTerminalMenu extends AEBaseMenu {
     private final Container phantomContainer = new SimpleContainer(12);
     private String selectedGroup = "";
     private final List<ItemStack> clientRecipes = new ArrayList<>();
+    private final List<String> clientGroups = new ArrayList<>();
     private boolean firstSync = true;
 
     public RecipeTerminalMenu(int containerId, Inventory playerInventory, RecipeTerminalPart part) {
@@ -70,14 +72,7 @@ public class RecipeTerminalMenu extends AEBaseMenu {
         }
     }
 
-    private boolean quantumValid = false;
-
-    public boolean isQuantumValid() {
-        return this.quantumValid;
-    }
-
-    public void setQuantumValid(boolean valid) {
-        this.quantumValid = valid;
+    public void setQuantumValid() {
     }
 
     public void syncRecipesToClient() {
@@ -90,8 +85,19 @@ public class RecipeTerminalMenu extends AEBaseMenu {
         boolean isQuantumValid = RecipeStorageCellItem.isQuantumComputerValidForGrid(grid, this.part.getLevel());
         var list = RecipeStorageCellItem.getAllPatternsForGrid(grid);
 
+        var groups = new ArrayList<String>();
+        try {
+            var machines = grid.getMachines(MeMachineInterfaceBlockEntity.class);
+            if (machines != null) for (var machine : machines) {
+                String name = machine.getInterfaceName();
+                if (name != null && !name.isEmpty() && !groups.contains(name)) groups.add(name);
+            }
+        } catch (Exception e) {
+            org.ae2craftcore.Ae2craftcore.LOGGER.error("Failed to query ME Machine Interfaces on grid: ", e);
+        }
+
         if (this.getPlayer() instanceof ServerPlayer serverPlayer) {
-            PacketDistributor.sendToPlayer(serverPlayer, new RecipeTerminalSyncPacket(list, isQuantumValid));
+            PacketDistributor.sendToPlayer(serverPlayer, new RecipeTerminalSyncPacket(list, groups, isQuantumValid));
         }
     }
 
@@ -102,6 +108,15 @@ public class RecipeTerminalMenu extends AEBaseMenu {
 
     public List<ItemStack> getClientRecipes() {
         return this.clientRecipes;
+    }
+
+    public void setClientGroups(List<String> groups) {
+        this.clientGroups.clear();
+        this.clientGroups.addAll(groups);
+    }
+
+    public List<String> getClientGroups() {
+        return this.clientGroups;
     }
 
     public RecipeTerminalPart getPart() {
