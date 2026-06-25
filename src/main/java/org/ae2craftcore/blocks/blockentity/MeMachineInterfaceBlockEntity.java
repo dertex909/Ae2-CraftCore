@@ -32,9 +32,7 @@ import org.ae2craftcore.registry.annotations.RegisterBlockEntity;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
-import java.util.EnumSet;
 import java.util.List;
-import java.util.Set;
 
 @RegisterBlockEntity(name = "me_machine_interface", blocks = {MeMachineInterfaceBlock.class})
 public class MeMachineInterfaceBlockEntity extends AENetworkedPoweredBlockEntity implements ICraftingProvider, MenuProvider {
