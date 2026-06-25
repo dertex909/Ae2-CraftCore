@@ -13,13 +13,12 @@ import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.ae2craftcore.blocks.menu.RecipeTerminalMenu;
 import org.ae2craftcore.network.packet.RecipeTerminalDeleteRecipePacket;
-import org.ae2craftcore.network.packet.RecipeTerminalGroupSyncPacket;
 import org.ae2craftcore.network.packet.RecipeTerminalSavePacket;
 import org.ae2craftcore.network.packet.RecipeTerminalSelectGroupPacket;
-import org.ae2craftcore.registry.AttachmentRegistry;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 
 public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminalMenu> {
@@ -51,7 +50,7 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
         guiGraphics.drawString(this.font, Component.literal("Groups"), 6, 10, 0x999999, false);
         guiGraphics.drawString(this.font, Component.literal("Recipes"), 180, 10, 0x999999, false);
 
-        var groups = RecipeTerminalGroupSyncPacket.RecipeTerminalMenuExt.getGroups(this.menu);
+        var groups = getGroups();
         for (int i = 0; i < 5; i++) {
             int actualIndex = i + groupScrollOffset;
             if (actualIndex >= 0 && actualIndex < groups.size()) {
@@ -146,11 +145,6 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
             guiGraphics.fill(slotX, slotY, slotX + 16, slotY + 16, 0xFF14171A);
         }
 
-        int cellSlotX = x + 144;
-        int cellSlotY = y + 40;
-        guiGraphics.fill(cellSlotX - 1, cellSlotY - 1, cellSlotX + 17, cellSlotY + 17, 0xFFE1B80D);
-        guiGraphics.fill(cellSlotX, cellSlotY, cellSlotX + 16, cellSlotY + 16, 0xFF14171A);
-
         for (int row = 0; row < 3; row++) {
             for (int col = 0; col < 9; col++) {
                 int slotX = x + 48 + col * 18;
@@ -221,7 +215,7 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
 
         if (x >= 6 && x < 76 && y >= 22 && y < 102) {
             int index = (y - 22) / 16;
-            var groups = RecipeTerminalGroupSyncPacket.RecipeTerminalMenuExt.getGroups(this.menu);
+            var groups = getGroups();
             int actualIndex = index + groupScrollOffset;
             if (actualIndex >= 0 && actualIndex < groups.size()) {
                 String clickedGroup = groups.get(actualIndex).name();
@@ -244,7 +238,7 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
             return true;
         }
         if (x >= 42 && x < 76 && y >= 106 && y < 120) {
-            var groups = RecipeTerminalGroupSyncPacket.RecipeTerminalMenuExt.getGroups(this.menu);
+            var groups = getGroups();
             if (groupScrollOffset < groups.size() - 5) {
                 groupScrollOffset++;
                 if (this.minecraft != null) {
@@ -261,8 +255,8 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
             if (actualIndex >= 0 && actualIndex < filtered.size()) {
                 int startY = 22 + itemIndex * 18;
                 if (x >= 236 && x < 246 && y >= startY + 2 && y < startY + 12) {
-                    int originalIndex = filtered.get(actualIndex).originalIndex();
-                    PacketDistributor.sendToServer(new RecipeTerminalDeleteRecipePacket(originalIndex));
+                    var patternToDelete = filtered.get(actualIndex).patternStack();
+                    PacketDistributor.sendToServer(new RecipeTerminalDeleteRecipePacket(patternToDelete));
                     if (this.minecraft != null) {
                         this.minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0f));
                     }
@@ -296,15 +290,10 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
 
     private List<RecipeInfo> getFilteredRecipes() {
         var filtered = new ArrayList<RecipeInfo>();
-        var cellStack = this.menu.getSlot(12).getItem();
-        if (cellStack.isEmpty()) return filtered;
-
-        var currentList = cellStack.get(AttachmentRegistry.STORED_PATTERNS.get());
-        if (currentList == null) return filtered;
+        var currentList = this.menu.getClientRecipes();
 
         String selected = this.menu.getSelectedGroup();
-        for (int i = 0; i < currentList.size(); i++) {
-            var p = currentList.get(i);
+        for (var p : currentList) {
             var customData = p.get(DataComponents.CUSTOM_DATA);
             String group = "";
             if (customData != null) {
@@ -323,12 +312,31 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
                     }
                 } catch (Exception ignored) {
                 }
-                filtered.add(new RecipeInfo(i, p, outputStack));
+                filtered.add(new RecipeInfo(p, outputStack));
             }
         }
         return filtered;
     }
 
-    public record RecipeInfo(int originalIndex, ItemStack patternStack, ItemStack outputStack) {
+    private List<GroupInfo> getGroups() {
+        var map = new LinkedHashMap<String, Integer>();
+        for (var p : this.menu.getClientRecipes()) {
+            var customData = p.get(DataComponents.CUSTOM_DATA);
+            String group = "";
+            if (customData != null) {
+                var tag = customData.copyTag();
+                if (tag.contains("RecipeMachineGroup")) group = tag.getString("RecipeMachineGroup");
+            }
+            if (!group.isEmpty()) map.put(group, map.getOrDefault(group, 0) + 1);
+        }
+        var list = new ArrayList<GroupInfo>();
+        map.forEach((k, v) -> list.add(new GroupInfo(k, v)));
+        return list;
+    }
+
+    public record GroupInfo(String name, int count) {
+    }
+
+    public record RecipeInfo(ItemStack patternStack, ItemStack outputStack) {
     }
 }

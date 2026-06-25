@@ -128,7 +128,7 @@ public class RecipeStorageCellItem extends Item {
         public long insert(AEKey what, long amount, Actionable mode, IActionSource source) {
             if (!(what instanceof AEItemKey itemKey)) return amount;
             var stack = itemKey.toStack();
-            if (!stack.is(AEItems.BLANK_PATTERN.get())) return amount;
+            if (!stack.is(AEItems.PROCESSING_PATTERN.get())) return amount;
             if (this.patterns.size() >= 128) return amount;
 
             if (mode == Actionable.MODULATE) {

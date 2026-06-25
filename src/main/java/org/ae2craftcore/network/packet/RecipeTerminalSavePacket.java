@@ -8,28 +8,23 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import org.ae2craftcore.Ae2craftcore;
 import org.ae2craftcore.blocks.menu.RecipeTerminalMenu;
-import org.ae2craftcore.registry.AttachmentRegistry;
 import org.ae2craftcore.registry.annotations.NetworkPayload;
 import org.ae2craftcore.registry.annotations.PacketHandler;
 import org.ae2craftcore.registry.annotations.PayloadDirection;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.UUID;
 
 @NetworkPayload(direction = PayloadDirection.TO_SERVER)
 public record RecipeTerminalSavePacket(String groupName) implements CustomPacketPayload {
 
     public static final Type<RecipeTerminalSavePacket> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(Ae2craftcore.MODID, "recipe_terminal_save"));
 
+    @SuppressWarnings("unused")
     public static final StreamCodec<FriendlyByteBuf, RecipeTerminalSavePacket> STREAM_CODEC = StreamCodec.of(
             (buf, value) -> buf.writeUtf(value.groupName()),
             buf -> new RecipeTerminalSavePacket(buf.readUtf())
@@ -45,9 +40,6 @@ public record RecipeTerminalSavePacket(String groupName) implements CustomPacket
         context.enqueueWork(() -> {
             var player = context.player();
             if (player.containerMenu instanceof RecipeTerminalMenu menu) {
-                var cellStack = menu.getSlot(12).getItem();
-                if (cellStack.isEmpty()) return;
-
                 var inputsList = new ArrayList<GenericStack>();
                 for (int i = 0; i < 9; i++) {
                     var stack = menu.getPhantomContainer().getItem(i);
@@ -71,26 +63,21 @@ public record RecipeTerminalSavePacket(String groupName) implements CustomPacket
                     tag.putString("RecipeMachineGroup", packet.groupName());
                     encodedPattern.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
 
-                    var cellCustomData = cellStack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY);
-                    var cellTag = cellCustomData.copyTag();
-                    if (!cellTag.hasUUID("RecipeCellUUID")) {
-                        cellTag.putUUID("RecipeCellUUID", UUID.randomUUID());
-                        cellStack.set(DataComponents.CUSTOM_DATA, CustomData.of(cellTag));
-                    }
+                    var part = menu.getPart();
+                    if (part == null) return;
+                    var node = part.getGridNode();
+                    if (node == null) return;
+                    var grid = node.getGrid();
+                    if (grid == null) return;
+                    var storage = grid.getStorageService();
+                    if (storage == null) return;
+                    var inv = storage.getInventory();
+                    if (inv == null) return;
 
-                    var currentList = cellStack.get(AttachmentRegistry.STORED_PATTERNS.get());
-                    var newList = new ArrayList<ItemStack>();
-                    if (currentList != null) newList.addAll(currentList);
-                    newList.add(encodedPattern);
+                    var key = AEItemKey.of(encodedPattern);
+                    inv.insert(key, 1, appeng.api.config.Actionable.MODULATE, new appeng.me.helpers.PlayerSource(player));
 
-                    cellStack.set(AttachmentRegistry.STORED_PATTERNS.get(), List.copyOf(newList));
-                    cellStack.set(AttachmentRegistry.RECIPE_COUNT.get(), newList.size());
-
-                    var uniqueTypes = new HashSet<Item>();
-                    for (var p : newList) uniqueTypes.add(p.getItem());
-                    cellStack.set(AttachmentRegistry.MACHINE_COUNT.get(), uniqueTypes.size());
-
-                    menu.getSlot(12).setChanged();
+                    menu.syncRecipesToClient();
                 } catch (Exception e) {
                     Ae2craftcore.LOGGER.error("Failed to encode and save virtual recipe: ", e);
                 }

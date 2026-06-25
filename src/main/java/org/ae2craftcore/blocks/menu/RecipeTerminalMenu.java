@@ -1,34 +1,36 @@
 package org.ae2craftcore.blocks.menu;
 
-import net.minecraft.core.BlockPos;
-import net.minecraft.network.FriendlyByteBuf;
+import appeng.api.stacks.AEItemKey;
+import appeng.api.stacks.KeyCounter;
+import appeng.core.definitions.AEItems;
+import appeng.menu.AEBaseMenu;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Container;
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
-import org.ae2craftcore.blocks.blockentity.RecipeTerminalBlockEntity;
-import org.ae2craftcore.items.RecipeStorageCellItem;
+import net.neoforged.neoforge.network.PacketDistributor;
+import org.ae2craftcore.network.packet.RecipeTerminalSyncPacket;
+import org.ae2craftcore.parts.RecipeTerminalPart;
 import org.ae2craftcore.registry.ModMenuTypes;
 import org.jetbrains.annotations.NotNull;
 
-public class RecipeTerminalMenu extends AbstractContainerMenu {
-    private final RecipeTerminalBlockEntity blockEntity;
-    private final BlockPos blockPos;
+import java.util.ArrayList;
+import java.util.List;
+
+public class RecipeTerminalMenu extends AEBaseMenu {
+    private final RecipeTerminalPart part;
     private final Container phantomContainer = new SimpleContainer(12);
     private String selectedGroup = "";
+    private final List<ItemStack> clientRecipes = new ArrayList<>();
+    private boolean firstSync = true;
 
-    public RecipeTerminalMenu(int containerId, Inventory playerInventory, FriendlyByteBuf buf) {
-        this(containerId, playerInventory, (RecipeTerminalBlockEntity) playerInventory.player.level().getBlockEntity(buf.readBlockPos()));
-    }
-
-    public RecipeTerminalMenu(int containerId, Inventory playerInventory, RecipeTerminalBlockEntity blockEntity) {
-        super(ModMenuTypes.RECIPE_TERMINAL.get(), containerId);
-        this.blockEntity = blockEntity;
-        this.blockPos = blockEntity != null ? blockEntity.getBlockPos() : BlockPos.ZERO;
+    public RecipeTerminalMenu(int containerId, Inventory playerInventory, RecipeTerminalPart part) {
+        super(ModMenuTypes.RECIPE_TERMINAL.get(), containerId, playerInventory, part);
+        this.part = part;
 
         for (int row = 0; row < 3; row++) {
             for (int col = 0; col < 3; col++) {
@@ -50,22 +52,6 @@ public class RecipeTerminalMenu extends AbstractContainerMenu {
             });
         }
 
-        if (blockEntity != null) {
-            this.addSlot(new Slot(blockEntity.getCellInventory(), 0, 144, 40) {
-                @Override
-                public boolean mayPlace(@NotNull ItemStack stack) {
-                    return stack.getItem() instanceof RecipeStorageCellItem;
-                }
-
-                @Override
-                public int getMaxStackSize() {
-                    return 1;
-                }
-            });
-        } else {
-            this.addSlot(new Slot(new SimpleContainer(1), 0, 144, 40));
-        }
-
         for (int row = 0; row < 3; ++row) {
             for (int col = 0; col < 9; ++col) {
                 this.addSlot(new Slot(playerInventory, col + row * 9 + 9, 48 + col * 18, 138 + row * 18));
@@ -77,12 +63,52 @@ public class RecipeTerminalMenu extends AbstractContainerMenu {
         }
     }
 
-    public RecipeTerminalBlockEntity getBlockEntity() {
-        return this.blockEntity;
+    @Override
+    public void broadcastChanges() {
+        super.broadcastChanges();
+        if (this.firstSync) {
+            this.firstSync = false;
+            this.syncRecipesToClient();
+        }
     }
 
-    public BlockPos getBlockPos() {
-        return this.blockPos;
+    public void syncRecipesToClient() {
+        if (this.part == null) return;
+        var node = this.part.getGridNode();
+        if (node == null) return;
+        var grid = node.getGrid();
+        if (grid == null) return;
+        var storage = grid.getStorageService();
+        if (storage == null) return;
+        var inv = storage.getInventory();
+        if (inv == null) return;
+
+        var counts = new KeyCounter();
+        inv.getAvailableStacks(counts);
+        var list = new ArrayList<ItemStack>();
+        for (var entry : counts) {
+            if (entry.getKey() instanceof AEItemKey itemKey) {
+                var stack = itemKey.toStack((int) entry.getLongValue());
+                if (stack.is(AEItems.PROCESSING_PATTERN.get())) list.add(itemKey.toStack(1));
+            }
+        }
+
+        if (this.getPlayer() instanceof ServerPlayer serverPlayer) {
+            PacketDistributor.sendToPlayer(serverPlayer, new RecipeTerminalSyncPacket(list));
+        }
+    }
+
+    public void setClientRecipes(List<ItemStack> recipes) {
+        this.clientRecipes.clear();
+        this.clientRecipes.addAll(recipes);
+    }
+
+    public List<ItemStack> getClientRecipes() {
+        return this.clientRecipes;
+    }
+
+    public RecipeTerminalPart getPart() {
+        return this.part;
     }
 
     public Container getPhantomContainer() {
@@ -122,14 +148,12 @@ public class RecipeTerminalMenu extends AbstractContainerMenu {
             var itemstack1 = slot.getItem();
             itemstack = itemstack1.copy();
 
-            if (index == 12) {
-                if (!this.moveItemStackTo(itemstack1, 13, 49, true)) return ItemStack.EMPTY;
-            } else if (index >= 13 && index < 49) {
-                if (itemstack1.getItem() instanceof RecipeStorageCellItem) {
-                    if (!this.moveItemStackTo(itemstack1, 12, 13, false)) {
-                        return ItemStack.EMPTY;
-                    }
-                }
+            if (index >= 12 && index < 39) {
+                if (!this.moveItemStackTo(itemstack1, 39, 48, false)) return ItemStack.EMPTY;
+            } else if (index >= 39 && index < 48) {
+                if (!this.moveItemStackTo(itemstack1, 12, 39, false)) return ItemStack.EMPTY;
+            } else {
+                return ItemStack.EMPTY;
             }
 
             if (itemstack1.isEmpty()) {
@@ -143,11 +167,5 @@ public class RecipeTerminalMenu extends AbstractContainerMenu {
         }
 
         return itemstack;
-    }
-
-    @Override
-    public boolean stillValid(@NotNull Player player) {
-        if (this.blockEntity == null) return false;
-        return player.level().getBlockEntity(this.blockPos) == this.blockEntity;
     }
 }

@@ -1,6 +1,8 @@
 package org.ae2craftcore.registry;
 
+import appeng.menu.implementations.MenuTypeBuilder;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.inventory.MenuType;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.common.extensions.IMenuTypeExtension;
@@ -8,6 +10,7 @@ import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import org.ae2craftcore.Ae2craftcore;
 import org.ae2craftcore.blocks.menu.*;
+import org.ae2craftcore.parts.RecipeTerminalPart;
 
 public class ModMenuTypes {
 
@@ -29,7 +32,7 @@ public class ModMenuTypes {
             "me_machine_interface", () -> IMenuTypeExtension.create(MeMachineInterfaceMenu::new));
 
     public static final DeferredHolder<MenuType<?>, MenuType<RecipeTerminalMenu>> RECIPE_TERMINAL = MENU_TYPES.register(
-            "recipe_terminal", () -> IMenuTypeExtension.create(RecipeTerminalMenu::new));
+            "recipe_terminal", () -> MenuTypeBuilder.create(RecipeTerminalMenu::new, RecipeTerminalPart.class).buildUnregistered(ResourceLocation.fromNamespaceAndPath(Ae2craftcore.MODID, "recipe_terminal")));
 
     public static void register(IEventBus bus) {
         MENU_TYPES.register(bus);
