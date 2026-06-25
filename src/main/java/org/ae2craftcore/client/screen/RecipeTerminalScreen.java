@@ -81,6 +81,14 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
         guiGraphics.fill(144, 84, 172, 102, saveBtnCol);
         guiGraphics.drawString(this.font, "Save", 147, 89, hasSelectedGroup ? 0xFFFFFF : 0x777777, false);
 
+        if (!this.menu.isQuantumValid()) {
+            guiGraphics.fill(80, 106, 177, 120, 0xFF5C1E1E);
+            guiGraphics.drawString(this.font, "QC OFFLINE", 102, 110, 0xFFFFAAAA, false);
+        } else {
+            guiGraphics.fill(80, 106, 177, 120, 0xFF1D5C1E);
+            guiGraphics.drawString(this.font, "QC ONLINE", 105, 110, 0xFFAAFFAA, false);
+        }
+
         var filtered = getFilteredRecipes();
         for (int i = 0; i < 5; i++) {
             int actualIndex = i + recipeScrollOffset;

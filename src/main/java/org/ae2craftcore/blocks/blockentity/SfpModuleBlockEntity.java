@@ -62,6 +62,14 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity {
     private long lastOutputPacked = 0L;
     private boolean hasLastOutput = false;
 
+    public boolean hasActiveConnection() {
+        return this.hasLastOutput;
+    }
+
+    public BlockPos getConnectedInterfacePos() {
+        return this.hasLastOutput ? BlockPos.of(this.lastOutputPacked) : null;
+    }
+
     private static final ThreadLocal<LongOpenHashSet> VISITED_SET = ThreadLocal.withInitial(LongOpenHashSet::new);
     private static final ThreadLocal<BlockPos.MutableBlockPos> MUTABLE_POS = ThreadLocal.withInitial(BlockPos.MutableBlockPos::new);
 

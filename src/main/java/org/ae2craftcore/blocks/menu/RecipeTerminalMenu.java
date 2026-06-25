@@ -1,8 +1,5 @@
 package org.ae2craftcore.blocks.menu;
 
-import appeng.api.stacks.AEItemKey;
-import appeng.api.stacks.KeyCounter;
-import appeng.core.definitions.AEItems;
 import appeng.menu.AEBaseMenu;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Container;
@@ -16,6 +13,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import org.ae2craftcore.network.packet.RecipeTerminalSyncPacket;
 import org.ae2craftcore.parts.RecipeTerminalPart;
 import org.ae2craftcore.registry.ModMenuTypes;
+import org.ae2craftcore.items.RecipeStorageCellItem;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -72,29 +70,28 @@ public class RecipeTerminalMenu extends AEBaseMenu {
         }
     }
 
+    private boolean quantumValid = false;
+
+    public boolean isQuantumValid() {
+        return this.quantumValid;
+    }
+
+    public void setQuantumValid(boolean valid) {
+        this.quantumValid = valid;
+    }
+
     public void syncRecipesToClient() {
         if (this.part == null) return;
         var node = this.part.getGridNode();
         if (node == null) return;
         var grid = node.getGrid();
         if (grid == null) return;
-        var storage = grid.getStorageService();
-        if (storage == null) return;
-        var inv = storage.getInventory();
-        if (inv == null) return;
 
-        var counts = new KeyCounter();
-        inv.getAvailableStacks(counts);
-        var list = new ArrayList<ItemStack>();
-        for (var entry : counts) {
-            if (entry.getKey() instanceof AEItemKey itemKey) {
-                var stack = itemKey.toStack((int) entry.getLongValue());
-                if (stack.is(AEItems.PROCESSING_PATTERN.get())) list.add(itemKey.toStack(1));
-            }
-        }
+        boolean isQuantumValid = RecipeStorageCellItem.isQuantumComputerValidForGrid(grid, this.part.getLevel());
+        var list = RecipeStorageCellItem.getAllPatternsForGrid(grid);
 
         if (this.getPlayer() instanceof ServerPlayer serverPlayer) {
-            PacketDistributor.sendToPlayer(serverPlayer, new RecipeTerminalSyncPacket(list));
+            PacketDistributor.sendToPlayer(serverPlayer, new RecipeTerminalSyncPacket(list, isQuantumValid));
         }
     }
 

@@ -20,6 +20,14 @@ public class OpticalInterfaceBlockEntity extends BlockEntity implements IMultibl
     private long linkedCorePacked = 0L;
     private boolean hasLinkedCore = false;
 
+    public boolean hasLinkedCore() {
+        return this.hasLinkedCore;
+    }
+
+    public BlockPos getLinkedCorePos() {
+        return this.hasLinkedCore ? BlockPos.of(this.linkedCorePacked) : null;
+    }
+
     public OpticalInterfaceBlockEntity(BlockPos pos, BlockState state) {
         super(TYPE, pos, state);
     }
