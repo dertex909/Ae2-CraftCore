@@ -4,6 +4,7 @@ import com.mojang.serialization.Codec;
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.codec.ByteBufCodecs;
+import net.minecraft.world.item.ItemStack;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import org.ae2craftcore.Ae2craftcore;
@@ -23,16 +24,16 @@ public final class AttachmentRegistry {
             "vessel_state", builder -> builder.persistent(Codec.INT).networkSynchronized(ByteBufCodecs.INT)
     );
 
-    public static final Supplier<DataComponentType<List<String>>> RECIPES = DATA_COMPONENTS.registerComponentType(
-            "recipes", builder -> builder.persistent(Codec.list(Codec.STRING)).networkSynchronized(ByteBufCodecs.STRING_UTF8.apply(ByteBufCodecs.list()))
-    );
-
     public static final Supplier<DataComponentType<Integer>> RECIPE_COUNT = DATA_COMPONENTS.registerComponentType(
             "recipe_count", builder -> builder.persistent(Codec.INT).networkSynchronized(ByteBufCodecs.INT)
     );
 
     public static final Supplier<DataComponentType<Integer>> MACHINE_COUNT = DATA_COMPONENTS.registerComponentType(
             "machine_count", builder -> builder.persistent(Codec.INT).networkSynchronized(ByteBufCodecs.INT)
+    );
+
+    public static final Supplier<DataComponentType<List<ItemStack>>> STORED_PATTERNS = DATA_COMPONENTS.registerComponentType(
+            "stored_patterns", builder -> builder.persistent(ItemStack.CODEC.listOf()).networkSynchronized(ItemStack.LIST_STREAM_CODEC)
     );
 
     public static void register(IEventBus bus) {

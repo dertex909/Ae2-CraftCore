@@ -15,18 +15,11 @@ import appeng.api.stacks.KeyCounter;
 import appeng.api.crafting.IPatternDetails;
 import appeng.core.definitions.AEItems;
 import appeng.crafting.pattern.AEPatternDecoder;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.core.RegistryAccess;
-import net.minecraft.core.component.DataComponents;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
-import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.entity.BlockEntity;
 import org.ae2craftcore.registry.annotations.RegisterItem;
 import org.ae2craftcore.registry.AttachmentRegistry;
 import org.jetbrains.annotations.NotNull;
@@ -79,38 +72,12 @@ public class RecipeStorageCellItem extends Item {
 
         private void load() {
             this.patterns.clear();
-            var tag = cellStack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).getUnsafe();
-            if (tag.contains("StoredPatterns", 9)) {
-                var list = tag.getList("StoredPatterns", 10);
-                HolderLookup.Provider registries = null;
-                if (host instanceof BlockEntity b && b.getLevel() != null) registries = b.getLevel().registryAccess();
-
-                for (int i = 0; i < list.size(); i++) {
-                    var itemTag = list.getCompound(i);
-                    ItemStack patternStack;
-                    if (registries != null) {
-                        patternStack = ItemStack.parseOptional(registries, itemTag);
-                    } else {
-                        patternStack = ItemStack.parse(RegistryAccess.EMPTY, itemTag).orElse(ItemStack.EMPTY);
-                    }
-                    if (!patternStack.isEmpty()) this.patterns.add(patternStack);
-                }
-            }
+            var stored = cellStack.get(AttachmentRegistry.STORED_PATTERNS.get());
+            if (stored != null) this.patterns.addAll(stored);
         }
 
         private void save() {
-            var tag = cellStack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
-            var list = new ListTag();
-            HolderLookup.Provider registries = null;
-            if (host instanceof BlockEntity be && be.getLevel() != null) registries = be.getLevel().registryAccess();
-            for (var pattern : this.patterns) {
-                CompoundTag itemTag;
-                itemTag = (CompoundTag) pattern.save(Objects.requireNonNullElse(registries, RegistryAccess.EMPTY));
-                list.add(itemTag);
-            }
-            tag.put("StoredPatterns", list);
-            cellStack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
-
+            cellStack.set(AttachmentRegistry.STORED_PATTERNS.get(), List.copyOf(this.patterns));
             cellStack.set(AttachmentRegistry.RECIPE_COUNT.get(), this.patterns.size());
             var uniqueTypes = new HashSet<Item>();
             for (var p : this.patterns) uniqueTypes.add(p.getItem());
@@ -148,6 +115,8 @@ public class RecipeStorageCellItem extends Item {
 
         @Override
         public void persist() {
+            this.save();
+            if (host != null) host.saveChanges();
         }
 
         @Override
