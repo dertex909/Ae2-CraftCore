@@ -36,8 +36,8 @@ public class RecipeTerminalMenu extends AEBaseMenu {
     public static final int RECIPE_LIST_WIDTH = 158;
     public static final int RECIPE_LIST_HEIGHT = 108;
 
-    public static final int ENCODING_X = 178;
-    public static final int ENCODING_Y = 146;
+    public static final int ENCODING_X = 180;
+    public static final int ENCODING_Y = 156;
     public static final int ENCODING_WIDTH = 124;
     public static final int ENCODING_SLOT_X = ENCODING_X;
     public static final int ENCODING_SLOT_Y = ENCODING_Y;
@@ -47,7 +47,7 @@ public class RecipeTerminalMenu extends AEBaseMenu {
 
     public static final int PLAYER_INV_X = 8;
     public static final int PLAYER_INV_Y = 152;
-    public static final int HOTBAR_Y = 212;
+    public static final int HOTBAR_Y = 210;
 
     private final RecipeTerminalPart part;
     private final Container phantomContainer = new SimpleContainer(162);
@@ -82,7 +82,7 @@ public class RecipeTerminalMenu extends AEBaseMenu {
     private void addEncodingModeSlots() {
         for (int row = 0; row < 3; row++) {
             for (int col = 0; col < 3; col++) {
-                this.addPhantomSlot(EncodingMode.CRAFTING, col + row * 3, ENCODING_SLOT_X + 15 + col * 18, ENCODING_SLOT_Y + 5 + row * 18);
+                this.addPhantomSlot(EncodingMode.CRAFTING, col + row * 3, ENCODING_SLOT_X + 7 + col * 18, ENCODING_SLOT_Y + 7 + row * 18);
             }
         }
 
