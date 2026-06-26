@@ -3,6 +3,7 @@ package org.ae2craftcore.network.packet;
 import appeng.api.crafting.PatternDetailsHelper;
 import appeng.api.stacks.AEItemKey;
 import appeng.api.stacks.GenericStack;
+import appeng.me.helpers.PlayerSource;
 import appeng.parts.encoding.EncodingMode;
 import net.minecraft.core.NonNullList;
 import net.minecraft.core.component.DataComponents;
@@ -27,6 +28,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
+
+import static appeng.api.config.Actionable.MODULATE;
 
 @NetworkPayload(direction = PayloadDirection.TO_SERVER)
 public record RecipeTerminalSavePacket(String groupName, String modeName, String stonecuttingRecipeId)
@@ -75,7 +78,7 @@ public record RecipeTerminalSavePacket(String groupName, String modeName, String
                 if (inv == null) return;
 
                 var key = AEItemKey.of(encodedPattern);
-                inv.insert(key, 1, appeng.api.config.Actionable.MODULATE, new appeng.me.helpers.PlayerSource(player));
+                inv.insert(key, 1, MODULATE, new PlayerSource(player));
 
                 menu.syncRecipesToClient();
             } catch (Exception e) {
