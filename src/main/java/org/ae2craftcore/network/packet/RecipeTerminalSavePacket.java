@@ -140,7 +140,7 @@ public record RecipeTerminalSavePacket(String groupName, String modeName, String
 
     @Nullable
     private static ItemStack encodeProcessingPattern(RecipeTerminalMenu menu) {
-        var inputs = new GenericStack[9];
+        var inputs = new GenericStack[27];
         var hasInput = false;
         for (int i = 0; i < inputs.length; i++) {
             var stack = menu.getPhantomContainer().getItem(i);
@@ -149,9 +149,9 @@ public record RecipeTerminalSavePacket(String groupName, String modeName, String
         }
         if (!hasInput) return null;
 
-        var outputs = new GenericStack[3];
+        var outputs = new GenericStack[9];
         for (int i = 0; i < outputs.length; i++) {
-            outputs[i] = GenericStack.fromItemStack(menu.getPhantomContainer().getItem(9 + i));
+            outputs[i] = GenericStack.fromItemStack(menu.getPhantomContainer().getItem(27 + i));
         }
         if (outputs[0] == null) return null;
 

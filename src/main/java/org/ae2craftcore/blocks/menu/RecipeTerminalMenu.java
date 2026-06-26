@@ -12,6 +12,7 @@ import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.ae2craftcore.blocks.blockentity.MeMachineInterfaceBlockEntity;
+import org.ae2craftcore.mixin.SlotAccessor;
 import org.ae2craftcore.network.packet.RecipeTerminalSyncPacket;
 import org.ae2craftcore.parts.RecipeTerminalPart;
 import org.ae2craftcore.registry.ModMenuTypes;
@@ -49,8 +50,11 @@ public class RecipeTerminalMenu extends AEBaseMenu {
     public static final int HOTBAR_Y = 212;
 
     private final RecipeTerminalPart part;
-    private final Container phantomContainer = new SimpleContainer(12);
+    private final Container phantomContainer = new SimpleContainer(36);
     private final List<RecipePhantomSlot> encodingSlots = new ArrayList<>();
+    private final List<Slot> processingInputSlots = new ArrayList<>();
+    private final List<Slot> processingOutputSlots = new ArrayList<>();
+    private int processingScrollOffset = 0;
     private String selectedGroup = "";
     private EncodingMode encodingMode = EncodingMode.PROCESSING;
     private final List<ItemStack> clientRecipes = new ArrayList<>();
@@ -82,13 +86,19 @@ public class RecipeTerminalMenu extends AEBaseMenu {
             }
         }
 
-        for (int row = 0; row < 3; row++) {
+        for (int row = 0; row < 9; row++) {
             for (int col = 0; col < 3; col++) {
-                this.addPhantomSlot(EncodingMode.PROCESSING, col + row * 3, ENCODING_SLOT_X + 15 + col * 18, ENCODING_SLOT_Y + 7 + row * 18);
+                var slot = new RecipePhantomSlot(this.phantomContainer, col + row * 3, ENCODING_SLOT_X + 15 + col * 18, ENCODING_SLOT_Y + 7 + row * 18, EncodingMode.PROCESSING);
+                this.encodingSlots.add(slot);
+                var added = this.addSlot(slot);
+                this.processingInputSlots.add(added);
             }
         }
-        for (int i = 0; i < 3; i++) {
-            this.addPhantomSlot(EncodingMode.PROCESSING, 9 + i, ENCODING_SLOT_X + 100, ENCODING_SLOT_Y + 7 + i * 18);
+        for (int i = 0; i < 9; i++) {
+            var slot = new RecipePhantomSlot(this.phantomContainer, 27 + i, ENCODING_SLOT_X + 100, ENCODING_SLOT_Y + 7 + i * 18, EncodingMode.PROCESSING);
+            this.encodingSlots.add(slot);
+            var added = this.addSlot(slot);
+            this.processingOutputSlots.add(added);
         }
 
         this.addPhantomSlot(EncodingMode.SMITHING_TABLE, 0, ENCODING_SLOT_X + 15, ENCODING_SLOT_Y + 23);
@@ -166,6 +176,29 @@ public class RecipeTerminalMenu extends AEBaseMenu {
 
     public Container getPhantomContainer() {
         return this.phantomContainer;
+    }
+
+    public int getProcessingScrollOffset() {
+        return this.processingScrollOffset;
+    }
+
+    public void setProcessingScrollOffset(int scrollOffset) {
+        this.processingScrollOffset = scrollOffset;
+        this.updateProcessingSlots();
+    }
+
+    public void updateProcessingSlots() {
+        for (int i = 0; i < this.processingInputSlots.size(); i++) {
+            var slot = this.processingInputSlots.get(i);
+            int row = i / 3;
+            int effectiveRow = row - this.processingScrollOffset;
+            ((SlotAccessor) slot).ae2craftcore$setY(ENCODING_SLOT_Y + 7 + effectiveRow * 18);
+        }
+        for (int row = 0; row < this.processingOutputSlots.size(); row++) {
+            var slot = this.processingOutputSlots.get(row);
+            int effectiveRow = row - this.processingScrollOffset;
+            ((SlotAccessor) slot).ae2craftcore$setY(ENCODING_SLOT_Y + 7 + effectiveRow * 18);
+        }
     }
 
     public String getSelectedGroup() {
@@ -256,7 +289,21 @@ public class RecipeTerminalMenu extends AEBaseMenu {
 
         @Override
         public boolean isActive() {
-            return RecipeTerminalMenu.this.encodingMode == this.mode;
+            if (RecipeTerminalMenu.this.encodingMode != this.mode) return false;
+            if (this.mode == EncodingMode.PROCESSING) {
+                int index = this.getContainerSlot();
+                int scroll = RecipeTerminalMenu.this.processingScrollOffset;
+                if (index < 27) {
+                    int row = index / 3;
+                    int effectiveRow = row - scroll;
+                    return effectiveRow >= 0 && effectiveRow < 3;
+                } else {
+                    int row = index - 27;
+                    int effectiveRow = row - scroll;
+                    return effectiveRow >= 0 && effectiveRow < 3;
+                }
+            }
+            return true;
         }
     }
 }

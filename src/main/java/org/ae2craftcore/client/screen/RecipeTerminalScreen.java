@@ -14,6 +14,7 @@ import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
+import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.CraftingInput;
@@ -67,6 +68,10 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
     private EncodingMode encodingMode = EncodingMode.PROCESSING;
     @Nullable
     private ResourceLocation selectedStonecuttingRecipeId;
+
+    private boolean draggingScrollbar = false;
+    private int activeScrollbarType = 0;
+    private double dragYOffset = 0;
 
     public RecipeTerminalScreen(RecipeTerminalMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
@@ -218,7 +223,8 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
 
     private void drawModeScrollbar(GuiGraphics guiGraphics, int x, int y) {
         if (this.encodingMode == EncodingMode.PROCESSING) {
-            this.drawAe2Scrollbar(guiGraphics, x + RecipeTerminalMenu.ENCODING_X + 6, y + RecipeTerminalMenu.ENCODING_Y + 7, 52, 0, 0);
+            int maxScroll = 6;
+            this.drawAe2Scrollbar(guiGraphics, x + RecipeTerminalMenu.ENCODING_X + 6, y + RecipeTerminalMenu.ENCODING_Y + 7, 52, this.menu.getProcessingScrollOffset(), maxScroll);
         } else if (this.encodingMode == EncodingMode.STONECUTTING) {
             int maxScroll = this.getMaxStoneScroll(this.getStonecuttingRecipes());
             if (maxScroll > 0) {
@@ -228,23 +234,31 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
     }
 
     private void drawAe2Scrollbar(GuiGraphics guiGraphics, int x, int y, int height, int value, int maxValue) {
-        //todo?
+        var enabledSprite = ResourceLocation.fromNamespaceAndPath("ae2", "small_scroller");
+        var disabledSprite = ResourceLocation.fromNamespaceAndPath("ae2", "small_scroller_disabled");
+
+        int handleHeight = 15;
+        int yOffset;
+        ResourceLocation sprite;
+        if (maxValue == 0) {
+            yOffset = 0;
+            sprite = disabledSprite;
+        } else {
+            int availableHeight = height - handleHeight;
+            yOffset = value * availableHeight / maxValue;
+            sprite = enabledSprite;
+        }
+
+        Blitter.guiSprite(sprite).dest(x, y + yOffset).blit(guiGraphics);
     }
 
     private void drawControlButtons(GuiGraphics guiGraphics, int x, int y, int mouseX, int mouseY) {
-        this.drawToolbarButton(guiGraphics, x + RecipeTerminalMenu.ENCODING_X + 82, y + RecipeTerminalMenu.ENCODING_Y + 76,
-                this.isInside(mouseX, mouseY, RecipeTerminalMenu.ENCODING_X + 82, RecipeTerminalMenu.ENCODING_Y + 76, 18, 20),
-                Icon.CLEAR);
-        this.drawToolbarButton(guiGraphics, x + RecipeTerminalMenu.ENCODING_X + 104, y + RecipeTerminalMenu.ENCODING_Y + 76,
-                this.isInside(mouseX, mouseY, RecipeTerminalMenu.ENCODING_X + 104, RecipeTerminalMenu.ENCODING_Y + 76, 18, 20),
-                Icon.WHITE_ARROW_DOWN);
+        this.drawToolbarButton(guiGraphics, x + RecipeTerminalMenu.ENCODING_X + 82, y + RecipeTerminalMenu.ENCODING_Y + 76, this.isInside(mouseX, mouseY, RecipeTerminalMenu.ENCODING_X + 82, RecipeTerminalMenu.ENCODING_Y + 76, 18, 20), Icon.CLEAR);
+        this.drawToolbarButton(guiGraphics, x + RecipeTerminalMenu.ENCODING_X + 104, y + RecipeTerminalMenu.ENCODING_Y + 76, this.isInside(mouseX, mouseY, RecipeTerminalMenu.ENCODING_X + 104, RecipeTerminalMenu.ENCODING_Y + 76, 18, 20), Icon.WHITE_ARROW_DOWN);
     }
 
     private void drawToolbarButton(GuiGraphics guiGraphics, int x, int y, boolean hovered, Icon icon) {
-        (hovered ? Icon.TOOLBAR_BUTTON_BACKGROUND_HOVER : Icon.TOOLBAR_BUTTON_BACKGROUND)
-                .getBlitter()
-                .dest(x, y)
-                .blit(guiGraphics);
+        (hovered ? Icon.TOOLBAR_BUTTON_BACKGROUND_HOVER : Icon.TOOLBAR_BUTTON_BACKGROUND).getBlitter().dest(x, y).blit(guiGraphics);
         icon.getBlitter().dest(x + 1, y + 2).blit(guiGraphics);
     }
 
@@ -375,6 +389,65 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         int x = (int) mouseX - this.leftPos;
         int y = (int) mouseY - this.topPos;
+
+        if (this.encodingMode == EncodingMode.PROCESSING && button == 0) {
+            int scrollbarX = RecipeTerminalMenu.ENCODING_X + 6;
+            int scrollbarY = RecipeTerminalMenu.ENCODING_Y + 7;
+            int scrollbarHeight = 52;
+            int maxScroll = 6;
+
+            if (this.isInside(x, y, scrollbarX - 2, scrollbarY, 11, scrollbarHeight)) {
+                this.draggingScrollbar = true;
+                this.activeScrollbarType = 1;
+
+                int handleHeight = 15;
+                int currentScroll = this.menu.getProcessingScrollOffset();
+                int availableHeight = scrollbarHeight - handleHeight;
+                int currentHandleY = currentScroll * availableHeight / maxScroll;
+                int relY = y - scrollbarY;
+
+                if (relY >= currentHandleY && relY < currentHandleY + handleHeight) {
+                    this.dragYOffset = relY - currentHandleY;
+                } else {
+                    this.dragYOffset = handleHeight / 2.0;
+                    double position = net.minecraft.util.Mth.clamp((relY - this.dragYOffset) / (double) availableHeight, 0.0, 1.0);
+                    int newScroll = (int) Math.round(position * maxScroll);
+                    this.menu.setProcessingScrollOffset(newScroll);
+                }
+                this.playClick();
+                return true;
+            }
+        }
+
+        if (this.encodingMode == EncodingMode.STONECUTTING && button == 0) {
+            int maxScroll = this.getMaxStoneScroll(this.getStonecuttingRecipes());
+            if (maxScroll > 0) {
+                int scrollbarX = RecipeTerminalMenu.ENCODING_X + 117;
+                int scrollbarY = RecipeTerminalMenu.ENCODING_Y + 12;
+                int scrollbarHeight = 44;
+
+                if (this.isInside(x, y, scrollbarX - 2, scrollbarY, 11, scrollbarHeight)) {
+                    this.draggingScrollbar = true;
+                    this.activeScrollbarType = 2;
+
+                    int handleHeight = 15;
+                    int currentScroll = this.stoneScrollOffset;
+                    int availableHeight = scrollbarHeight - handleHeight;
+                    int currentHandleY = currentScroll * availableHeight / maxScroll;
+                    int relY = y - scrollbarY;
+
+                    if (relY >= currentHandleY && relY < currentHandleY + handleHeight) {
+                        this.dragYOffset = relY - currentHandleY;
+                    } else {
+                        this.dragYOffset = handleHeight / 2.0;
+                        double position = Mth.clamp((relY - this.dragYOffset) / (double) availableHeight, 0.0, 1.0);
+                        this.stoneScrollOffset = (int) Math.round(position * maxScroll);
+                    }
+                    this.playClick();
+                    return true;
+                }
+            }
+        }
 
         for (int i = 0; i < MODE_ORDER.length; i++) {
             if (this.isInside(x, y, RecipeTerminalMenu.MODE_TABS_X, RecipeTerminalMenu.MODE_TABS_Y + i * 21, 22, 22)) {
@@ -518,7 +591,63 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
             return oldScroll != this.stoneScrollOffset;
         }
 
+        if (this.encodingMode == EncodingMode.PROCESSING && this.isInside(x, y, RecipeTerminalMenu.ENCODING_X,
+                RecipeTerminalMenu.ENCODING_Y, 124, 66)) {
+            int maxScroll = 6;
+            int oldScroll = this.menu.getProcessingScrollOffset();
+            this.menu.setProcessingScrollOffset(Math.clamp(this.menu.getProcessingScrollOffset() + direction, 0, maxScroll));
+            return oldScroll != this.menu.getProcessingScrollOffset();
+        }
+
         return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+    }
+
+    @Override
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        if (button == 0) {
+            this.draggingScrollbar = false;
+            this.activeScrollbarType = 0;
+        }
+        return super.mouseReleased(mouseX, mouseY, button);
+    }
+
+    @Override
+    public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
+        if (this.draggingScrollbar && button == 0) {
+            int y = (int) mouseY - this.topPos;
+
+            if (this.activeScrollbarType == 1) {
+                final int newScroll = getScroll(y);
+                this.menu.setProcessingScrollOffset(newScroll);
+                return true;
+            } else if (this.activeScrollbarType == 2) {
+                int scrollbarY = RecipeTerminalMenu.ENCODING_Y + 12;
+                int scrollbarHeight = 44;
+                int maxScroll = this.getMaxStoneScroll(this.getStonecuttingRecipes());
+                int handleHeight = 15;
+
+                if (maxScroll > 0) {
+                    double handleUpperEdgeY = y - scrollbarY - this.dragYOffset;
+                    double availableHeight = scrollbarHeight - handleHeight;
+                    double position = Mth.clamp(handleUpperEdgeY / availableHeight, 0.0, 1.0);
+                    this.stoneScrollOffset = (int) Math.round(position * maxScroll);
+                    return true;
+                }
+            }
+        }
+        return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
+    }
+
+    private int getScroll(int y) {
+        int scrollbarY = RecipeTerminalMenu.ENCODING_Y + 7;
+        int scrollbarHeight = 52;
+        int maxScroll = 6;
+        int handleHeight = 15;
+
+        double handleUpperEdgeY = y - scrollbarY - this.dragYOffset;
+        double availableHeight = scrollbarHeight - handleHeight;
+        double position = Mth.clamp(handleUpperEdgeY / availableHeight, 0.0, 1.0);
+        return (int) Math.round(position * maxScroll);
     }
 
     private void playClick() {
@@ -562,6 +691,7 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
         this.groupScrollOffset = Math.clamp(this.groupScrollOffset, 0, Math.max(0, this.getGroups().size() - LIST_ROWS));
         this.recipeScrollOffset = Math.clamp(this.recipeScrollOffset, 0, Math.max(0, this.getFilteredRecipes().size() - LIST_ROWS));
         this.stoneScrollOffset = Math.clamp(this.stoneScrollOffset, 0, this.getMaxStoneScroll(this.getStonecuttingRecipes()));
+        this.menu.setProcessingScrollOffset(Math.clamp(this.menu.getProcessingScrollOffset(), 0, 6));
     }
 
     @Nullable
