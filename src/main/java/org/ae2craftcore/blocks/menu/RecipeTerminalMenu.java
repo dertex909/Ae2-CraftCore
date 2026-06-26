@@ -38,6 +38,8 @@ public class RecipeTerminalMenu extends AEBaseMenu {
     public static final int ENCODING_X = 178;
     public static final int ENCODING_Y = 38;
     public static final int ENCODING_WIDTH = 124;
+    public static final int ENCODING_SLOT_X = ENCODING_X;
+    public static final int ENCODING_SLOT_Y = ENCODING_Y;
 
     public static final int MODE_TABS_X = ENCODING_X + ENCODING_WIDTH + 2;
     public static final int MODE_TABS_Y = ENCODING_Y;
@@ -76,24 +78,24 @@ public class RecipeTerminalMenu extends AEBaseMenu {
     private void addEncodingModeSlots() {
         for (int row = 0; row < 3; row++) {
             for (int col = 0; col < 3; col++) {
-                this.addPhantomSlot(EncodingMode.CRAFTING, col + row * 3, ENCODING_X + 5 + col * 18, ENCODING_Y + 5 + row * 18);
+                this.addPhantomSlot(EncodingMode.CRAFTING, col + row * 3, ENCODING_SLOT_X + 15 + col * 18, ENCODING_SLOT_Y + 5 + row * 18);
             }
         }
 
         for (int row = 0; row < 3; row++) {
             for (int col = 0; col < 3; col++) {
-                this.addPhantomSlot(EncodingMode.PROCESSING, col + row * 3, ENCODING_X + 15 + col * 18, ENCODING_Y + 7 + row * 18);
+                this.addPhantomSlot(EncodingMode.PROCESSING, col + row * 3, ENCODING_SLOT_X + 15 + col * 18, ENCODING_SLOT_Y + 7 + row * 18);
             }
         }
         for (int i = 0; i < 3; i++) {
-            this.addPhantomSlot(EncodingMode.PROCESSING, 9 + i, ENCODING_X + 99, ENCODING_Y + 7 + i * 18);
+            this.addPhantomSlot(EncodingMode.PROCESSING, 9 + i, ENCODING_SLOT_X + 100, ENCODING_SLOT_Y + 7 + i * 18);
         }
 
-        this.addPhantomSlot(EncodingMode.SMITHING_TABLE, 0, ENCODING_X + 5, ENCODING_Y + 23);
-        this.addPhantomSlot(EncodingMode.SMITHING_TABLE, 1, ENCODING_X + 23, ENCODING_Y + 23);
-        this.addPhantomSlot(EncodingMode.SMITHING_TABLE, 2, ENCODING_X + 41, ENCODING_Y + 23);
+        this.addPhantomSlot(EncodingMode.SMITHING_TABLE, 0, ENCODING_SLOT_X + 15, ENCODING_SLOT_Y + 23);
+        this.addPhantomSlot(EncodingMode.SMITHING_TABLE, 1, ENCODING_SLOT_X + 33, ENCODING_SLOT_Y + 23);
+        this.addPhantomSlot(EncodingMode.SMITHING_TABLE, 2, ENCODING_SLOT_X + 51, ENCODING_SLOT_Y + 23);
 
-        this.addPhantomSlot(EncodingMode.STONECUTTING, 0, ENCODING_X + 5, ENCODING_Y + 23);
+        this.addPhantomSlot(EncodingMode.STONECUTTING, 0, ENCODING_SLOT_X + 15, ENCODING_SLOT_Y + 23);
     }
 
     private void addPhantomSlot(EncodingMode mode, int containerSlot, int x, int y) {
@@ -188,7 +190,6 @@ public class RecipeTerminalMenu extends AEBaseMenu {
     public void clicked(int slotId, int button, @NotNull ClickType clickType, @NotNull Player player) {
         if (slotId >= 0 && slotId < this.encodingSlots.size()) {
             var slot = this.getSlot(slotId);
-            if (!slot.isActive()) return;
             var carried = this.getCarried();
             if (carried.isEmpty()) {
                 slot.set(ItemStack.EMPTY);

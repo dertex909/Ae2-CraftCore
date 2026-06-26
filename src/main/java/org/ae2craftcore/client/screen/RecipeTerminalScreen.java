@@ -56,6 +56,10 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
     private static final int RECIPE_ROW_HEIGHT = 18;
     private static final int STONE_COLS = 4;
     private static final int STONE_ROWS = 2;
+    private static final int CRAFTING_RESULT_X = RecipeTerminalMenu.ENCODING_X + 106;
+    private static final int CRAFTING_RESULT_Y = RecipeTerminalMenu.ENCODING_Y + 23;
+    private static final int SMITHING_RESULT_X = RecipeTerminalMenu.ENCODING_X + 109;
+    private static final int SMITHING_RESULT_Y = RecipeTerminalMenu.ENCODING_Y + 23;
 
     private int groupScrollOffset = 0;
     private int recipeScrollOffset = 0;
@@ -156,18 +160,24 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
         }
 
         if (this.encodingMode == EncodingMode.CRAFTING) {
-            this.renderEncodingResult(guiGraphics, this.getCraftingResult(), x + RecipeTerminalMenu.ENCODING_X + 94, y + RecipeTerminalMenu.ENCODING_Y + 23);
+            this.renderEncodingResult(guiGraphics, this.getCraftingResult(), x, y, CRAFTING_RESULT_X, CRAFTING_RESULT_Y, mouseX, mouseY);
         } else if (this.encodingMode == EncodingMode.SMITHING_TABLE) {
-            this.renderEncodingResult(guiGraphics, this.getSmithingResult(), x + RecipeTerminalMenu.ENCODING_X + 99, y + RecipeTerminalMenu.ENCODING_Y + 23);
+            this.renderEncodingResult(guiGraphics, this.getSmithingResult(), x, y, SMITHING_RESULT_X, SMITHING_RESULT_Y, mouseX, mouseY);
         } else if (this.encodingMode == EncodingMode.STONECUTTING) {
             this.renderStonecuttingRecipes(guiGraphics, x, y, mouseX, mouseY);
         }
+
+        this.drawModeScrollbar(guiGraphics, x, y);
     }
 
-    private void renderEncodingResult(GuiGraphics guiGraphics, ItemStack result, int x, int y) {
+    private void renderEncodingResult(GuiGraphics guiGraphics, ItemStack result, int screenX, int screenY, int slotX, int slotY, int mouseX, int mouseY) {
+        if (this.isInside(mouseX, mouseY, slotX, slotY, 18, 18)) {
+            guiGraphics.fill(screenX + slotX, screenY + slotY, screenX + slotX + 16, screenY + slotY + 16, 0x66FFFFFF);
+        }
+
         if (!result.isEmpty()) {
-            guiGraphics.renderFakeItem(result, x, y);
-            guiGraphics.renderItemDecorations(this.font, result, x, y);
+            guiGraphics.renderFakeItem(result, screenX + slotX, screenY + slotY);
+            guiGraphics.renderItemDecorations(this.font, result, screenX + slotX, screenY + slotY);
         }
     }
 
@@ -204,6 +214,21 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
             Icon.S_ARROW_UP.getBlitter().dest(x + RecipeTerminalMenu.ENCODING_X + 115, y + RecipeTerminalMenu.ENCODING_Y + 15).blit(guiGraphics);
             Icon.S_ARROW_DOWN.getBlitter().dest(x + RecipeTerminalMenu.ENCODING_X + 115, y + RecipeTerminalMenu.ENCODING_Y + 48).blit(guiGraphics);
         }
+    }
+
+    private void drawModeScrollbar(GuiGraphics guiGraphics, int x, int y) {
+        if (this.encodingMode == EncodingMode.PROCESSING) {
+            this.drawAe2Scrollbar(guiGraphics, x + RecipeTerminalMenu.ENCODING_X + 6, y + RecipeTerminalMenu.ENCODING_Y + 7, 52, 0, 0);
+        } else if (this.encodingMode == EncodingMode.STONECUTTING) {
+            int maxScroll = this.getMaxStoneScroll(this.getStonecuttingRecipes());
+            if (maxScroll > 0) {
+                this.drawAe2Scrollbar(guiGraphics, x + RecipeTerminalMenu.ENCODING_X + 117, y + RecipeTerminalMenu.ENCODING_Y + 12, 44, this.stoneScrollOffset, maxScroll);
+            }
+        }
+    }
+
+    private void drawAe2Scrollbar(GuiGraphics guiGraphics, int x, int y, int height, int value, int maxValue) {
+        //todo?
     }
 
     private void drawControlButtons(GuiGraphics guiGraphics, int x, int y, int mouseX, int mouseY) {
@@ -463,6 +488,39 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
         return super.mouseClicked(mouseX, mouseY, button);
     }
 
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        int x = (int) mouseX - this.leftPos;
+        int y = (int) mouseY - this.topPos;
+        int direction = scrollY > 0 ? -1 : 1;
+
+        if (this.isInside(x, y, RecipeTerminalMenu.MACHINE_LIST_X, RecipeTerminalMenu.MACHINE_LIST_Y,
+                RecipeTerminalMenu.MACHINE_LIST_WIDTH, RecipeTerminalMenu.MACHINE_LIST_HEIGHT)) {
+            int maxScroll = Math.max(0, this.getGroups().size() - LIST_ROWS);
+            int oldScroll = this.groupScrollOffset;
+            this.groupScrollOffset = Math.clamp(this.groupScrollOffset + direction, 0, maxScroll);
+            return oldScroll != this.groupScrollOffset;
+        }
+
+        if (this.isInside(x, y, RecipeTerminalMenu.RECIPE_LIST_X, RecipeTerminalMenu.RECIPE_LIST_Y,
+                RecipeTerminalMenu.RECIPE_LIST_WIDTH, RecipeTerminalMenu.RECIPE_LIST_HEIGHT)) {
+            int maxScroll = Math.max(0, this.getFilteredRecipes().size() - LIST_ROWS);
+            int oldScroll = this.recipeScrollOffset;
+            this.recipeScrollOffset = Math.clamp(this.recipeScrollOffset + direction, 0, maxScroll);
+            return oldScroll != this.recipeScrollOffset;
+        }
+
+        if (this.encodingMode == EncodingMode.STONECUTTING && this.isInside(x, y, RecipeTerminalMenu.ENCODING_X,
+                RecipeTerminalMenu.ENCODING_Y, 124, 66)) {
+            int maxScroll = this.getMaxStoneScroll(this.getStonecuttingRecipes());
+            int oldScroll = this.stoneScrollOffset;
+            this.stoneScrollOffset = Math.clamp(this.stoneScrollOffset + direction, 0, maxScroll);
+            return oldScroll != this.stoneScrollOffset;
+        }
+
+        return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+    }
+
     private void playClick() {
         if (this.minecraft != null) {
             this.minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0f));
@@ -516,10 +574,10 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
     }
 
     private ItemStack getHoveredEncodingResult(int x, int y) {
-        if (this.encodingMode == EncodingMode.CRAFTING && this.isInside(x, y, RecipeTerminalMenu.ENCODING_X + 94,
-                RecipeTerminalMenu.ENCODING_Y + 23, 18, 18)) return this.getCraftingResult();
-        if (this.encodingMode == EncodingMode.SMITHING_TABLE && this.isInside(x, y, RecipeTerminalMenu.ENCODING_X + 99,
-                RecipeTerminalMenu.ENCODING_Y + 23, 18, 18)) return this.getSmithingResult();
+        if (this.encodingMode == EncodingMode.CRAFTING && this.isInside(x, y, CRAFTING_RESULT_X,
+                CRAFTING_RESULT_Y, 18, 18)) return this.getCraftingResult();
+        if (this.encodingMode == EncodingMode.SMITHING_TABLE && this.isInside(x, y, SMITHING_RESULT_X,
+                SMITHING_RESULT_Y, 18, 18)) return this.getSmithingResult();
         return ItemStack.EMPTY;
     }
 
