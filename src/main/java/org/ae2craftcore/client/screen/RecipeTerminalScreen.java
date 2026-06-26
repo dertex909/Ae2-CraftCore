@@ -172,6 +172,9 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
     }
 
     private void renderStonecuttingRecipes(GuiGraphics guiGraphics, int x, int y, int mouseX, int mouseY) {
+        if (this.minecraft == null || this.minecraft.level == null) return;
+
+        var level = this.minecraft.level;
         var recipes = this.getStonecuttingRecipes();
         this.validateStonecuttingSelection(recipes);
         int startIndex = this.stoneScrollOffset * STONE_COLS;
@@ -190,9 +193,10 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
             var blitter = selected ? STONE_RECIPE_SLOT_SELECTED : hovered ? STONE_RECIPE_SLOT_HOVER : STONE_RECIPE_SLOT;
             blitter.dest(x + slotX, y + slotY).blit(guiGraphics);
 
-            var result = recipe.value().getResultItem(this.minecraft.level.registryAccess());
-            guiGraphics.renderFakeItem(result, x + slotX + 2, y + slotY + (selected || hovered ? 3 : 2));
-            guiGraphics.renderItemDecorations(this.font, result, x + slotX + 2, y + slotY + (selected || hovered ? 3 : 2));
+            int itemY = y + slotY + (selected || hovered ? 3 : 2);
+            var result = recipe.value().getResultItem(level.registryAccess());
+            guiGraphics.renderFakeItem(result, x + slotX + 2, itemY);
+            guiGraphics.renderItemDecorations(this.font, result, x + slotX + 2, itemY);
         }
 
         int maxScroll = this.getMaxStoneScroll(recipes);
@@ -337,7 +341,8 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
 
         var stoneRecipe = this.getStonecuttingRecipeAt(x, y);
         if (stoneRecipe != null && this.minecraft != null && this.minecraft.level != null) {
-            guiGraphics.renderTooltip(this.font, stoneRecipe.value().getResultItem(this.minecraft.level.registryAccess()), mouseX, mouseY);
+            var level = this.minecraft.level;
+            guiGraphics.renderTooltip(this.font, stoneRecipe.value().getResultItem(level.registryAccess()), mouseX, mouseY);
         }
     }
 
@@ -520,6 +525,7 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
 
     private ItemStack getCraftingResult() {
         if (this.minecraft == null || this.minecraft.level == null) return ItemStack.EMPTY;
+        var level = this.minecraft.level;
 
         var grid = NonNullList.withSize(9, ItemStack.EMPTY);
         var hasInput = false;
@@ -535,29 +541,31 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
         if (!hasInput) return ItemStack.EMPTY;
 
         var input = CraftingInput.of(3, 3, grid);
-        var recipe = this.minecraft.level.getRecipeManager().getRecipeFor(RecipeType.CRAFTING, input, this.minecraft.level).orElse(null);
+        var recipe = level.getRecipeManager().getRecipeFor(RecipeType.CRAFTING, input, level).orElse(null);
         if (recipe == null) return ItemStack.EMPTY;
-        return recipe.value().assemble(input, this.minecraft.level.registryAccess());
+        return recipe.value().assemble(input, level.registryAccess());
     }
 
     private ItemStack getSmithingResult() {
         if (this.minecraft == null || this.minecraft.level == null) return ItemStack.EMPTY;
+        var level = this.minecraft.level;
         var template = this.menu.getPhantomContainer().getItem(0);
         var base = this.menu.getPhantomContainer().getItem(1);
         var addition = this.menu.getPhantomContainer().getItem(2);
         if (template.isEmpty() || base.isEmpty() || addition.isEmpty()) return ItemStack.EMPTY;
 
         var input = new SmithingRecipeInput(template, base, addition);
-        var recipe = this.minecraft.level.getRecipeManager().getRecipeFor(RecipeType.SMITHING, input, this.minecraft.level).orElse(null);
+        var recipe = level.getRecipeManager().getRecipeFor(RecipeType.SMITHING, input, level).orElse(null);
         if (recipe == null) return ItemStack.EMPTY;
-        return recipe.value().assemble(input, this.minecraft.level.registryAccess());
+        return recipe.value().assemble(input, level.registryAccess());
     }
 
     private List<RecipeHolder<StonecutterRecipe>> getStonecuttingRecipes() {
         if (this.minecraft == null || this.minecraft.level == null) return List.of();
+        var level = this.minecraft.level;
         var inputStack = this.menu.getPhantomContainer().getItem(0);
         if (inputStack.isEmpty()) return List.of();
-        return this.minecraft.level.getRecipeManager().getRecipesFor(RecipeType.STONECUTTING, new SingleRecipeInput(inputStack), this.minecraft.level);
+        return level.getRecipeManager().getRecipesFor(RecipeType.STONECUTTING, new SingleRecipeInput(inputStack), level);
     }
 
     private void validateStonecuttingSelection(List<RecipeHolder<StonecutterRecipe>> recipes) {
@@ -588,8 +596,7 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
 
         int col = localX / 20;
         int row = localY / 22;
-        if (col < 0 || col >= STONE_COLS || row < 0 || row >= STONE_ROWS) return null;
-        if (localX % 20 >= 20 || localY % 22 >= 22) return null;
+        if (col >= STONE_COLS || row >= STONE_ROWS) return null;
 
         int index = (this.stoneScrollOffset + row) * STONE_COLS + col;
         return index >= 0 && index < recipes.size() ? recipes.get(index) : null;
