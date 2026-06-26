@@ -28,16 +28,16 @@ public class RecipeTerminalMenu extends AEBaseMenu {
 
     public static final int MACHINE_LIST_X = 8;
     public static final int MACHINE_LIST_Y = 22;
-    public static final int MACHINE_LIST_WIDTH = 76;
-    public static final int MACHINE_LIST_HEIGHT = 112;
+    public static final int MACHINE_LIST_WIDTH = 140;
+    public static final int MACHINE_LIST_HEIGHT = 108;
 
-    public static final int RECIPE_LIST_X = 88;
+    public static final int RECIPE_LIST_X = 156;
     public static final int RECIPE_LIST_Y = 22;
-    public static final int RECIPE_LIST_WIDTH = 82;
-    public static final int RECIPE_LIST_HEIGHT = 112;
+    public static final int RECIPE_LIST_WIDTH = 158;
+    public static final int RECIPE_LIST_HEIGHT = 108;
 
     public static final int ENCODING_X = 178;
-    public static final int ENCODING_Y = 38;
+    public static final int ENCODING_Y = 146;
     public static final int ENCODING_WIDTH = 124;
     public static final int ENCODING_SLOT_X = ENCODING_X;
     public static final int ENCODING_SLOT_Y = ENCODING_Y;
@@ -45,8 +45,8 @@ public class RecipeTerminalMenu extends AEBaseMenu {
     public static final int MODE_TABS_X = ENCODING_X + ENCODING_WIDTH + 2;
     public static final int MODE_TABS_Y = ENCODING_Y;
 
-    public static final int PLAYER_INV_X = 80;
-    public static final int PLAYER_INV_Y = 154;
+    public static final int PLAYER_INV_X = 8;
+    public static final int PLAYER_INV_Y = 152;
     public static final int HOTBAR_Y = 212;
 
     private final RecipeTerminalPart part;

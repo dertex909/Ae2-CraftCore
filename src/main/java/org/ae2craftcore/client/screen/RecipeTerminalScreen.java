@@ -45,12 +45,12 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
     private static final int TAB_STEP_Y = 21;
 
     private static final int CLEAR_X = RecipeTerminalMenu.ENCODING_X + 82;
-    private static final int CLEAR_Y = RecipeTerminalMenu.ENCODING_Y + 76;
+    private static final int CLEAR_Y = 214;
     private static final int CLEAR_W = 18;
     private static final int CLEAR_H = 20;
 
     private static final int SAVE_X = RecipeTerminalMenu.ENCODING_X + 104;
-    private static final int SAVE_Y = RecipeTerminalMenu.ENCODING_Y + 76;
+    private static final int SAVE_Y = 214;
     private static final int SAVE_W = 18;
     private static final int SAVE_H = 20;
 
@@ -82,13 +82,13 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
     private static final int STONE_SLOT_W = 20;
     private static final int STONE_SLOT_H = 22;
 
-    private static final int SCROLL_BTN_Y = 137;
+    private static final int SCROLL_BTN_Y = 131;
     private static final int SCROLL_BTN_W = 35;
     private static final int SCROLL_BTN_H = 13;
-    private static final int MACHINE_UP_X = RecipeTerminalMenu.MACHINE_LIST_X;
-    private static final int MACHINE_DN_X = RecipeTerminalMenu.MACHINE_LIST_X + 39;
-    private static final int RECIPE_UP_X = RecipeTerminalMenu.RECIPE_LIST_X;
-    private static final int RECIPE_DN_X = RecipeTerminalMenu.RECIPE_LIST_X + 43;
+    private static final int MACHINE_UP_X = 41;
+    private static final int MACHINE_DN_X = 80;
+    private static final int RECIPE_UP_X = 198;
+    private static final int RECIPE_DN_X = 237;
 
     private static final int LIST_ROWS = 6;
     private static final int MACHINE_ROW_HEIGHT = 17;
@@ -103,6 +103,7 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
             EncodingMode.STONECUTTING
     };
 
+    private static final ResourceLocation BACKGROUND_TEXTURE = ResourceLocation.fromNamespaceAndPath("ae2craftcore", "textures/gui/container/recipe_terminal.png");
     private static final Blitter CRAFTING_BG = Blitter.texture("guis/pattern_modes.png").src(0, 0, 124, 66);
     private static final Blitter PROCESSING_BG = Blitter.texture("guis/pattern_modes.png").src(0, 70, 124, 66);
     private static final Blitter SMITHING_BG = Blitter.texture("guis/pattern_modes.png").src(128, 70, 124, 66);
@@ -164,33 +165,12 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
         int relMouseX = mouseX - x;
         int relMouseY = mouseY - y;
 
-        this.drawMainPanel(guiGraphics, x, y);
-        this.drawListPanel(guiGraphics, x + RecipeTerminalMenu.MACHINE_LIST_X, y + RecipeTerminalMenu.MACHINE_LIST_Y, RecipeTerminalMenu.MACHINE_LIST_WIDTH, RecipeTerminalMenu.MACHINE_LIST_HEIGHT);
-        this.drawListPanel(guiGraphics, x + RecipeTerminalMenu.RECIPE_LIST_X, y + RecipeTerminalMenu.RECIPE_LIST_Y, RecipeTerminalMenu.RECIPE_LIST_WIDTH, RecipeTerminalMenu.RECIPE_LIST_HEIGHT);
+        guiGraphics.blit(BACKGROUND_TEXTURE, x, y, 0, 0, this.imageWidth, this.imageHeight, this.imageWidth, this.imageHeight);
 
         this.drawEncodingPanel(guiGraphics, x, y, relMouseX, relMouseY);
         this.drawControlButtons(guiGraphics, x, y, relMouseX, relMouseY);
         this.drawScrollButtons(guiGraphics, x, y);
-        this.drawInventorySlots(guiGraphics, x, y);
         this.drawRecipeItems(guiGraphics, x, y, relMouseX, relMouseY);
-    }
-
-    private void drawMainPanel(GuiGraphics guiGraphics, int x, int y) {
-        guiGraphics.fill(x, y, x + this.imageWidth, y + this.imageHeight, 0xFFD6D8E1);
-        guiGraphics.fill(x, y, x + this.imageWidth, y + 2, 0xFFF8F8FF);
-        guiGraphics.fill(x, y, x + 2, y + this.imageHeight, 0xFFF8F8FF);
-        guiGraphics.fill(x + this.imageWidth - 2, y, x + this.imageWidth, y + this.imageHeight, 0xFF7F8496);
-        guiGraphics.fill(x, y + this.imageHeight - 2, x + this.imageWidth, y + this.imageHeight, 0xFF7F8496);
-        guiGraphics.fill(x + 3, y + 3, x + this.imageWidth - 3, y + this.imageHeight - 3, 0xFFC9CBD6);
-    }
-
-    private void drawListPanel(GuiGraphics guiGraphics, int x, int y, int width, int height) {
-        guiGraphics.fill(x - 1, y - 1, x + width + 1, y + height + 1, 0xFFF4F5FA);
-        guiGraphics.fill(x, y, x + width, y + height, 0xFFAEB2C2);
-        guiGraphics.fill(x, y, x + width, y + 1, 0xFF777D94);
-        guiGraphics.fill(x, y, x + 1, y + height, 0xFF777D94);
-        guiGraphics.fill(x + width - 1, y, x + width, y + height, 0xFFE9EAF2);
-        guiGraphics.fill(x, y + height - 1, x + width, y + height, 0xFFE9EAF2);
     }
 
     private void drawEncodingPanel(GuiGraphics guiGraphics, int x, int y, int mouseX, int mouseY) {
@@ -321,17 +301,6 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
         icon.getBlitter().dest(x + 13, y + 3).blit(guiGraphics);
     }
 
-    private void drawInventorySlots(GuiGraphics guiGraphics, int x, int y) {
-        for (int row = 0; row < 3; row++) {
-            for (int col = 0; col < 9; col++) {
-                Icon.SLOT_BACKGROUND.getBlitter().dest(x + RecipeTerminalMenu.PLAYER_INV_X + col * 18 - 1, y + RecipeTerminalMenu.PLAYER_INV_Y + row * 18 - 1).blit(guiGraphics);
-            }
-        }
-        for (int col = 0; col < 9; col++) {
-            Icon.SLOT_BACKGROUND.getBlitter().dest(x + RecipeTerminalMenu.PLAYER_INV_X + col * 18 - 1, y + RecipeTerminalMenu.HOTBAR_Y - 1).blit(guiGraphics);
-        }
-    }
-
     private void drawRecipeItems(GuiGraphics guiGraphics, int x, int y, int mouseX, int mouseY) {
         var filtered = this.getFilteredRecipes();
         for (int i = 0; i < LIST_ROWS; i++) {
@@ -364,8 +333,8 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
             guiGraphics.fill(RecipeTerminalMenu.MACHINE_LIST_X + 2, rowY - 2, RecipeTerminalMenu.MACHINE_LIST_X + RecipeTerminalMenu.MACHINE_LIST_WIDTH - 2, rowY + 13, selected ? 0xFFD9DDEB : 0x00FFFFFF);
 
             String displayName = group.name();
-            if (this.font.width(displayName) > 54) {
-                displayName = this.font.plainSubstrByWidth(displayName, 50) + "..";
+            if (this.font.width(displayName) > 115) {
+                displayName = this.font.plainSubstrByWidth(displayName, 110) + "..";
             }
             guiGraphics.drawString(this.font, displayName, RecipeTerminalMenu.MACHINE_LIST_X + 5, rowY, selected ? 0x27304A : 0x42475A, false);
             guiGraphics.drawString(this.font, String.valueOf(group.count()), RecipeTerminalMenu.MACHINE_LIST_X + RecipeTerminalMenu.MACHINE_LIST_WIDTH - 14, rowY, 0x656A7C, false);
@@ -380,7 +349,7 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
             var recipe = filtered.get(actualIndex);
             int rowY = RecipeTerminalMenu.RECIPE_LIST_Y + 7 + i * RECIPE_ROW_HEIGHT;
             String name = recipe.outputStack().isEmpty() ? recipe.patternStack().getHoverName().getString() : recipe.outputStack().getHoverName().getString();
-            if (this.font.width(name) > 30) name = this.font.plainSubstrByWidth(name, 28) + "..";
+            if (this.font.width(name) > 103) name = this.font.plainSubstrByWidth(name, 98) + "..";
             guiGraphics.drawString(this.font, name, RecipeTerminalMenu.RECIPE_LIST_X + 42, rowY, 0x42475A, false);
         }
     }
