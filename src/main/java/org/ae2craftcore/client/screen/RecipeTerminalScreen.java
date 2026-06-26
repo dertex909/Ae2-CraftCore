@@ -63,7 +63,7 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
     private static final int PROC_SCROLL_Y = RecipeTerminalMenu.ENCODING_Y + 7;
     private static final int PROC_SCROLL_W = 11;
     private static final int PROC_SCROLL_H = 52;
-    private static final int PROC_SCROLL_MAX = 6;
+    private static final int PROC_SCROLL_MAX = 24;
 
     private static final int STONE_SCROLL_X = RecipeTerminalMenu.ENCODING_X + 117;
     private static final int STONE_SCROLL_Y = RecipeTerminalMenu.ENCODING_Y + 12;

@@ -50,7 +50,7 @@ public class RecipeTerminalMenu extends AEBaseMenu {
     public static final int HOTBAR_Y = 212;
 
     private final RecipeTerminalPart part;
-    private final Container phantomContainer = new SimpleContainer(36);
+    private final Container phantomContainer = new SimpleContainer(162);
     private final List<RecipePhantomSlot> encodingSlots = new ArrayList<>();
     private final List<Slot> processingInputSlots = new ArrayList<>();
     private final List<Slot> processingOutputSlots = new ArrayList<>();
@@ -86,7 +86,7 @@ public class RecipeTerminalMenu extends AEBaseMenu {
             }
         }
 
-        for (int row = 0; row < 9; row++) {
+        for (int row = 0; row < 27; row++) {
             for (int col = 0; col < 3; col++) {
                 var slot = new RecipePhantomSlot(this.phantomContainer, col + row * 3, ENCODING_SLOT_X + 15 + col * 18, ENCODING_SLOT_Y + 7 + row * 18, EncodingMode.PROCESSING);
                 this.encodingSlots.add(slot);
@@ -94,8 +94,8 @@ public class RecipeTerminalMenu extends AEBaseMenu {
                 this.processingInputSlots.add(added);
             }
         }
-        for (int i = 0; i < 9; i++) {
-            var slot = new RecipePhantomSlot(this.phantomContainer, 27 + i, ENCODING_SLOT_X + 100, ENCODING_SLOT_Y + 7 + i * 18, EncodingMode.PROCESSING);
+        for (int row = 0; row < 27; row++) {
+            var slot = new RecipePhantomSlot(this.phantomContainer, 81 + row, ENCODING_SLOT_X + 100, ENCODING_SLOT_Y + 7 + row * 18, EncodingMode.PROCESSING);
             this.encodingSlots.add(slot);
             var added = this.addSlot(slot);
             this.processingOutputSlots.add(added);
@@ -293,12 +293,12 @@ public class RecipeTerminalMenu extends AEBaseMenu {
             if (this.mode == EncodingMode.PROCESSING) {
                 int index = this.getContainerSlot();
                 int scroll = RecipeTerminalMenu.this.processingScrollOffset;
-                if (index < 27) {
+                if (index < 81) {
                     int row = index / 3;
                     int effectiveRow = row - scroll;
                     return effectiveRow >= 0 && effectiveRow < 3;
                 } else {
-                    int row = index - 27;
+                    int row = index - 81;
                     int effectiveRow = row - scroll;
                     return effectiveRow >= 0 && effectiveRow < 3;
                 }
