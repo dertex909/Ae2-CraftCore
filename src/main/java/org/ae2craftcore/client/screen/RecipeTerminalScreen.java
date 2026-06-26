@@ -59,7 +59,7 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
     private static final int SMITHING_RESULT_X = RecipeTerminalMenu.ENCODING_X + 109;
     private static final int SMITHING_RESULT_Y = RecipeTerminalMenu.ENCODING_Y + 23;
 
-    private static final int PROC_SCROLL_X = RecipeTerminalMenu.ENCODING_X + 6;
+    private static final int PROC_SCROLL_X = RecipeTerminalMenu.ENCODING_X + 7;
     private static final int PROC_SCROLL_Y = RecipeTerminalMenu.ENCODING_Y + 7;
     private static final int PROC_SCROLL_W = 11;
     private static final int PROC_SCROLL_H = 52;
