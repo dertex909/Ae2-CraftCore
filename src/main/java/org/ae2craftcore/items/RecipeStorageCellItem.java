@@ -13,7 +13,7 @@ import appeng.api.stacks.AEKey;
 import appeng.api.stacks.AEItemKey;
 import appeng.api.stacks.KeyCounter;
 import appeng.api.crafting.IPatternDetails;
-import appeng.core.definitions.AEItems;
+import appeng.api.crafting.PatternDetailsHelper;
 import appeng.crafting.pattern.AEPatternDecoder;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
@@ -176,7 +176,7 @@ public class RecipeStorageCellItem extends Item {
         public long insert(AEKey what, long amount, Actionable mode, IActionSource source) {
             if (!(what instanceof AEItemKey itemKey)) return amount;
             var stack = itemKey.toStack();
-            if (!stack.is(AEItems.PROCESSING_PATTERN.get())) return amount;
+            if (!PatternDetailsHelper.isEncodedPattern(stack)) return amount;
             if (this.patterns.size() >= 128) return amount;
 
             if (mode == Actionable.MODULATE) {

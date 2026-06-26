@@ -1,6 +1,7 @@
 package org.ae2craftcore.blocks.menu;
 
 import appeng.menu.AEBaseMenu;
+import appeng.parts.encoding.EncodingMode;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Container;
 import net.minecraft.world.SimpleContainer;
@@ -21,9 +22,35 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class RecipeTerminalMenu extends AEBaseMenu {
+    public static final int IMAGE_WIDTH = 322;
+    public static final int IMAGE_HEIGHT = 236;
+
+    public static final int MACHINE_LIST_X = 8;
+    public static final int MACHINE_LIST_Y = 22;
+    public static final int MACHINE_LIST_WIDTH = 76;
+    public static final int MACHINE_LIST_HEIGHT = 112;
+
+    public static final int RECIPE_LIST_X = 88;
+    public static final int RECIPE_LIST_Y = 22;
+    public static final int RECIPE_LIST_WIDTH = 82;
+    public static final int RECIPE_LIST_HEIGHT = 112;
+
+    public static final int ENCODING_X = 178;
+    public static final int ENCODING_Y = 38;
+    public static final int ENCODING_WIDTH = 124;
+
+    public static final int MODE_TABS_X = ENCODING_X + ENCODING_WIDTH + 2;
+    public static final int MODE_TABS_Y = ENCODING_Y;
+
+    public static final int PLAYER_INV_X = 80;
+    public static final int PLAYER_INV_Y = 154;
+    public static final int HOTBAR_Y = 212;
+
     private final RecipeTerminalPart part;
     private final Container phantomContainer = new SimpleContainer(12);
+    private final List<RecipePhantomSlot> encodingSlots = new ArrayList<>();
     private String selectedGroup = "";
+    private EncodingMode encodingMode = EncodingMode.PROCESSING;
     private final List<ItemStack> clientRecipes = new ArrayList<>();
     private final List<String> clientGroups = new ArrayList<>();
     private boolean firstSync = true;
@@ -32,35 +59,47 @@ public class RecipeTerminalMenu extends AEBaseMenu {
         super(ModMenuTypes.RECIPE_TERMINAL.get(), containerId, playerInventory, part);
         this.part = part;
 
-        for (int row = 0; row < 3; row++) {
-            for (int col = 0; col < 3; col++) {
-                this.addSlot(new Slot(this.phantomContainer, col + row * 3, 84 + col * 18, 22 + row * 18) {
-                    @Override
-                    public boolean mayPlace(@NotNull ItemStack stack) {
-                        return true;
-                    }
-                });
-            }
-        }
-
-        for (int i = 0; i < 3; i++) {
-            this.addSlot(new Slot(this.phantomContainer, 9 + i, 84 + i * 18, 84) {
-                @Override
-                public boolean mayPlace(@NotNull ItemStack stack) {
-                    return true;
-                }
-            });
-        }
+        this.addEncodingModeSlots();
+        this.setEncodingMode(EncodingMode.PROCESSING);
 
         for (int row = 0; row < 3; ++row) {
             for (int col = 0; col < 9; ++col) {
-                this.addSlot(new Slot(playerInventory, col + row * 9 + 9, 48 + col * 18, 138 + row * 18));
+                this.addSlot(new Slot(playerInventory, col + row * 9 + 9, PLAYER_INV_X + col * 18, PLAYER_INV_Y + row * 18));
             }
         }
 
         for (int col = 0; col < 9; ++col) {
-            this.addSlot(new Slot(playerInventory, col, 48 + col * 18, 196));
+            this.addSlot(new Slot(playerInventory, col, PLAYER_INV_X + col * 18, HOTBAR_Y));
         }
+    }
+
+    private void addEncodingModeSlots() {
+        for (int row = 0; row < 3; row++) {
+            for (int col = 0; col < 3; col++) {
+                this.addPhantomSlot(EncodingMode.CRAFTING, col + row * 3, ENCODING_X + 5 + col * 18, ENCODING_Y + 5 + row * 18);
+            }
+        }
+
+        for (int row = 0; row < 3; row++) {
+            for (int col = 0; col < 3; col++) {
+                this.addPhantomSlot(EncodingMode.PROCESSING, col + row * 3, ENCODING_X + 15 + col * 18, ENCODING_Y + 7 + row * 18);
+            }
+        }
+        for (int i = 0; i < 3; i++) {
+            this.addPhantomSlot(EncodingMode.PROCESSING, 9 + i, ENCODING_X + 99, ENCODING_Y + 7 + i * 18);
+        }
+
+        this.addPhantomSlot(EncodingMode.SMITHING_TABLE, 0, ENCODING_X + 5, ENCODING_Y + 23);
+        this.addPhantomSlot(EncodingMode.SMITHING_TABLE, 1, ENCODING_X + 23, ENCODING_Y + 23);
+        this.addPhantomSlot(EncodingMode.SMITHING_TABLE, 2, ENCODING_X + 41, ENCODING_Y + 23);
+
+        this.addPhantomSlot(EncodingMode.STONECUTTING, 0, ENCODING_X + 5, ENCODING_Y + 23);
+    }
+
+    private void addPhantomSlot(EncodingMode mode, int containerSlot, int x, int y) {
+        var slot = new RecipePhantomSlot(this.phantomContainer, containerSlot, x, y, mode);
+        this.encodingSlots.add(slot);
+        this.addSlot(slot);
     }
 
     @Override
@@ -135,10 +174,21 @@ public class RecipeTerminalMenu extends AEBaseMenu {
         this.selectedGroup = group != null ? group : "";
     }
 
+    public void setEncodingMode(EncodingMode mode) {
+        this.encodingMode = mode != null ? mode : EncodingMode.PROCESSING;
+    }
+
+    public void clearEncodingSlots() {
+        for (int i = 0; i < this.phantomContainer.getContainerSize(); i++) {
+            this.phantomContainer.setItem(i, ItemStack.EMPTY);
+        }
+    }
+
     @Override
     public void clicked(int slotId, int button, @NotNull ClickType clickType, @NotNull Player player) {
-        if (slotId >= 0 && slotId < 12) {
+        if (slotId >= 0 && slotId < this.encodingSlots.size()) {
             var slot = this.getSlot(slotId);
+            if (!slot.isActive()) return;
             var carried = this.getCarried();
             if (carried.isEmpty()) {
                 slot.set(ItemStack.EMPTY);
@@ -160,10 +210,14 @@ public class RecipeTerminalMenu extends AEBaseMenu {
             var itemstack1 = slot.getItem();
             itemstack = itemstack1.copy();
 
-            if (index >= 12 && index < 39) {
-                if (!this.moveItemStackTo(itemstack1, 39, 48, false)) return ItemStack.EMPTY;
-            } else if (index >= 39 && index < 48) {
-                if (!this.moveItemStackTo(itemstack1, 12, 39, false)) return ItemStack.EMPTY;
+            int playerInventoryStart = this.encodingSlots.size();
+            int hotbarStart = playerInventoryStart + 27;
+            int hotbarEnd = hotbarStart + 9;
+
+            if (index >= playerInventoryStart && index < hotbarStart) {
+                if (!this.moveItemStackTo(itemstack1, hotbarStart, hotbarEnd, false)) return ItemStack.EMPTY;
+            } else if (index >= hotbarStart && index < hotbarEnd) {
+                if (!this.moveItemStackTo(itemstack1, playerInventoryStart, hotbarStart, false)) return ItemStack.EMPTY;
             } else {
                 return ItemStack.EMPTY;
             }
@@ -179,5 +233,29 @@ public class RecipeTerminalMenu extends AEBaseMenu {
         }
 
         return itemstack;
+    }
+
+    private class RecipePhantomSlot extends Slot {
+        private final EncodingMode mode;
+
+        public RecipePhantomSlot(Container container, int slot, int x, int y, EncodingMode mode) {
+            super(container, slot, x, y);
+            this.mode = mode;
+        }
+
+        @Override
+        public boolean mayPlace(@NotNull ItemStack stack) {
+            return true;
+        }
+
+        @Override
+        public boolean mayPickup(@NotNull Player player) {
+            return false;
+        }
+
+        @Override
+        public boolean isActive() {
+            return RecipeTerminalMenu.this.encodingMode == this.mode;
+        }
     }
 }

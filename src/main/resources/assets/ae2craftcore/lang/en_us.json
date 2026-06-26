@@ -28,5 +28,9 @@
   "block.ae2craftcore.multiblock_monitor": "Multiblock Monitor",
   "block.ae2craftcore.optical_interface": "Optical Interface",
   "block.ae2craftcore.me_machine_interface": "ME Machine Interface",
-  "block.ae2craftcore.recipe_terminal": "Recipe Terminal"
+  "block.ae2craftcore.recipe_terminal": "Recipe Terminal",
+  "gui.ae2craftcore.recipe_terminal.machines": "Machines",
+  "gui.ae2craftcore.recipe_terminal.recipes": "Recipes",
+  "gui.ae2craftcore.recipe_terminal.clear": "Clear",
+  "gui.ae2craftcore.recipe_terminal.encode": "Encode Recipe"
 }

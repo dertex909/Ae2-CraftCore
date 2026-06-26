@@ -25,27 +25,24 @@ public record RecipeTerminalSyncPacket(List<ItemStack> patterns, List<String> gr
     public static final Type<RecipeTerminalSyncPacket> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(Ae2craftcore.MODID, "recipe_terminal_sync"));
 
     @SuppressWarnings("unused")
-    public static final StreamCodec<FriendlyByteBuf, RecipeTerminalSyncPacket> STREAM_CODEC = StreamCodec.of(
-            (buf, value) -> {
-                var registryBuf = (RegistryFriendlyByteBuf) buf;
-                registryBuf.writeBoolean(value.isQuantumValid());
-                registryBuf.writeInt(value.patterns().size());
-                for (var stack : value.patterns()) ItemStack.OPTIONAL_STREAM_CODEC.encode(registryBuf, stack);
-                registryBuf.writeInt(value.groups().size());
-                for (var g : value.groups()) registryBuf.writeUtf(g);
-            },
-            buf -> {
-                var registryBuf = (RegistryFriendlyByteBuf) buf;
-                boolean isQuantumValid = registryBuf.readBoolean();
-                int size = registryBuf.readInt();
-                var list = new ArrayList<ItemStack>();
-                for (int i = 0; i < size; i++) list.add(ItemStack.OPTIONAL_STREAM_CODEC.decode(registryBuf));
-                int groupSize = registryBuf.readInt();
-                var groupsList = new ArrayList<String>();
-                for (int i = 0; i < groupSize; i++) groupsList.add(registryBuf.readUtf());
-                return new RecipeTerminalSyncPacket(list, groupsList, isQuantumValid);
-            }
-    );
+    public static final StreamCodec<FriendlyByteBuf, RecipeTerminalSyncPacket> STREAM_CODEC = StreamCodec.of((buf, value) -> {
+        var registryBuf = (RegistryFriendlyByteBuf) buf;
+        registryBuf.writeBoolean(value.isQuantumValid());
+        registryBuf.writeInt(value.patterns().size());
+        for (var stack : value.patterns()) ItemStack.OPTIONAL_STREAM_CODEC.encode(registryBuf, stack);
+        registryBuf.writeInt(value.groups().size());
+        for (var g : value.groups()) registryBuf.writeUtf(g);
+    }, buf -> {
+        var registryBuf = (RegistryFriendlyByteBuf) buf;
+        boolean isQuantumValid = registryBuf.readBoolean();
+        int size = registryBuf.readInt();
+        var list = new ArrayList<ItemStack>();
+        for (int i = 0; i < size; i++) list.add(ItemStack.OPTIONAL_STREAM_CODEC.decode(registryBuf));
+        int groupSize = registryBuf.readInt();
+        var groupsList = new ArrayList<String>();
+        for (int i = 0; i < groupSize; i++) groupsList.add(registryBuf.readUtf());
+        return new RecipeTerminalSyncPacket(list, groupsList, isQuantumValid);
+    });
 
     @Override
     public @NotNull Type<? extends CustomPacketPayload> type() {
