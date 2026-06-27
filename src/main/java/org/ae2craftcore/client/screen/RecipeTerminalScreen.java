@@ -453,15 +453,31 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
         tooltip.add(title.copy().withStyle(ChatFormatting.WHITE));
 
         String descText = desc.getString();
-        int limit = 30;
-        var sb = new StringBuilder(descText);
-        int i = 0;
-        while (i + limit < sb.length() && (i = sb.lastIndexOf(" ", i + limit)) != -1) {
-            sb.replace(i, i + 1, "\n");
-        }
+        int limit = 35;
+        var paragraphs = descText.split("\n");
+        for (var paragraph : paragraphs) {
+            var words = paragraph.split(" ");
+            var currentLine = new StringBuilder();
 
-        for (var line : sb.toString().split("\n")) {
-            tooltip.add(Component.literal(line).withStyle(ChatFormatting.GRAY));
+            for (var word : words) {
+                if (currentLine.length() + word.length() + (!currentLine.isEmpty() ? 1 : 0) <= limit) {
+                    if (!currentLine.isEmpty()) currentLine.append(" ");
+                    currentLine.append(word);
+                } else {
+                    if (!currentLine.isEmpty()) {
+                        tooltip.add(Component.literal(currentLine.toString()).withStyle(ChatFormatting.GRAY));
+                        currentLine = new StringBuilder();
+                    }
+                    while (word.length() > limit) {
+                        tooltip.add(Component.literal(word.substring(0, limit)).withStyle(ChatFormatting.GRAY));
+                        word = word.substring(limit);
+                    }
+                    currentLine.append(word);
+                }
+            }
+            if (!currentLine.isEmpty()) {
+                tooltip.add(Component.literal(currentLine.toString()).withStyle(ChatFormatting.GRAY));
+            }
         }
 
         guiGraphics.renderComponentTooltip(this.font, tooltip, mouseX, mouseY);
