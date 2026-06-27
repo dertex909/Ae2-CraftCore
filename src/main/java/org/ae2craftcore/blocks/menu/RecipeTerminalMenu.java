@@ -47,8 +47,8 @@ public class RecipeTerminalMenu extends AEBaseMenu {
     public static final int ENCODING_SLOT_X = ENCODING_X;
     public static final int ENCODING_SLOT_Y = ENCODING_Y;
 
-    public static final int MODE_TABS_X = ENCODING_X + ENCODING_WIDTH + 2;
-    public static final int MODE_TABS_Y = ENCODING_Y;
+    public static final int MODE_TABS_X = ENCODING_X + ENCODING_WIDTH + 15;
+    public static final int MODE_TABS_Y = ENCODING_Y - 9;
 
     public static final int PLAYER_INV_X = 8;
     public static final int PLAYER_INV_Y = 152;

@@ -57,8 +57,8 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
     private static final int PROC_SCROLL_H = 52;
     private static final int PROC_SCROLL_MAX = 24;
 
-    private static final int STONE_SCROLL_X = RecipeTerminalMenu.ENCODING_X + 117;
-    private static final int STONE_SCROLL_Y = RecipeTerminalMenu.ENCODING_Y + 12;
+    private static final int STONE_SCROLL_X = RecipeTerminalMenu.ENCODING_X + 109;
+    private static final int STONE_SCROLL_Y = RecipeTerminalMenu.ENCODING_Y + 11;
     private static final int STONE_SCROLL_W = 11;
     private static final int STONE_SCROLL_H = 44;
 
@@ -214,12 +214,6 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
             guiGraphics.renderFakeItem(result, x + slotX + 2, itemY);
             guiGraphics.renderItemDecorations(this.font, result, x + slotX + 2, itemY);
         }
-
-        int maxScroll = this.getMaxStoneScroll(recipes);
-        if (maxScroll > 0) {
-            Icon.S_ARROW_UP.getBlitter().dest(x + STONE_UP_ARROW_X + 1, y + STONE_UP_ARROW_Y + 2).blit(guiGraphics);
-            Icon.S_ARROW_DOWN.getBlitter().dest(x + STONE_DN_ARROW_X + 1, y + STONE_DN_ARROW_Y + 2).blit(guiGraphics);
-        }
     }
 
     private void drawModeScrollbar(GuiGraphics guiGraphics, int x, int y) {
@@ -227,9 +221,7 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
             this.drawAe2Scrollbar(guiGraphics, x + PROC_SCROLL_X, y + PROC_SCROLL_Y, PROC_SCROLL_H, this.menu.getProcessingScrollOffset(), PROC_SCROLL_MAX);
         } else if (this.encodingMode == EncodingMode.STONECUTTING) {
             int maxScroll = this.getMaxStoneScroll(this.getStonecuttingRecipes());
-            if (maxScroll > 0) {
-                this.drawAe2Scrollbar(guiGraphics, x + STONE_SCROLL_X, y + STONE_SCROLL_Y, STONE_SCROLL_H, this.stoneScrollOffset, maxScroll);
-            }
+            this.drawAe2Scrollbar(guiGraphics, x + STONE_SCROLL_X, y + STONE_SCROLL_Y, STONE_SCROLL_H, this.stoneScrollOffset, maxScroll);
         }
     }
 
