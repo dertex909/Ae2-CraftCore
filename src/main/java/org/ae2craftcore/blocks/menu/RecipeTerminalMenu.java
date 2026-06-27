@@ -11,6 +11,11 @@ import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.network.PacketDistributor;
+import net.minecraft.core.NonNullList;
+import net.minecraft.world.item.crafting.CraftingInput;
+import net.minecraft.world.item.crafting.SmithingRecipeInput;
+import net.minecraft.world.item.crafting.RecipeType;
+import org.ae2craftcore.Ae2craftcore;
 import org.ae2craftcore.blocks.blockentity.MeMachineInterfaceBlockEntity;
 import org.ae2craftcore.mixin.SlotAccessor;
 import org.ae2craftcore.network.packet.RecipeTerminalSyncPacket;
@@ -52,6 +57,7 @@ public class RecipeTerminalMenu extends AEBaseMenu {
     private final RecipeTerminalPart part;
     private final Container phantomContainer = new SimpleContainer(162);
     private final List<RecipePhantomSlot> encodingSlots = new ArrayList<>();
+    private final List<Slot> resultSlots = new ArrayList<>();
     private final List<Slot> processingInputSlots = new ArrayList<>();
     private final List<Slot> processingOutputSlots = new ArrayList<>();
     private int processingScrollOffset = 0;
@@ -85,32 +91,40 @@ public class RecipeTerminalMenu extends AEBaseMenu {
                 this.addPhantomSlot(EncodingMode.CRAFTING, col + row * 3, ENCODING_SLOT_X + 7 + col * 18, ENCODING_SLOT_Y + 7 + row * 18);
             }
         }
+        this.addResultSlot(EncodingMode.CRAFTING, 100, ENCODING_SLOT_X + 98, ENCODING_SLOT_Y + 25);
 
         for (int row = 0; row < 27; row++) {
             for (int col = 0; col < 3; col++) {
-                var slot = new RecipePhantomSlot(this.phantomContainer, col + row * 3, ENCODING_SLOT_X + 15 + col * 18, ENCODING_SLOT_Y + 7 + row * 18, EncodingMode.PROCESSING);
+                var slot = new RecipePhantomSlot(this.phantomContainer, col + row * 3, ENCODING_SLOT_X + 16 + col * 18, ENCODING_SLOT_Y + 7 + row * 18, EncodingMode.PROCESSING);
                 this.encodingSlots.add(slot);
                 var added = this.addSlot(slot);
                 this.processingInputSlots.add(added);
             }
         }
         for (int row = 0; row < 27; row++) {
-            var slot = new RecipePhantomSlot(this.phantomContainer, 81 + row, ENCODING_SLOT_X + 100, ENCODING_SLOT_Y + 7 + row * 18, EncodingMode.PROCESSING);
+            var slot = new RecipePhantomSlot(this.phantomContainer, 81 + row, ENCODING_SLOT_X + 101, ENCODING_SLOT_Y + 7 + row * 18, EncodingMode.PROCESSING);
             this.encodingSlots.add(slot);
             var added = this.addSlot(slot);
             this.processingOutputSlots.add(added);
         }
 
-        this.addPhantomSlot(EncodingMode.SMITHING_TABLE, 0, ENCODING_SLOT_X + 15, ENCODING_SLOT_Y + 23);
-        this.addPhantomSlot(EncodingMode.SMITHING_TABLE, 1, ENCODING_SLOT_X + 33, ENCODING_SLOT_Y + 23);
-        this.addPhantomSlot(EncodingMode.SMITHING_TABLE, 2, ENCODING_SLOT_X + 51, ENCODING_SLOT_Y + 23);
+        this.addPhantomSlot(EncodingMode.SMITHING_TABLE, 0, ENCODING_SLOT_X + 7, ENCODING_SLOT_Y + 25);
+        this.addPhantomSlot(EncodingMode.SMITHING_TABLE, 1, ENCODING_SLOT_X + 25, ENCODING_SLOT_Y + 25);
+        this.addPhantomSlot(EncodingMode.SMITHING_TABLE, 2, ENCODING_SLOT_X + 43, ENCODING_SLOT_Y + 25);
+        this.addResultSlot(EncodingMode.SMITHING_TABLE, 101, ENCODING_SLOT_X + 101, ENCODING_SLOT_Y + 25);
 
-        this.addPhantomSlot(EncodingMode.STONECUTTING, 0, ENCODING_SLOT_X + 15, ENCODING_SLOT_Y + 23);
+        this.addPhantomSlot(EncodingMode.STONECUTTING, 0, ENCODING_SLOT_X + 7, ENCODING_SLOT_Y + 25);
     }
 
     private void addPhantomSlot(EncodingMode mode, int containerSlot, int x, int y) {
         var slot = new RecipePhantomSlot(this.phantomContainer, containerSlot, x, y, mode);
         this.encodingSlots.add(slot);
+        this.addSlot(slot);
+    }
+
+    private void addResultSlot(EncodingMode mode, int containerSlot, int x, int y) {
+        var slot = new RecipeResultSlot(this.phantomContainer, containerSlot, x, y, mode);
+        this.resultSlots.add(slot);
         this.addSlot(slot);
     }
 
@@ -144,7 +158,7 @@ public class RecipeTerminalMenu extends AEBaseMenu {
                 if (name != null && !name.isEmpty() && !groups.contains(name)) groups.add(name);
             }
         } catch (Exception e) {
-            org.ae2craftcore.Ae2craftcore.LOGGER.error("Failed to query ME Machine Interfaces on grid: ", e);
+            Ae2craftcore.LOGGER.error("Failed to query ME Machine Interfaces on grid: ", e);
         }
 
         if (this.getPlayer() instanceof ServerPlayer serverPlayer) {
@@ -221,6 +235,10 @@ public class RecipeTerminalMenu extends AEBaseMenu {
 
     @Override
     public void clicked(int slotId, int button, @NotNull ClickType clickType, @NotNull Player player) {
+        if (slotId >= 0 && slotId < this.slots.size()) {
+            var slot = this.getSlot(slotId);
+            if (slot instanceof RecipeResultSlot) return;
+        }
         if (slotId >= 0 && slotId < this.encodingSlots.size()) {
             var slot = this.getSlot(slotId);
             var carried = this.getCarried();
@@ -238,13 +256,14 @@ public class RecipeTerminalMenu extends AEBaseMenu {
 
     @Override
     public @NotNull ItemStack quickMoveStack(@NotNull Player player, int index) {
-        var itemstack = ItemStack.EMPTY;
         var slot = this.slots.get(index);
+        if (slot instanceof RecipeResultSlot) return ItemStack.EMPTY;
+        var itemstack = ItemStack.EMPTY;
         if (slot.hasItem()) {
             var itemstack1 = slot.getItem();
             itemstack = itemstack1.copy();
 
-            int playerInventoryStart = this.encodingSlots.size();
+            int playerInventoryStart = this.encodingSlots.size() + this.resultSlots.size();
             int hotbarStart = playerInventoryStart + 27;
             int hotbarEnd = hotbarStart + 9;
 
@@ -304,6 +323,78 @@ public class RecipeTerminalMenu extends AEBaseMenu {
                 }
             }
             return true;
+        }
+    }
+
+    public ItemStack getCraftingResult() {
+        var player = this.getPlayer();
+        if (player == null) return ItemStack.EMPTY;
+        var level = player.level();
+
+        var grid = NonNullList.withSize(9, ItemStack.EMPTY);
+        var hasInput = false;
+        for (int i = 0; i < 9; i++) {
+            var stack = this.phantomContainer.getItem(i);
+            if (!stack.isEmpty()) {
+                var copy = stack.copy();
+                copy.setCount(1);
+                grid.set(i, copy);
+                hasInput = true;
+            }
+        }
+        if (!hasInput) return ItemStack.EMPTY;
+
+        var input = CraftingInput.of(3, 3, grid);
+        var recipe = level.getRecipeManager().getRecipeFor(RecipeType.CRAFTING, input, level).orElse(null);
+        if (recipe == null) return ItemStack.EMPTY;
+        return recipe.value().assemble(input, level.registryAccess());
+    }
+
+    public ItemStack getSmithingResult() {
+        var player = this.getPlayer();
+        if (player == null) return ItemStack.EMPTY;
+        var level = player.level();
+        var template = this.phantomContainer.getItem(0);
+        var base = this.phantomContainer.getItem(1);
+        var addition = this.phantomContainer.getItem(2);
+        if (template.isEmpty() || base.isEmpty() || addition.isEmpty()) return ItemStack.EMPTY;
+        var input = new SmithingRecipeInput(template, base, addition);
+        var recipe = level.getRecipeManager().getRecipeFor(RecipeType.SMITHING, input, level).orElse(null);
+        if (recipe == null) return ItemStack.EMPTY;
+        return recipe.value().assemble(input, level.registryAccess());
+    }
+
+    private class RecipeResultSlot extends Slot {
+        private final EncodingMode mode;
+
+        public RecipeResultSlot(Container container, int slot, int x, int y, EncodingMode mode) {
+            super(container, slot, x, y);
+            this.mode = mode;
+        }
+
+        @Override
+        public @NotNull ItemStack getItem() {
+            if (this.mode == EncodingMode.CRAFTING) {
+                return RecipeTerminalMenu.this.getCraftingResult();
+            } else if (this.mode == EncodingMode.SMITHING_TABLE) {
+                return RecipeTerminalMenu.this.getSmithingResult();
+            }
+            return ItemStack.EMPTY;
+        }
+
+        @Override
+        public boolean mayPlace(@NotNull ItemStack stack) {
+            return false;
+        }
+
+        @Override
+        public boolean mayPickup(@NotNull Player player) {
+            return false;
+        }
+
+        @Override
+        public boolean isActive() {
+            return RecipeTerminalMenu.this.encodingMode == this.mode;
         }
     }
 }

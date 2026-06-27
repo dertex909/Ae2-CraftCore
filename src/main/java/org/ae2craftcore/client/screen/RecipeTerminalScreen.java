@@ -9,7 +9,6 @@ import appeng.parts.encoding.EncodingMode;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
-import net.minecraft.core.NonNullList;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -17,11 +16,9 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.crafting.CraftingInput;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.item.crafting.SingleRecipeInput;
-import net.minecraft.world.item.crafting.SmithingRecipeInput;
 import net.minecraft.world.item.crafting.StonecutterRecipe;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.ae2craftcore.blocks.menu.RecipeTerminalMenu;
@@ -53,11 +50,6 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
     private static final int SAVE_Y = 214;
     private static final int SAVE_W = 18;
     private static final int SAVE_H = 20;
-
-    private static final int CRAFTING_RESULT_X = RecipeTerminalMenu.ENCODING_X + 106;
-    private static final int CRAFTING_RESULT_Y = RecipeTerminalMenu.ENCODING_Y + 23;
-    private static final int SMITHING_RESULT_X = RecipeTerminalMenu.ENCODING_X + 109;
-    private static final int SMITHING_RESULT_Y = RecipeTerminalMenu.ENCODING_Y + 23;
 
     private static final int PROC_SCROLL_X = RecipeTerminalMenu.ENCODING_X + 7;
     private static final int PROC_SCROLL_Y = RecipeTerminalMenu.ENCODING_Y + 7;
@@ -188,26 +180,11 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
             this.getModeIcon(mode).getBlitter().dest(tabX + 3, tabY + 2).blit(guiGraphics);
         }
 
-        if (this.encodingMode == EncodingMode.CRAFTING) {
-            this.renderEncodingResult(guiGraphics, this.getCraftingResult(), x, y, CRAFTING_RESULT_X, CRAFTING_RESULT_Y, mouseX, mouseY);
-        } else if (this.encodingMode == EncodingMode.SMITHING_TABLE) {
-            this.renderEncodingResult(guiGraphics, this.getSmithingResult(), x, y, SMITHING_RESULT_X, SMITHING_RESULT_Y, mouseX, mouseY);
-        } else if (this.encodingMode == EncodingMode.STONECUTTING) {
+        if (this.encodingMode == EncodingMode.STONECUTTING) {
             this.renderStonecuttingRecipes(guiGraphics, x, y, mouseX, mouseY);
         }
 
         this.drawModeScrollbar(guiGraphics, x, y);
-    }
-
-    private void renderEncodingResult(GuiGraphics guiGraphics, ItemStack result, int screenX, int screenY, int slotX, int slotY, int mouseX, int mouseY) {
-        if (this.isInside(mouseX, mouseY, slotX, slotY, 18, 18)) {
-            guiGraphics.fill(screenX + slotX, screenY + slotY, screenX + slotX + 16, screenY + slotY + 16, 0x66FFFFFF);
-        }
-
-        if (!result.isEmpty()) {
-            guiGraphics.renderFakeItem(result, screenX + slotX, screenY + slotY);
-            guiGraphics.renderItemDecorations(this.font, result, screenX + slotX, screenY + slotY);
-        }
     }
 
     private void renderStonecuttingRecipes(GuiGraphics guiGraphics, int x, int y, int mouseX, int mouseY) {
@@ -381,12 +358,6 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
         if (hoveredRecipe != null) {
             var displayStack = hoveredRecipe.outputStack().isEmpty() ? hoveredRecipe.patternStack() : hoveredRecipe.outputStack();
             guiGraphics.renderTooltip(this.font, displayStack, mouseX, mouseY);
-            return;
-        }
-
-        var encodingResult = this.getHoveredEncodingResult(x, y);
-        if (!encodingResult.isEmpty()) {
-            guiGraphics.renderTooltip(this.font, encodingResult, mouseX, mouseY);
             return;
         }
 
@@ -695,51 +666,6 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
         int index = (y - RecipeTerminalMenu.RECIPE_LIST_Y) / RECIPE_ROW_HEIGHT + this.recipeScrollOffset;
         var recipes = this.getFilteredRecipes();
         return index >= 0 && index < recipes.size() ? recipes.get(index) : null;
-    }
-
-    private ItemStack getHoveredEncodingResult(int x, int y) {
-        if (this.encodingMode == EncodingMode.CRAFTING && this.isInside(x, y, CRAFTING_RESULT_X,
-                CRAFTING_RESULT_Y, 18, 18)) return this.getCraftingResult();
-        if (this.encodingMode == EncodingMode.SMITHING_TABLE && this.isInside(x, y, SMITHING_RESULT_X,
-                SMITHING_RESULT_Y, 18, 18)) return this.getSmithingResult();
-        return ItemStack.EMPTY;
-    }
-
-    private ItemStack getCraftingResult() {
-        if (this.minecraft == null || this.minecraft.level == null) return ItemStack.EMPTY;
-        var level = this.minecraft.level;
-
-        var grid = NonNullList.withSize(9, ItemStack.EMPTY);
-        var hasInput = false;
-        for (int i = 0; i < 9; i++) {
-            var stack = this.menu.getPhantomContainer().getItem(i);
-            if (!stack.isEmpty()) {
-                var copy = stack.copy();
-                copy.setCount(1);
-                grid.set(i, copy);
-                hasInput = true;
-            }
-        }
-        if (!hasInput) return ItemStack.EMPTY;
-
-        var input = CraftingInput.of(3, 3, grid);
-        var recipe = level.getRecipeManager().getRecipeFor(RecipeType.CRAFTING, input, level).orElse(null);
-        if (recipe == null) return ItemStack.EMPTY;
-        return recipe.value().assemble(input, level.registryAccess());
-    }
-
-    private ItemStack getSmithingResult() {
-        if (this.minecraft == null || this.minecraft.level == null) return ItemStack.EMPTY;
-        var level = this.minecraft.level;
-        var template = this.menu.getPhantomContainer().getItem(0);
-        var base = this.menu.getPhantomContainer().getItem(1);
-        var addition = this.menu.getPhantomContainer().getItem(2);
-        if (template.isEmpty() || base.isEmpty() || addition.isEmpty()) return ItemStack.EMPTY;
-
-        var input = new SmithingRecipeInput(template, base, addition);
-        var recipe = level.getRecipeManager().getRecipeFor(RecipeType.SMITHING, input, level).orElse(null);
-        if (recipe == null) return ItemStack.EMPTY;
-        return recipe.value().assemble(input, level.registryAccess());
     }
 
     private List<RecipeHolder<StonecutterRecipe>> getStonecuttingRecipes() {
