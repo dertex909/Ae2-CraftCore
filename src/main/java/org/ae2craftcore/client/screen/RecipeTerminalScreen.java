@@ -384,7 +384,6 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
                     int newScroll = (int) Math.round(position * PROC_SCROLL_MAX);
                     this.menu.setProcessingScrollOffset(newScroll);
                 }
-                this.playClick();
                 return true;
             }
         }
@@ -409,7 +408,6 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
                         double position = Mth.clamp((relY - this.dragYOffset) / (double) availableHeight, 0.0, 1.0);
                         this.stoneScrollOffset = (int) Math.round(position * maxScroll);
                     }
-                    this.playClick();
                     return true;
                 }
             }
