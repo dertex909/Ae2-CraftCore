@@ -42,8 +42,8 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
     private static final int TAB_H = 22;
     private static final int TAB_STEP_Y = 21;
 
-    private static final int SAVE_X = RecipeTerminalMenu.ENCODING_X + 104;
-    private static final int SAVE_Y = 214;
+    private static final int SAVE_X = RecipeTerminalMenu.ENCODING_X + 127;
+    private static final int SAVE_Y = 180;
     private static final int SAVE_W = 18;
     private static final int SAVE_H = 20;
 
@@ -155,10 +155,10 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
     @Override
     protected void renderLabels(@NotNull GuiGraphics guiGraphics, int mouseX, int mouseY) {
         guiGraphics.drawString(this.font, this.title, this.titleLabelX, this.titleLabelY, 0x333342, false);
-        guiGraphics.drawString(this.font, Component.translatable("gui.ae2craftcore.recipe_terminal.machines"), RecipeTerminalMenu.MACHINE_LIST_X, 13, 0x55596B, false);
-        guiGraphics.drawString(this.font, Component.translatable("gui.ae2craftcore.recipe_terminal.recipes"), RecipeTerminalMenu.RECIPE_LIST_X, 13, 0x55596B, false);
-        guiGraphics.drawString(this.font, Component.translatable("gui.ae2.PatternEncoding"), RecipeTerminalMenu.ENCODING_X, 24, 0x55596B, false);
-        guiGraphics.drawString(this.font, this.playerInventoryTitle, this.inventoryLabelX, this.inventoryLabelY, 0x55596B, false);
+        guiGraphics.drawString(this.font, Component.translatable("gui.ae2craftcore.recipe_terminal.machines"), RecipeTerminalMenu.MACHINE_LIST_X, 13, 0xFF403E53, false);
+        guiGraphics.drawString(this.font, Component.translatable("gui.ae2craftcore.recipe_terminal.recipes"), RecipeTerminalMenu.RECIPE_LIST_X, 13, 0xFF403E53, false);
+        guiGraphics.drawString(this.font, Component.translatable("gui.ae2.PatternEncoding"), RecipeTerminalMenu.ENCODING_X, this.inventoryLabelY, 0xFF403E53, false);
+        guiGraphics.drawString(this.font, this.playerInventoryTitle, this.inventoryLabelX, this.inventoryLabelY, 0xFF403E53, false);
 
         this.renderMachineRows(guiGraphics);
         this.renderRecipeRows(guiGraphics);
