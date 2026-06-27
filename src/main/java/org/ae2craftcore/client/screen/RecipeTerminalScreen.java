@@ -28,10 +28,7 @@ import net.minecraft.world.inventory.Slot;
 import org.ae2craftcore.Ae2craftcore;
 import org.ae2craftcore.blocks.menu.RecipeTerminalMenu;
 import org.ae2craftcore.mixin.AbstractContainerScreenAccessor;
-import org.ae2craftcore.network.packet.RecipeTerminalClearPacket;
-import org.ae2craftcore.network.packet.RecipeTerminalDeleteRecipePacket;
-import org.ae2craftcore.network.packet.RecipeTerminalSavePacket;
-import org.ae2craftcore.network.packet.RecipeTerminalSelectGroupPacket;
+import org.ae2craftcore.network.packet.*;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -149,6 +146,7 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
         this.titleLabelY = 6;
         this.inventoryLabelX = RecipeTerminalMenu.PLAYER_INV_X;
         this.inventoryLabelY = RecipeTerminalMenu.PLAYER_INV_Y - 12;
+        PacketDistributor.sendToServer(new RecipeTerminalChangeModePacket(this.encodingMode));
     }
 
     @Override
@@ -586,6 +584,7 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
             if (this.isInside(x, y, TABS_X, TABS_Y + i * TAB_STEP_Y, TAB_W, TAB_H)) {
                 this.encodingMode = MODE_ORDER[i];
                 this.menu.setEncodingMode(this.encodingMode);
+                PacketDistributor.sendToServer(new RecipeTerminalChangeModePacket(this.encodingMode));
                 this.playClick();
                 return true;
             }
