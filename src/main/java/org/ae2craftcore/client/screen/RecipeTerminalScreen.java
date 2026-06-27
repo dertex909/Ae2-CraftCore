@@ -89,11 +89,12 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
     private static final int STONE_COLS = 4;
     private static final int STONE_ROWS = 2;
 
-    private static final int SUB_X = RecipeTerminalMenu.ENCODING_X + 61;
-    private static final int SUB_Y = RecipeTerminalMenu.ENCODING_Y + 5;
-    private static final int CRAFT_CLEAR_X = RecipeTerminalMenu.ENCODING_X + 79;
-    private static final int CRAFT_CLEAR_Y = RecipeTerminalMenu.ENCODING_Y + 5;
-    private static final int FLUID_X = RecipeTerminalMenu.ENCODING_X + 97;
+    private static final int CRAFT_CLEAR_X = RecipeTerminalMenu.ENCODING_X + 62;
+    private static final int CRAFT_CLEAR_Y = RecipeTerminalMenu.ENCODING_Y + 6;
+    private static final int SUB_X = RecipeTerminalMenu.ENCODING_X + 72;
+    private static final int SUB_Y = RecipeTerminalMenu.ENCODING_Y + 6;
+    private static final int FLUID_X = RecipeTerminalMenu.ENCODING_X + 82;
+    private static final int FLUID_Y = RecipeTerminalMenu.ENCODING_Y + 6;
 
     private static final int BUTTON_MINI = 8;
 
@@ -195,9 +196,9 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
             Icon.S_CLEAR.getBlitter().dest(x + CRAFT_CLEAR_X, y + CRAFT_CLEAR_Y).blit(guiGraphics);
 
             var fluidIcon = this.fluidSubstitutionsEnabled ? Icon.S_FLUID_SUBSTITUTION_ENABLED : Icon.S_FLUID_SUBSTITUTION_DISABLED;
-            fluidIcon.getBlitter().dest(x + FLUID_X, y + BUTTON_MINI).blit(guiGraphics);
+            fluidIcon.getBlitter().dest(x + FLUID_X, y + FLUID_Y).blit(guiGraphics);
 
-            if (this.fluidSubstitutionsEnabled && this.isInside(mouseX, mouseY, FLUID_X, BUTTON_MINI, BUTTON_MINI, BUTTON_MINI)) {
+            if (this.fluidSubstitutionsEnabled && this.isInside(mouseX, mouseY, FLUID_X, FLUID_Y, BUTTON_MINI, BUTTON_MINI)) {
                 for (int i = 0; i < 9; i++) {
                     var slot = this.menu.slots.get(i);
                     if (this.supportsFluidSubstitution(slot.getItem())) {
@@ -391,7 +392,7 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
                 guiGraphics.renderComponentTooltip(this.font, List.of(Component.translatable("gui.tooltips.ae2.Clear"), Component.translatable("gui.tooltips.ae2.ClearSettings")), mouseX, mouseY);
                 return;
             }
-            if (this.isInside(x, y, FLUID_X, BUTTON_MINI, BUTTON_MINI, BUTTON_MINI)) {
+            if (this.isInside(x, y, FLUID_X, FLUID_Y, BUTTON_MINI, BUTTON_MINI)) {
                 var title = Component.translatable("gui.tooltips.ae2.FluidSubstitutions");
                 var desc = Component.translatable(this.fluidSubstitutionsEnabled ? "gui.tooltips.ae2.FluidSubstitutionsDescEnabled" : "gui.tooltips.ae2.FluidSubstitutionsDescDisabled");
                 guiGraphics.renderComponentTooltip(this.font, List.of(title, desc), mouseX, mouseY);
@@ -462,7 +463,7 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
                 this.playClick();
                 return true;
             }
-            if (this.isInside(x, y, FLUID_X, BUTTON_MINI, BUTTON_MINI, BUTTON_MINI)) {
+            if (this.isInside(x, y, FLUID_X, FLUID_Y, BUTTON_MINI, BUTTON_MINI)) {
                 this.fluidSubstitutionsEnabled = !this.fluidSubstitutionsEnabled;
                 this.playClick();
                 return true;
