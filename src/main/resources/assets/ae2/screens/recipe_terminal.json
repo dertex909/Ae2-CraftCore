@@ -1,0 +1,14 @@
+{
+  "palette": {
+    "DEFAULT_TEXT_COLOR": "#FF413F54",
+    "MUTED_TEXT_COLOR": "#FF878FA5",
+    "SELECTION_COLOR": "#FFACE9FF",
+    "TEXTFIELD_PLACEHOLDER": "#FFDEDFE3",
+    "TEXTFIELD_SELECTION": "#FF0000FF",
+    "TEXTFIELD_ERROR": "#FFFF1900",
+    "TEXTFIELD_TEXT": "#FFF2F2F2",
+    "ERROR": "#FFCE2401"
+  },
+  "slots": {},
+  "text": {}
+}

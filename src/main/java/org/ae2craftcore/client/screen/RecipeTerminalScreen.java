@@ -2,13 +2,17 @@ package org.ae2craftcore.client.screen;
 
 import appeng.api.behaviors.ContainerItemStrategies;
 import appeng.api.stacks.AEItemKey;
+import appeng.api.stacks.GenericStack;
+import appeng.client.gui.AEBaseScreen;
 import appeng.client.gui.Icon;
 import appeng.client.gui.style.Blitter;
+import appeng.client.gui.me.common.StackSizeRenderer;
+import appeng.client.gui.style.StyleManager;
 import appeng.core.definitions.AEItems;
+import appeng.core.network.serverbound.InventoryActionPacket;
 import appeng.crafting.pattern.AEPatternDecoder;
 import appeng.parts.encoding.EncodingMode;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.component.DataComponents;
@@ -37,8 +41,9 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 
-public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminalMenu> {
+import static appeng.helpers.InventoryAction.SET_FILTER;
 
+public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
     private static final int TABS_X = RecipeTerminalMenu.MODE_TABS_X;
     private static final int TABS_Y = RecipeTerminalMenu.MODE_TABS_Y;
     private static final int TAB_W = 22;
@@ -134,7 +139,7 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
     private final HashSet<Slot> drag_click = new HashSet<>();
 
     public RecipeTerminalScreen(RecipeTerminalMenu menu, Inventory playerInventory, Component title) {
-        super(menu, playerInventory, title);
+        super(menu, playerInventory, title, StyleManager.loadStyleDoc("/screens/recipe_terminal.json"));
         this.imageWidth = RecipeTerminalMenu.IMAGE_WIDTH;
         this.imageHeight = RecipeTerminalMenu.IMAGE_HEIGHT;
     }
@@ -158,7 +163,23 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
     }
 
     @Override
-    protected void renderLabels(@NotNull GuiGraphics guiGraphics, int mouseX, int mouseY) {
+    public void renderSlot(@NotNull GuiGraphics guiGraphics, @NotNull Slot slot) {
+        if (slot instanceof RecipeTerminalMenu.RecipePhantomSlot && slot.isActive()) {
+            var itemstack = slot.getItem();
+            if (!itemstack.isEmpty()) {
+                guiGraphics.renderFakeItem(itemstack, slot.x, slot.y);
+                int count = itemstack.getCount();
+                if (count > 1) {
+                    StackSizeRenderer.renderSizeLabel(guiGraphics, this.font, slot.x, slot.y, this.formatStackSize(count));
+                }
+                return;
+            }
+        }
+        super.renderSlot(guiGraphics, slot);
+    }
+
+    @Override
+    public void drawFG(GuiGraphics guiGraphics, int offsetX, int offsetY, int mouseX, int mouseY) {
         guiGraphics.drawString(this.font, this.title, this.titleLabelX, this.titleLabelY, 0x333342, false);
         guiGraphics.drawString(this.font, Component.translatable("gui.ae2craftcore.recipe_terminal.machines"), RecipeTerminalMenu.MACHINE_LIST_X, 13, 0xFF403E53, false);
         guiGraphics.drawString(this.font, Component.translatable("gui.ae2craftcore.recipe_terminal.recipes"), RecipeTerminalMenu.RECIPE_LIST_X, 13, 0xFF403E53, false);
@@ -170,7 +191,7 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
     }
 
     @Override
-    protected void renderBg(@NotNull GuiGraphics guiGraphics, float partialTick, int mouseX, int mouseY) {
+    public void drawBG(GuiGraphics guiGraphics, int offsetX, int offsetY, int mouseX, int mouseY, float partialTicks) {
         int x = this.leftPos;
         int y = this.topPos;
         int relMouseX = mouseX - x;
@@ -383,6 +404,28 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
 
     @Override
     protected void renderTooltip(@NotNull GuiGraphics guiGraphics, int mouseX, int mouseY) {
+        if (this.hoveredSlot instanceof RecipeTerminalMenu.RecipePhantomSlot && this.hoveredSlot.hasItem()) {
+            var itemStack = this.hoveredSlot.getItem();
+            var tooltip = new ArrayList<>(this.getTooltipFromContainerItem(itemStack));
+
+            if (this.encodingMode == EncodingMode.PROCESSING && this.menu.isProcessingOutputSlot(this.hoveredSlot)) {
+                boolean isPrimary = this.hoveredSlot.getContainerSlot() == 81;
+                if (isPrimary) {
+                    tooltip.add(Component.translatable("gui.ae2.PatternEncoding.primary_processing_result_tooltip").withStyle(ChatFormatting.GOLD));
+                    tooltip.add(Component.translatable("gui.ae2.PatternEncoding.primary_processing_result_hint").withStyle(ChatFormatting.GRAY));
+                } else {
+                    tooltip.add(Component.translatable("gui.ae2.PatternEncoding.secondary_processing_result_tooltip").withStyle(ChatFormatting.GOLD));
+                    tooltip.add(Component.translatable("gui.ae2.PatternEncoding.secondary_processing_result_hint").withStyle(ChatFormatting.GRAY));
+                }
+            }
+
+            if (this.encodingMode == EncodingMode.PROCESSING) tooltip.add(Component.translatable(
+                    "gui.tooltips.ae2.ModifyAmountAction", Component.translatable("gui.tooltips.ae2.MiddleClick").withStyle(ChatFormatting.YELLOW)).withStyle(ChatFormatting.GRAY));
+
+            guiGraphics.renderComponentTooltip(this.font, tooltip, mouseX, mouseY);
+            return;
+        }
+
         super.renderTooltip(guiGraphics, mouseX, mouseY);
 
         int x = mouseX - this.leftPos;
@@ -488,6 +531,24 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (button == 2 || (this.minecraft != null && this.minecraft.options.keyPickItem.matchesMouse(button))) {
+            var slot = ((AbstractContainerScreenAccessor) this).ae2craftcore$findSlot(mouseX, mouseY);
+            if (slot instanceof RecipeTerminalMenu.RecipePhantomSlot && slot.isActive() && this.encodingMode == EncodingMode.PROCESSING) {
+                var currentStack = GenericStack.fromItemStack(slot.getItem());
+                if (currentStack != null) {
+                    var screen = new RecipeTerminalSetAmountScreen(this, currentStack, newStack -> {
+                        var message = new InventoryActionPacket(SET_FILTER, slot.index, GenericStack.wrapInItemStack(newStack));
+                        PacketDistributor.sendToServer(message);
+                        int count = newStack != null ? (int) newStack.amount() : 0;
+                        this.menu.setPhantomSlotCount(slot.index, count);
+                    });
+                    switchToScreen(screen);
+                    this.playClick();
+                    return true;
+                }
+            }
+        }
+
         this.drag_click.clear();
         int x = (int) mouseX - this.leftPos;
         int y = (int) mouseY - this.topPos;
@@ -689,7 +750,7 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
     }
 
     @Override
-    protected void slotClicked(@NotNull Slot slot, int slotId, int mouseButton, @NotNull ClickType clickType) {
+    protected void slotClicked(Slot slot, int slotId, int mouseButton, @NotNull ClickType clickType) {
         if (slot instanceof RecipeTerminalMenu.RecipePhantomSlot) {
             if (this.drag_click.size() > 1) return;
             PacketDistributor.sendToServer(new RecipeTerminalPhantomClickPacket(slotId, mouseButton, clickType));
@@ -787,6 +848,12 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
         }
 
         return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
+    }
+
+    private String formatStackSize(int count) {
+        if (count >= 1_000_000) return String.format("%.1fM", count / 1_000_000.0).replace(".0", "");
+        if (count >= 10_000) return String.format("%.1fK", count / 1000.0).replace(".0", "");
+        return String.valueOf(count);
     }
 
     private void playClick() {
@@ -935,6 +1002,11 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
         if (AEItems.SMITHING_TABLE_PATTERN.is(pattern)) return EncodingMode.SMITHING_TABLE;
         if (AEItems.STONECUTTING_PATTERN.is(pattern)) return EncodingMode.STONECUTTING;
         return EncodingMode.PROCESSING;
+    }
+
+    @Override
+    protected boolean shouldAddToolbar() {
+        return false;
     }
 
     public record GroupInfo(String name, int count) {

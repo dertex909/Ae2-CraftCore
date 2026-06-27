@@ -176,6 +176,28 @@ public class RecipeTerminalMenu extends AEBaseMenu {
         }
     }
 
+    public void setPhantomSlotCount(int slotId, int count) {
+        if (slotId >= 0 && slotId < this.slots.size()) {
+            var slot = this.getSlot(slotId);
+            if (slot instanceof RecipePhantomSlot) {
+                var stack = slot.getItem();
+                if (!stack.isEmpty()) {
+                    var copy = stack.copy();
+                    copy.setCount(Math.clamp(count, 1, 999999));
+                    slot.set(copy);
+                }
+            }
+        }
+    }
+
+    public boolean isProcessingOutputSlot(Slot slot) {
+        return this.processingOutputSlots.contains(slot);
+    }
+
+    public boolean isProcessingInputSlot(Slot slot) {
+        return this.processingInputSlots.contains(slot);
+    }
+
     public void setClientRecipes(List<ItemStack> recipes) {
         this.clientRecipes.clear();
         this.clientRecipes.addAll(recipes);
