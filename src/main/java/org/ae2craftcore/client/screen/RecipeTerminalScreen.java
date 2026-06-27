@@ -1,5 +1,6 @@
 package org.ae2craftcore.client.screen;
 
+import appeng.api.behaviors.ContainerItemStrategies;
 import appeng.api.stacks.AEItemKey;
 import appeng.client.gui.Icon;
 import appeng.client.gui.style.Blitter;
@@ -88,6 +89,21 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
     private static final int STONE_COLS = 4;
     private static final int STONE_ROWS = 2;
 
+    private static final int SUB_X = RecipeTerminalMenu.ENCODING_X + 61;
+    private static final int SUB_Y = RecipeTerminalMenu.ENCODING_Y + 5;
+    private static final int SUB_W = 16;
+    private static final int SUB_H = 16;
+
+    private static final int CRAFT_CLEAR_X = RecipeTerminalMenu.ENCODING_X + 79;
+    private static final int CRAFT_CLEAR_Y = RecipeTerminalMenu.ENCODING_Y + 5;
+    private static final int CRAFT_CLEAR_W = 16;
+    private static final int CRAFT_CLEAR_H = 16;
+
+    private static final int FLUID_X = RecipeTerminalMenu.ENCODING_X + 97;
+    private static final int FLUID_Y = RecipeTerminalMenu.ENCODING_Y + 5;
+    private static final int FLUID_W = 16;
+    private static final int FLUID_H = 16;
+
     private static final EncodingMode[] MODE_ORDER = {
             EncodingMode.CRAFTING,
             EncodingMode.PROCESSING,
@@ -110,6 +126,8 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
     private EncodingMode encodingMode = EncodingMode.PROCESSING;
     @Nullable
     private ResourceLocation selectedStonecuttingRecipeId;
+    private boolean substitutionsEnabled = true;
+    private boolean fluidSubstitutionsEnabled = true;
 
     private boolean draggingScrollbar = false;
     private int activeScrollbarType = 0;
@@ -177,11 +195,52 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
             this.getModeIcon(mode).getBlitter().dest(tabX + 3, tabY + 2).blit(guiGraphics);
         }
 
+        if (this.encodingMode == EncodingMode.CRAFTING) {
+            var subIcon = this.substitutionsEnabled ? Icon.SUBSTITUTION_ENABLED : Icon.SUBSTITUTION_DISABLED;
+            subIcon.getBlitter().dest(x + SUB_X, y + SUB_Y).blit(guiGraphics);
+
+            Icon.S_CLEAR.getBlitter().dest(x + CRAFT_CLEAR_X, y + CRAFT_CLEAR_Y).blit(guiGraphics);
+
+            var fluidIcon = this.fluidSubstitutionsEnabled ? Icon.FLUID_SUBSTITUTION_ENABLED : Icon.FLUID_SUBSTITUTION_DISABLED;
+            fluidIcon.getBlitter().dest(x + FLUID_X, y + FLUID_Y).blit(guiGraphics);
+
+            if (this.fluidSubstitutionsEnabled && this.isInside(mouseX, mouseY, FLUID_X, FLUID_Y, FLUID_W, FLUID_H)) {
+                for (int i = 0; i < 9; i++) {
+                    var slot = this.menu.slots.get(i);
+                    if (this.supportsFluidSubstitution(slot.getItem())) {
+                        int slotX = x + slot.x;
+                        int slotY = y + slot.y;
+                        guiGraphics.fill(slotX, slotY, slotX + 16, slotY + 16, 0xff7ac25f);
+                    }
+                }
+            }
+        }
+
+        if (this.encodingMode == EncodingMode.SMITHING_TABLE) {
+            var subIcon = this.substitutionsEnabled ? Icon.SUBSTITUTION_ENABLED : Icon.SUBSTITUTION_DISABLED;
+            subIcon.getBlitter().dest(x + SUB_X, y + SUB_Y).blit(guiGraphics);
+
+            Icon.S_CLEAR.getBlitter().dest(x + CRAFT_CLEAR_X, y + CRAFT_CLEAR_Y).blit(guiGraphics);
+        }
+
+        if (this.encodingMode == EncodingMode.PROCESSING) {
+            Icon.S_CLEAR.getBlitter().dest(x + CRAFT_CLEAR_X, y + CRAFT_CLEAR_Y).blit(guiGraphics);
+        }
+
         if (this.encodingMode == EncodingMode.STONECUTTING) {
             this.renderStonecuttingRecipes(guiGraphics, x, y, mouseX, mouseY);
         }
 
         this.drawModeScrollbar(guiGraphics, x, y);
+    }
+
+    private boolean supportsFluidSubstitution(ItemStack stack) {
+        if (stack.isEmpty()) return false;
+        try {
+            return ContainerItemStrategies.getEmptyingAction(stack) != null;
+        } catch (Exception ignored) {
+            return false;
+        }
     }
 
     private void renderStonecuttingRecipes(GuiGraphics guiGraphics, int x, int y, int mouseX, int mouseY) {
@@ -327,6 +386,41 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
         int x = mouseX - this.leftPos;
         int y = mouseY - this.topPos;
 
+        if (this.encodingMode == EncodingMode.CRAFTING) {
+            if (this.isInside(x, y, SUB_X, SUB_Y, SUB_W, SUB_H)) {
+                var title = Component.translatable(this.substitutionsEnabled ? "gui.tooltips.ae2.SubstitutionsOn" : "gui.tooltips.ae2.SubstitutionsOff");
+                var desc = Component.translatable(this.substitutionsEnabled ? "gui.tooltips.ae2.SubstitutionsDescEnabled" : "gui.tooltips.ae2.SubstitutionsDescDisabled");
+                guiGraphics.renderComponentTooltip(this.font, List.of(title, desc), mouseX, mouseY);
+                return;
+            }
+            if (this.isInside(x, y, CRAFT_CLEAR_X, CRAFT_CLEAR_Y, CRAFT_CLEAR_W, CRAFT_CLEAR_H)) {
+                guiGraphics.renderComponentTooltip(this.font, List.of(Component.translatable("gui.tooltips.ae2.Clear"), Component.translatable("gui.tooltips.ae2.ClearSettings")), mouseX, mouseY);
+                return;
+            }
+            if (this.isInside(x, y, FLUID_X, FLUID_Y, FLUID_W, FLUID_H)) {
+                var title = Component.translatable("gui.tooltips.ae2.FluidSubstitutions");
+                var desc = Component.translatable(this.fluidSubstitutionsEnabled ? "gui.tooltips.ae2.FluidSubstitutionsDescEnabled" : "gui.tooltips.ae2.FluidSubstitutionsDescDisabled");
+                guiGraphics.renderComponentTooltip(this.font, List.of(title, desc), mouseX, mouseY);
+                return;
+            }
+        } else if (this.encodingMode == EncodingMode.SMITHING_TABLE) {
+            if (this.isInside(x, y, SUB_X, SUB_Y, SUB_W, SUB_H)) {
+                var title = Component.translatable(this.substitutionsEnabled ? "gui.tooltips.ae2.SubstitutionsOn" : "gui.tooltips.ae2.SubstitutionsOff");
+                var desc = Component.translatable(this.substitutionsEnabled ? "gui.tooltips.ae2.SubstitutionsDescEnabled" : "gui.tooltips.ae2.SubstitutionsDescDisabled");
+                guiGraphics.renderComponentTooltip(this.font, List.of(title, desc), mouseX, mouseY);
+                return;
+            }
+            if (this.isInside(x, y, CRAFT_CLEAR_X, CRAFT_CLEAR_Y, CRAFT_CLEAR_W, CRAFT_CLEAR_H)) {
+                guiGraphics.renderComponentTooltip(this.font, List.of(Component.translatable("gui.tooltips.ae2.Clear"), Component.translatable("gui.tooltips.ae2.ClearSettings")), mouseX, mouseY);
+                return;
+            }
+        } else if (this.encodingMode == EncodingMode.PROCESSING) {
+            if (this.isInside(x, y, CRAFT_CLEAR_X, CRAFT_CLEAR_Y, CRAFT_CLEAR_W, CRAFT_CLEAR_H)) {
+                guiGraphics.renderComponentTooltip(this.font, List.of(Component.translatable("gui.tooltips.ae2.Clear"), Component.translatable("gui.tooltips.ae2.ClearSettings")), mouseX, mouseY);
+                return;
+            }
+        }
+
         for (int i = 0; i < MODE_ORDER.length; i++) {
             if (this.isInside(x, y, TABS_X, TABS_Y + i * TAB_STEP_Y, TAB_W, TAB_H)) {
                 guiGraphics.renderTooltip(this.font, this.getModeTooltip(MODE_ORDER[i]), mouseX, mouseY);
@@ -335,11 +429,11 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
         }
 
         if (this.isInside(x, y, CLEAR_X, CLEAR_Y, CLEAR_W, CLEAR_H)) {
-            guiGraphics.renderTooltip(this.font, Component.translatable("gui.ae2craftcore.recipe_terminal.clear"), mouseX, mouseY);
+            guiGraphics.renderTooltip(this.font, Component.translatable("gui.tooltips.ae2.Clear"), mouseX, mouseY);
             return;
         }
         if (this.isInside(x, y, SAVE_X, SAVE_Y, SAVE_W, SAVE_H)) {
-            guiGraphics.renderTooltip(this.font, Component.translatable("gui.ae2craftcore.recipe_terminal.encode"), mouseX, mouseY);
+            guiGraphics.renderTooltip(this.font, Component.translatable("gui.tooltips.ae2.Encode"), mouseX, mouseY);
             return;
         }
 
@@ -362,7 +456,47 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
         int x = (int) mouseX - this.leftPos;
         int y = (int) mouseY - this.topPos;
 
+        if (this.encodingMode == EncodingMode.CRAFTING && button == 0) {
+            if (this.isInside(x, y, SUB_X, SUB_Y, SUB_W, SUB_H)) {
+                this.substitutionsEnabled = !this.substitutionsEnabled;
+                this.playClick();
+                return true;
+            }
+            if (this.isInside(x, y, CRAFT_CLEAR_X, CRAFT_CLEAR_Y, CRAFT_CLEAR_W, CRAFT_CLEAR_H)) {
+                this.menu.clearEncodingSlots();
+                PacketDistributor.sendToServer(new RecipeTerminalClearPacket());
+                this.playClick();
+                return true;
+            }
+            if (this.isInside(x, y, FLUID_X, FLUID_Y, FLUID_W, FLUID_H)) {
+                this.fluidSubstitutionsEnabled = !this.fluidSubstitutionsEnabled;
+                this.playClick();
+                return true;
+            }
+        }
+
+        if (this.encodingMode == EncodingMode.SMITHING_TABLE && button == 0) {
+            if (this.isInside(x, y, SUB_X, SUB_Y, SUB_W, SUB_H)) {
+                this.substitutionsEnabled = !this.substitutionsEnabled;
+                this.playClick();
+                return true;
+            }
+            if (this.isInside(x, y, CRAFT_CLEAR_X, CRAFT_CLEAR_Y, CRAFT_CLEAR_W, CRAFT_CLEAR_H)) {
+                this.menu.clearEncodingSlots();
+                PacketDistributor.sendToServer(new RecipeTerminalClearPacket());
+                this.playClick();
+                return true;
+            }
+        }
+
         if (this.encodingMode == EncodingMode.PROCESSING && button == 0) {
+            if (this.isInside(x, y, CRAFT_CLEAR_X, CRAFT_CLEAR_Y, CRAFT_CLEAR_W, CRAFT_CLEAR_H)) {
+                this.menu.clearEncodingSlots();
+                PacketDistributor.sendToServer(new RecipeTerminalClearPacket());
+                this.playClick();
+                return true;
+            }
+
             if (this.isInside(x, y, PROC_SCROLL_X - 2, PROC_SCROLL_Y, PROC_SCROLL_W, PROC_SCROLL_H)) {
                 this.draggingScrollbar = true;
                 this.activeScrollbarType = 1;
@@ -429,7 +563,7 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
         if (this.isInside(x, y, SAVE_X, SAVE_Y, SAVE_W, SAVE_H)) {
             String selected = this.menu.getSelectedGroup();
             if (!selected.isEmpty()) {
-                PacketDistributor.sendToServer(new RecipeTerminalSavePacket(selected, this.encodingMode, this.selectedStonecuttingRecipeId));
+                PacketDistributor.sendToServer(new RecipeTerminalSavePacket(selected, this.encodingMode, this.selectedStonecuttingRecipeId, this.substitutionsEnabled, this.fluidSubstitutionsEnabled));
                 this.playClick();
             }
             return true;

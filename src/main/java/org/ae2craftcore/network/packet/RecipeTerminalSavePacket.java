@@ -32,13 +32,13 @@ import java.util.Arrays;
 import static appeng.api.config.Actionable.MODULATE;
 
 @NetworkPayload(direction = PayloadDirection.TO_SERVER)
-public record RecipeTerminalSavePacket(String groupName, String modeName, String stonecuttingRecipeId)
+public record RecipeTerminalSavePacket(String groupName, String modeName, String stonecuttingRecipeId, boolean substitutionsEnabled, boolean fluidSubstitutionsEnabled)
         implements CustomPacketPayload {
 
     public static final Type<RecipeTerminalSavePacket> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(Ae2craftcore.MODID, "recipe_terminal_save"));
 
-    public RecipeTerminalSavePacket(String groupName, EncodingMode mode, @Nullable ResourceLocation stonecuttingRecipeId) {
-        this(groupName, mode.name(), stonecuttingRecipeId != null ? stonecuttingRecipeId.toString() : "");
+    public RecipeTerminalSavePacket(String groupName, EncodingMode mode, @Nullable ResourceLocation stonecuttingRecipeId, boolean substitutionsEnabled, boolean fluidSubstitutionsEnabled) {
+        this(groupName, mode.name(), stonecuttingRecipeId != null ? stonecuttingRecipeId.toString() : "", substitutionsEnabled, fluidSubstitutionsEnabled);
     }
 
     @SuppressWarnings("unused")
@@ -46,7 +46,9 @@ public record RecipeTerminalSavePacket(String groupName, String modeName, String
         buf.writeUtf(value.groupName());
         buf.writeUtf(value.modeName());
         buf.writeUtf(value.stonecuttingRecipeId());
-    }, buf -> new RecipeTerminalSavePacket(buf.readUtf(), buf.readUtf(), buf.readUtf()));
+        buf.writeBoolean(value.substitutionsEnabled());
+        buf.writeBoolean(value.fluidSubstitutionsEnabled());
+    }, buf -> new RecipeTerminalSavePacket(buf.readUtf(), buf.readUtf(), buf.readUtf(), buf.readBoolean(), buf.readBoolean()));
 
     @Override
     public @NotNull Type<? extends CustomPacketPayload> type() {
@@ -58,7 +60,7 @@ public record RecipeTerminalSavePacket(String groupName, String modeName, String
         context.enqueueWork(() -> {
             var player = context.player();
             if (player.containerMenu instanceof RecipeTerminalMenu menu) try {
-                var encodedPattern = encodePattern(menu, player, parseMode(packet.modeName()), packet.stonecuttingRecipeId());
+                var encodedPattern = encodePattern(menu, player, parseMode(packet.modeName()), packet.stonecuttingRecipeId(), packet.substitutionsEnabled(), packet.fluidSubstitutionsEnabled());
                 if (encodedPattern == null || encodedPattern.isEmpty()) return;
 
                 var customData = encodedPattern.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY);
@@ -96,17 +98,17 @@ public record RecipeTerminalSavePacket(String groupName, String modeName, String
     }
 
     @Nullable
-    private static ItemStack encodePattern(RecipeTerminalMenu menu, Player player, EncodingMode mode, String stonecuttingRecipeId) {
+    private static ItemStack encodePattern(RecipeTerminalMenu menu, Player player, EncodingMode mode, String stonecuttingRecipeId, boolean substitutionsEnabled, boolean fluidSubstitutionsEnabled) {
         return switch (mode) {
-            case CRAFTING -> encodeCraftingPattern(menu, player);
+            case CRAFTING -> encodeCraftingPattern(menu, player, substitutionsEnabled, fluidSubstitutionsEnabled);
             case PROCESSING -> encodeProcessingPattern(menu);
-            case SMITHING_TABLE -> encodeSmithingTablePattern(menu, player);
+            case SMITHING_TABLE -> encodeSmithingTablePattern(menu, player, substitutionsEnabled);
             case STONECUTTING -> encodeStonecuttingPattern(menu, player, stonecuttingRecipeId);
         };
     }
 
     @Nullable
-    private static ItemStack encodeCraftingPattern(RecipeTerminalMenu menu, Player player) {
+    private static ItemStack encodeCraftingPattern(RecipeTerminalMenu menu, Player player, boolean substitutionsEnabled, boolean fluidSubstitutionsEnabled) {
         var ingredients = new ItemStack[9];
         var craftingGrid = NonNullList.withSize(9, ItemStack.EMPTY);
         var hasInput = false;
@@ -135,7 +137,7 @@ public record RecipeTerminalSavePacket(String groupName, String modeName, String
         var result = recipe.value().assemble(input, level.registryAccess());
         if (result.isEmpty()) return null;
 
-        return PatternDetailsHelper.encodeCraftingPattern(recipe, ingredients, result, false, true);
+        return PatternDetailsHelper.encodeCraftingPattern(recipe, ingredients, result, substitutionsEnabled, fluidSubstitutionsEnabled);
     }
 
     @Nullable
@@ -162,7 +164,7 @@ public record RecipeTerminalSavePacket(String groupName, String modeName, String
     }
 
     @Nullable
-    private static ItemStack encodeSmithingTablePattern(RecipeTerminalMenu menu, Player player) {
+    private static ItemStack encodeSmithingTablePattern(RecipeTerminalMenu menu, Player player, boolean substitutionsEnabled) {
         var templateStack = menu.getPhantomContainer().getItem(0);
         var baseStack = menu.getPhantomContainer().getItem(1);
         var additionStack = menu.getPhantomContainer().getItem(2);
@@ -182,7 +184,7 @@ public record RecipeTerminalSavePacket(String groupName, String modeName, String
         var output = AEItemKey.of(outputStack);
         if (output == null) return null;
 
-        return PatternDetailsHelper.encodeSmithingTablePattern(recipe, template, base, addition, output, false);
+        return PatternDetailsHelper.encodeSmithingTablePattern(recipe, template, base, addition, output, substitutionsEnabled);
     }
 
     @Nullable
