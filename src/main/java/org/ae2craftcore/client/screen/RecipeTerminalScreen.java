@@ -42,11 +42,6 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
     private static final int TAB_H = 22;
     private static final int TAB_STEP_Y = 21;
 
-    private static final int CLEAR_X = RecipeTerminalMenu.ENCODING_X + 82;
-    private static final int CLEAR_Y = 214;
-    private static final int CLEAR_W = 18;
-    private static final int CLEAR_H = 20;
-
     private static final int SAVE_X = RecipeTerminalMenu.ENCODING_X + 104;
     private static final int SAVE_Y = 214;
     private static final int SAVE_W = 18;
@@ -91,11 +86,18 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
 
     private static final int CRAFT_CLEAR_X = RecipeTerminalMenu.ENCODING_X + 62;
     private static final int CRAFT_CLEAR_Y = RecipeTerminalMenu.ENCODING_Y + 6;
-    private static final int SUB_X = RecipeTerminalMenu.ENCODING_X + 72;
-    private static final int SUB_Y = RecipeTerminalMenu.ENCODING_Y + 6;
-    private static final int FLUID_X = RecipeTerminalMenu.ENCODING_X + 82;
-    private static final int FLUID_Y = RecipeTerminalMenu.ENCODING_Y + 6;
+    private static final int CRAFT_SUB_X = RecipeTerminalMenu.ENCODING_X + 72;
+    private static final int CRAFT_SUB_Y = RecipeTerminalMenu.ENCODING_Y + 6;
+    private static final int CRAFT_FLUID_X = RecipeTerminalMenu.ENCODING_X + 82;
+    private static final int CRAFT_FLUID_Y = RecipeTerminalMenu.ENCODING_Y + 6;
 
+    private static final int SMITH_CLEAR_X = RecipeTerminalMenu.ENCODING_X + 6;
+    private static final int SMITH_CLEAR_Y = RecipeTerminalMenu.ENCODING_Y + 14;
+    private static final int SMITH_SUB_X = RecipeTerminalMenu.ENCODING_X + 16;
+    private static final int SMITH_SUB_Y = RecipeTerminalMenu.ENCODING_Y + 14;
+
+    private static final int PROC_CLEAR_X = RecipeTerminalMenu.ENCODING_X + 72;
+    private static final int PROC_CLEAR_Y = RecipeTerminalMenu.ENCODING_Y + 6;
     private static final int BUTTON_MINI = 8;
 
     private static final EncodingMode[] MODE_ORDER = {
@@ -172,7 +174,7 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
         guiGraphics.blit(BACKGROUND_TEXTURE, x, y, 0, 0, this.imageWidth, this.imageHeight, this.imageWidth, this.imageHeight);
 
         this.drawEncodingPanel(guiGraphics, x, y, relMouseX, relMouseY);
-        this.drawControlButtons(guiGraphics, x, y, relMouseX, relMouseY);
+        this.drawControlButton(guiGraphics, x, y, relMouseX, relMouseY);
         this.drawScrollButtons(guiGraphics, x, y);
         this.drawRecipeItems(guiGraphics, x, y, relMouseX, relMouseY);
     }
@@ -191,14 +193,14 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
 
         if (this.encodingMode == EncodingMode.CRAFTING) {
             var subIcon = this.substitutionsEnabled ? Icon.S_SUBSTITUTION_ENABLED : Icon.S_SUBSTITUTION_DISABLED;
-            subIcon.getBlitter().dest(x + SUB_X, y + SUB_Y).blit(guiGraphics);
+            subIcon.getBlitter().dest(x + CRAFT_SUB_X, y + CRAFT_SUB_Y).blit(guiGraphics);
 
             Icon.S_CLEAR.getBlitter().dest(x + CRAFT_CLEAR_X, y + CRAFT_CLEAR_Y).blit(guiGraphics);
 
             var fluidIcon = this.fluidSubstitutionsEnabled ? Icon.S_FLUID_SUBSTITUTION_ENABLED : Icon.S_FLUID_SUBSTITUTION_DISABLED;
-            fluidIcon.getBlitter().dest(x + FLUID_X, y + FLUID_Y).blit(guiGraphics);
+            fluidIcon.getBlitter().dest(x + CRAFT_FLUID_X, y + CRAFT_FLUID_Y).blit(guiGraphics);
 
-            if (this.fluidSubstitutionsEnabled && this.isInside(mouseX, mouseY, FLUID_X, FLUID_Y, BUTTON_MINI, BUTTON_MINI)) {
+            if (this.fluidSubstitutionsEnabled && this.isInside(mouseX, mouseY, CRAFT_FLUID_X, CRAFT_FLUID_Y, BUTTON_MINI, BUTTON_MINI)) {
                 for (int i = 0; i < 9; i++) {
                     var slot = this.menu.slots.get(i);
                     if (this.supportsFluidSubstitution(slot.getItem())) {
@@ -212,13 +214,12 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
 
         if (this.encodingMode == EncodingMode.SMITHING_TABLE) {
             var subIcon = this.substitutionsEnabled ? Icon.S_SUBSTITUTION_ENABLED : Icon.S_SUBSTITUTION_DISABLED;
-            subIcon.getBlitter().dest(x + SUB_X + 4, y + SUB_Y + 4).blit(guiGraphics);
-
-            Icon.S_CLEAR.getBlitter().dest(x + CRAFT_CLEAR_X + 4, y + CRAFT_CLEAR_Y + 4).blit(guiGraphics);
+            subIcon.getBlitter().dest(x + SMITH_SUB_X, y + SMITH_SUB_Y).blit(guiGraphics);
+            Icon.S_CLEAR.getBlitter().dest(x + SMITH_CLEAR_X, y + SMITH_CLEAR_Y).blit(guiGraphics);
         }
 
         if (this.encodingMode == EncodingMode.PROCESSING) {
-            Icon.S_CLEAR.getBlitter().dest(x + CRAFT_CLEAR_X + 4, y + CRAFT_CLEAR_Y + 4).blit(guiGraphics);
+            Icon.S_CLEAR.getBlitter().dest(x + PROC_CLEAR_X, y + PROC_CLEAR_Y).blit(guiGraphics);
         }
 
         if (this.encodingMode == EncodingMode.STONECUTTING) {
@@ -295,14 +296,13 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
         Blitter.guiSprite(sprite).dest(x, y + yOffset).blit(guiGraphics);
     }
 
-    private void drawControlButtons(GuiGraphics guiGraphics, int x, int y, int mouseX, int mouseY) {
-        this.drawToolbarButton(guiGraphics, x + CLEAR_X, y + CLEAR_Y, this.isInside(mouseX, mouseY, CLEAR_X, CLEAR_Y, CLEAR_W, CLEAR_H), Icon.CLEAR);
-        this.drawToolbarButton(guiGraphics, x + SAVE_X, y + SAVE_Y, this.isInside(mouseX, mouseY, SAVE_X, SAVE_Y, SAVE_W, SAVE_H), Icon.WHITE_ARROW_DOWN);
+    private void drawControlButton(GuiGraphics guiGraphics, int x, int y, int mouseX, int mouseY) {
+        this.drawToolbarButton(guiGraphics, x + SAVE_X, y + SAVE_Y, this.isInside(mouseX, mouseY, SAVE_X, SAVE_Y, SAVE_W, SAVE_H));
     }
 
-    private void drawToolbarButton(GuiGraphics guiGraphics, int x, int y, boolean hovered, Icon icon) {
+    private void drawToolbarButton(GuiGraphics guiGraphics, int x, int y, boolean hovered) {
         (hovered ? Icon.TOOLBAR_BUTTON_BACKGROUND_HOVER : Icon.TOOLBAR_BUTTON_BACKGROUND).getBlitter().dest(x, y).blit(guiGraphics);
-        icon.getBlitter().dest(x + 1, y + 2).blit(guiGraphics);
+        Icon.WHITE_ARROW_DOWN.getBlitter().dest(x + 1, y + 2).blit(guiGraphics);
     }
 
     private void drawScrollButtons(GuiGraphics guiGraphics, int x, int y) {
@@ -382,7 +382,7 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
         int y = mouseY - this.topPos;
 
         if (this.encodingMode == EncodingMode.CRAFTING) {
-            if (this.isInside(x, y, SUB_X, SUB_Y, BUTTON_MINI, BUTTON_MINI)) {
+            if (this.isInside(x, y, CRAFT_SUB_X, CRAFT_SUB_Y, BUTTON_MINI, BUTTON_MINI)) {
                 var title = Component.translatable(this.substitutionsEnabled ? "gui.tooltips.ae2.SubstitutionsOn" : "gui.tooltips.ae2.SubstitutionsOff");
                 var desc = Component.translatable(this.substitutionsEnabled ? "gui.tooltips.ae2.SubstitutionsDescEnabled" : "gui.tooltips.ae2.SubstitutionsDescDisabled");
                 guiGraphics.renderComponentTooltip(this.font, List.of(title, desc), mouseX, mouseY);
@@ -392,25 +392,25 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
                 guiGraphics.renderComponentTooltip(this.font, List.of(Component.translatable("gui.tooltips.ae2.Clear"), Component.translatable("gui.tooltips.ae2.ClearSettings")), mouseX, mouseY);
                 return;
             }
-            if (this.isInside(x, y, FLUID_X, FLUID_Y, BUTTON_MINI, BUTTON_MINI)) {
+            if (this.isInside(x, y, CRAFT_FLUID_X, CRAFT_FLUID_Y, BUTTON_MINI, BUTTON_MINI)) {
                 var title = Component.translatable("gui.tooltips.ae2.FluidSubstitutions");
                 var desc = Component.translatable(this.fluidSubstitutionsEnabled ? "gui.tooltips.ae2.FluidSubstitutionsDescEnabled" : "gui.tooltips.ae2.FluidSubstitutionsDescDisabled");
                 guiGraphics.renderComponentTooltip(this.font, List.of(title, desc), mouseX, mouseY);
                 return;
             }
         } else if (this.encodingMode == EncodingMode.SMITHING_TABLE) {
-            if (this.isInside(x, y, SUB_X, SUB_Y, BUTTON_MINI, BUTTON_MINI)) {
+            if (this.isInside(x, y, SMITH_SUB_X, SMITH_SUB_Y, BUTTON_MINI, BUTTON_MINI)) {
                 var title = Component.translatable(this.substitutionsEnabled ? "gui.tooltips.ae2.SubstitutionsOn" : "gui.tooltips.ae2.SubstitutionsOff");
                 var desc = Component.translatable(this.substitutionsEnabled ? "gui.tooltips.ae2.SubstitutionsDescEnabled" : "gui.tooltips.ae2.SubstitutionsDescDisabled");
                 guiGraphics.renderComponentTooltip(this.font, List.of(title, desc), mouseX, mouseY);
                 return;
             }
-            if (this.isInside(x, y, CRAFT_CLEAR_X, CRAFT_CLEAR_Y, BUTTON_MINI, BUTTON_MINI)) {
+            if (this.isInside(x, y, SMITH_CLEAR_X, SMITH_CLEAR_Y, BUTTON_MINI, BUTTON_MINI)) {
                 guiGraphics.renderComponentTooltip(this.font, List.of(Component.translatable("gui.tooltips.ae2.Clear"), Component.translatable("gui.tooltips.ae2.ClearSettings")), mouseX, mouseY);
                 return;
             }
         } else if (this.encodingMode == EncodingMode.PROCESSING) {
-            if (this.isInside(x, y, CRAFT_CLEAR_X, CRAFT_CLEAR_Y, BUTTON_MINI, BUTTON_MINI)) {
+            if (this.isInside(x, y, PROC_CLEAR_X, PROC_CLEAR_Y, BUTTON_MINI, BUTTON_MINI)) {
                 guiGraphics.renderComponentTooltip(this.font, List.of(Component.translatable("gui.tooltips.ae2.Clear"), Component.translatable("gui.tooltips.ae2.ClearSettings")), mouseX, mouseY);
                 return;
             }
@@ -423,10 +423,6 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
             }
         }
 
-        if (this.isInside(x, y, CLEAR_X, CLEAR_Y, CLEAR_W, CLEAR_H)) {
-            guiGraphics.renderTooltip(this.font, Component.translatable("gui.tooltips.ae2.Clear"), mouseX, mouseY);
-            return;
-        }
         if (this.isInside(x, y, SAVE_X, SAVE_Y, SAVE_W, SAVE_H)) {
             guiGraphics.renderTooltip(this.font, Component.translatable("gui.tooltips.ae2.Encode"), mouseX, mouseY);
             return;
@@ -452,7 +448,7 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
         int y = (int) mouseY - this.topPos;
 
         if (this.encodingMode == EncodingMode.CRAFTING && button == 0) {
-            if (this.isInside(x, y, SUB_X, SUB_Y, BUTTON_MINI, BUTTON_MINI)) {
+            if (this.isInside(x, y, CRAFT_SUB_X, CRAFT_SUB_Y, BUTTON_MINI, BUTTON_MINI)) {
                 this.substitutionsEnabled = !this.substitutionsEnabled;
                 this.playClick();
                 return true;
@@ -463,7 +459,7 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
                 this.playClick();
                 return true;
             }
-            if (this.isInside(x, y, FLUID_X, FLUID_Y, BUTTON_MINI, BUTTON_MINI)) {
+            if (this.isInside(x, y, CRAFT_FLUID_X, CRAFT_FLUID_Y, BUTTON_MINI, BUTTON_MINI)) {
                 this.fluidSubstitutionsEnabled = !this.fluidSubstitutionsEnabled;
                 this.playClick();
                 return true;
@@ -471,12 +467,12 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
         }
 
         if (this.encodingMode == EncodingMode.SMITHING_TABLE && button == 0) {
-            if (this.isInside(x, y, SUB_X, SUB_Y, BUTTON_MINI, BUTTON_MINI)) {
+            if (this.isInside(x, y, SMITH_SUB_X, SMITH_SUB_Y, BUTTON_MINI, BUTTON_MINI)) {
                 this.substitutionsEnabled = !this.substitutionsEnabled;
                 this.playClick();
                 return true;
             }
-            if (this.isInside(x, y, CRAFT_CLEAR_X, CRAFT_CLEAR_Y, BUTTON_MINI, BUTTON_MINI)) {
+            if (this.isInside(x, y, SMITH_CLEAR_X, SMITH_CLEAR_Y, BUTTON_MINI, BUTTON_MINI)) {
                 this.menu.clearEncodingSlots();
                 PacketDistributor.sendToServer(new RecipeTerminalClearPacket());
                 this.playClick();
@@ -485,7 +481,7 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
         }
 
         if (this.encodingMode == EncodingMode.PROCESSING && button == 0) {
-            if (this.isInside(x, y, CRAFT_CLEAR_X, CRAFT_CLEAR_Y, BUTTON_MINI, BUTTON_MINI)) {
+            if (this.isInside(x, y, PROC_CLEAR_X, PROC_CLEAR_Y, BUTTON_MINI, BUTTON_MINI)) {
                 this.menu.clearEncodingSlots();
                 PacketDistributor.sendToServer(new RecipeTerminalClearPacket());
                 this.playClick();
@@ -546,13 +542,6 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
                 this.playClick();
                 return true;
             }
-        }
-
-        if (this.isInside(x, y, CLEAR_X, CLEAR_Y, CLEAR_W, CLEAR_H)) {
-            this.menu.clearEncodingSlots();
-            PacketDistributor.sendToServer(new RecipeTerminalClearPacket());
-            this.playClick();
-            return true;
         }
 
         if (this.isInside(x, y, SAVE_X, SAVE_Y, SAVE_W, SAVE_H)) {
