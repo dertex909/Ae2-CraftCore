@@ -173,9 +173,6 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
             int tabX = x + TABS_X;
             int tabY = y + TABS_Y + i * TAB_STEP_Y;
             var backdrop = mode == this.encodingMode ? Icon.HORIZONTAL_TAB_SELECTED : Icon.HORIZONTAL_TAB;
-            if (this.isInside(mouseX, mouseY, TABS_X, TABS_Y + i * TAB_STEP_Y, TAB_W, TAB_H)) {
-                backdrop = Icon.HORIZONTAL_TAB_FOCUS;
-            }
             backdrop.getBlitter().dest(tabX, tabY).blit(guiGraphics);
             this.getModeIcon(mode).getBlitter().dest(tabX + 3, tabY + 2).blit(guiGraphics);
         }
