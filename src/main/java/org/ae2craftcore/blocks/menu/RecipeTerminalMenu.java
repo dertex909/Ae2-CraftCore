@@ -55,7 +55,17 @@ public class RecipeTerminalMenu extends AEBaseMenu {
     public static final int HOTBAR_Y = 210;
 
     private final RecipeTerminalPart part;
-    private final Container phantomContainer = new SimpleContainer(162);
+    private final Container phantomContainer = new SimpleContainer(162) {
+        @Override
+        public int getMaxStackSize() {
+            return 999999;
+        }
+
+        @Override
+        public int getMaxStackSize(@NotNull ItemStack stack) {
+            return 999999;
+        }
+    };
     private final List<RecipePhantomSlot> encodingSlots = new ArrayList<>();
     private final List<Slot> resultSlots = new ArrayList<>();
     private final List<Slot> processingInputSlots = new ArrayList<>();
@@ -239,58 +249,74 @@ public class RecipeTerminalMenu extends AEBaseMenu {
             var slot = this.getSlot(slotId);
             if (slot instanceof RecipeResultSlot) return;
             if (slot instanceof RecipePhantomSlot) {
-                var carried = this.getCarried();
-                if (this.encodingMode == EncodingMode.PROCESSING) {
-                    if (clickType == ClickType.QUICK_MOVE) {
-                        slot.set(ItemStack.EMPTY);
-                    } else if (button == 0) {
-                        if (carried.isEmpty()) {
-                            slot.set(ItemStack.EMPTY);
-                        } else {
-                            slot.set(carried.copy());
-                        }
-                    } else if (button == 1) {
-                        var current = slot.getItem();
-                        if (current.isEmpty()) {
-                            if (!carried.isEmpty()) {
-                                var copy = carried.copy();
-                                copy.setCount(1);
-                                slot.set(copy);
-                            }
-                        } else {
-                            if (carried.isEmpty()) {
-                                var copy = current.copy();
-                                copy.shrink(1);
-                                if (copy.isEmpty()) {
-                                    slot.set(ItemStack.EMPTY);
-                                } else {
-                                    slot.set(copy);
-                                }
-                            } else if (ItemStack.isSameItemSameComponents(current, carried)) {
-                                var copy = current.copy();
-                                int newCount = Math.min(64, copy.getCount() + 1);
-                                copy.setCount(newCount);
-                                slot.set(copy);
-                            } else {
-                                var copy = carried.copy();
-                                copy.setCount(1);
-                                slot.set(copy);
-                            }
-                        }
+                this.handlePhantomClick(slotId, button, clickType);
+                return;
+            }
+        }
+        super.clicked(slotId, button, clickType, player);
+    }
+
+    public void handlePhantomClick(int slotId, int button, ClickType clickType) {
+        if (slotId < 0 || slotId >= this.slots.size()) return;
+        var slot = this.getSlot(slotId);
+        if (!(slot instanceof RecipePhantomSlot)) return;
+
+        var carried = this.getCarried();
+        if (this.encodingMode == EncodingMode.PROCESSING) {
+            if (clickType == ClickType.QUICK_MOVE) {
+                slot.set(ItemStack.EMPTY);
+            } else if (button == 0) {
+                if (carried.isEmpty()) {
+                    slot.set(ItemStack.EMPTY);
+                } else {
+                    var current = slot.getItem();
+                    if (!current.isEmpty() && ItemStack.isSameItemSameComponents(current, carried)) {
+                        var copy = current.copy();
+                        int newCount = Math.min(999999, copy.getCount() + carried.getCount());
+                        copy.setCount(newCount);
+                        slot.set(copy);
+                    } else {
+                        slot.set(carried.copy());
+                    }
+                }
+            } else if (button == 1) {
+                var current = slot.getItem();
+                if (current.isEmpty()) {
+                    if (!carried.isEmpty()) {
+                        var copy = carried.copy();
+                        copy.setCount(1);
+                        slot.set(copy);
                     }
                 } else {
-                    if (clickType == ClickType.QUICK_MOVE || carried.isEmpty()) {
-                        slot.set(ItemStack.EMPTY);
+                    if (carried.isEmpty()) {
+                        var copy = current.copy();
+                        copy.shrink(1);
+                        if (copy.isEmpty()) {
+                            slot.set(ItemStack.EMPTY);
+                        } else {
+                            slot.set(copy);
+                        }
+                    } else if (ItemStack.isSameItemSameComponents(current, carried)) {
+                        var copy = current.copy();
+                        int newCount = Math.min(999999, copy.getCount() + 1);
+                        copy.setCount(newCount);
+                        slot.set(copy);
                     } else {
                         var copy = carried.copy();
                         copy.setCount(1);
                         slot.set(copy);
                     }
                 }
-                return;
+            }
+        } else {
+            if (clickType == ClickType.QUICK_MOVE || carried.isEmpty()) {
+                slot.set(ItemStack.EMPTY);
+            } else {
+                var copy = carried.copy();
+                copy.setCount(1);
+                slot.set(copy);
             }
         }
-        super.clicked(slotId, button, clickType, player);
     }
 
     @Override
@@ -343,6 +369,16 @@ public class RecipeTerminalMenu extends AEBaseMenu {
         @Override
         public boolean mayPickup(@NotNull Player player) {
             return false;
+        }
+
+        @Override
+        public int getMaxStackSize() {
+            return this.mode == EncodingMode.PROCESSING ? 999999 : super.getMaxStackSize();
+        }
+
+        @Override
+        public int getMaxStackSize(@NotNull ItemStack stack) {
+            return this.mode == EncodingMode.PROCESSING ? 999999 : super.getMaxStackSize(stack);
         }
 
         @Override

@@ -692,9 +692,8 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
     protected void slotClicked(@NotNull Slot slot, int slotId, int mouseButton, @NotNull ClickType clickType) {
         if (slot instanceof RecipeTerminalMenu.RecipePhantomSlot) {
             if (this.drag_click.size() > 1) return;
-            if (this.minecraft != null && this.minecraft.gameMode != null && this.minecraft.player != null) {
-                this.minecraft.gameMode.handleInventoryMouseClick(this.menu.containerId, slotId, mouseButton, clickType, this.minecraft.player);
-            }
+            PacketDistributor.sendToServer(new RecipeTerminalPhantomClickPacket(slotId, mouseButton, clickType));
+            this.menu.handlePhantomClick(slotId, mouseButton, clickType);
             return;
         }
         super.slotClicked(slot, slotId, mouseButton, clickType);
@@ -781,9 +780,8 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
         var itemstack = this.menu.getCarried();
         if (slot instanceof RecipeTerminalMenu.RecipePhantomSlot && !itemstack.isEmpty()) {
             if (this.drag_click.add(slot)) {
-                if (this.minecraft != null && this.minecraft.gameMode != null && this.minecraft.player != null) {
-                    this.minecraft.gameMode.handleInventoryMouseClick(this.menu.containerId, slot.index, button, ClickType.PICKUP, this.minecraft.player);
-                }
+                PacketDistributor.sendToServer(new RecipeTerminalPhantomClickPacket(slot.index, button, ClickType.PICKUP));
+                this.menu.handlePhantomClick(slot.index, button, ClickType.PICKUP);
             }
             return true;
         }
