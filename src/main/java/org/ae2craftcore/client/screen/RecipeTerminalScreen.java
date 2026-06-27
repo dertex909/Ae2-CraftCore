@@ -23,8 +23,11 @@ import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.item.crafting.SingleRecipeInput;
 import net.minecraft.world.item.crafting.StonecutterRecipe;
 import net.neoforged.neoforge.network.PacketDistributor;
+import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.inventory.Slot;
 import org.ae2craftcore.Ae2craftcore;
 import org.ae2craftcore.blocks.menu.RecipeTerminalMenu;
+import org.ae2craftcore.mixin.AbstractContainerScreenAccessor;
 import org.ae2craftcore.network.packet.RecipeTerminalClearPacket;
 import org.ae2craftcore.network.packet.RecipeTerminalDeleteRecipePacket;
 import org.ae2craftcore.network.packet.RecipeTerminalSavePacket;
@@ -33,6 +36,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 
@@ -130,6 +134,7 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
     private boolean draggingScrollbar = false;
     private int activeScrollbarType = 0;
     private double dragYOffset = 0;
+    private final HashSet<Slot> drag_click = new HashSet<>();
 
     public RecipeTerminalScreen(RecipeTerminalMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
@@ -485,6 +490,7 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        this.drag_click.clear();
         int x = (int) mouseX - this.leftPos;
         int y = (int) mouseY - this.topPos;
 
@@ -684,6 +690,18 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
     }
 
     @Override
+    protected void slotClicked(@NotNull Slot slot, int slotId, int mouseButton, @NotNull ClickType clickType) {
+        if (slot instanceof RecipeTerminalMenu.RecipePhantomSlot) {
+            if (this.drag_click.size() > 1) return;
+            if (this.minecraft != null && this.minecraft.gameMode != null && this.minecraft.player != null) {
+                this.minecraft.gameMode.handleInventoryMouseClick(this.menu.containerId, slotId, mouseButton, clickType, this.minecraft.player);
+            }
+            return;
+        }
+        super.slotClicked(slot, slotId, mouseButton, clickType);
+    }
+
+    @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
         int x = (int) mouseX - this.leftPos;
         int y = (int) mouseY - this.topPos;
@@ -729,6 +747,7 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
             this.draggingScrollbar = false;
             this.activeScrollbarType = 0;
         }
+        this.drag_click.clear();
         return super.mouseReleased(mouseX, mouseY, button);
     }
 
@@ -758,6 +777,18 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
                 }
             }
         }
+
+        var slot = ((AbstractContainerScreenAccessor) this).ae2craftcore$findSlot(mouseX, mouseY);
+        var itemstack = this.menu.getCarried();
+        if (slot instanceof RecipeTerminalMenu.RecipePhantomSlot && !itemstack.isEmpty()) {
+            if (this.drag_click.add(slot)) {
+                if (this.minecraft != null && this.minecraft.gameMode != null && this.minecraft.player != null) {
+                    this.minecraft.gameMode.handleInventoryMouseClick(this.menu.containerId, slot.index, button, ClickType.PICKUP, this.minecraft.player);
+                }
+            }
+            return true;
+        }
+
         return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
     }
 

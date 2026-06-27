@@ -238,18 +238,57 @@ public class RecipeTerminalMenu extends AEBaseMenu {
         if (slotId >= 0 && slotId < this.slots.size()) {
             var slot = this.getSlot(slotId);
             if (slot instanceof RecipeResultSlot) return;
-        }
-        if (slotId >= 0 && slotId < this.encodingSlots.size()) {
-            var slot = this.getSlot(slotId);
-            var carried = this.getCarried();
-            if (carried.isEmpty()) {
-                slot.set(ItemStack.EMPTY);
-            } else {
-                var copy = carried.copy();
-                copy.setCount(1);
-                slot.set(copy);
+            if (slot instanceof RecipePhantomSlot) {
+                var carried = this.getCarried();
+                if (this.encodingMode == EncodingMode.PROCESSING) {
+                    if (clickType == ClickType.QUICK_MOVE) {
+                        slot.set(ItemStack.EMPTY);
+                    } else if (button == 0) {
+                        if (carried.isEmpty()) {
+                            slot.set(ItemStack.EMPTY);
+                        } else {
+                            slot.set(carried.copy());
+                        }
+                    } else if (button == 1) {
+                        var current = slot.getItem();
+                        if (current.isEmpty()) {
+                            if (!carried.isEmpty()) {
+                                var copy = carried.copy();
+                                copy.setCount(1);
+                                slot.set(copy);
+                            }
+                        } else {
+                            if (carried.isEmpty()) {
+                                var copy = current.copy();
+                                copy.shrink(1);
+                                if (copy.isEmpty()) {
+                                    slot.set(ItemStack.EMPTY);
+                                } else {
+                                    slot.set(copy);
+                                }
+                            } else if (ItemStack.isSameItemSameComponents(current, carried)) {
+                                var copy = current.copy();
+                                int newCount = Math.min(64, copy.getCount() + 1);
+                                copy.setCount(newCount);
+                                slot.set(copy);
+                            } else {
+                                var copy = carried.copy();
+                                copy.setCount(1);
+                                slot.set(copy);
+                            }
+                        }
+                    }
+                } else {
+                    if (clickType == ClickType.QUICK_MOVE || carried.isEmpty()) {
+                        slot.set(ItemStack.EMPTY);
+                    } else {
+                        var copy = carried.copy();
+                        copy.setCount(1);
+                        slot.set(copy);
+                    }
+                }
+                return;
             }
-            return;
         }
         super.clicked(slotId, button, clickType, player);
     }
@@ -288,7 +327,7 @@ public class RecipeTerminalMenu extends AEBaseMenu {
         return itemstack;
     }
 
-    private class RecipePhantomSlot extends Slot {
+    public class RecipePhantomSlot extends Slot {
         private final EncodingMode mode;
 
         public RecipePhantomSlot(Container container, int slot, int x, int y, EncodingMode mode) {
@@ -298,7 +337,7 @@ public class RecipeTerminalMenu extends AEBaseMenu {
 
         @Override
         public boolean mayPlace(@NotNull ItemStack stack) {
-            return true;
+            return false;
         }
 
         @Override
@@ -364,7 +403,7 @@ public class RecipeTerminalMenu extends AEBaseMenu {
         return recipe.value().assemble(input, level.registryAccess());
     }
 
-    private class RecipeResultSlot extends Slot {
+    public class RecipeResultSlot extends Slot {
         private final EncodingMode mode;
 
         public RecipeResultSlot(Container container, int slot, int x, int y, EncodingMode mode) {
