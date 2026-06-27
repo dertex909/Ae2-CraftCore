@@ -10,6 +10,7 @@ import appeng.parts.encoding.EncodingMode;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
+import net.minecraft.ChatFormatting;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -22,6 +23,7 @@ import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.item.crafting.SingleRecipeInput;
 import net.minecraft.world.item.crafting.StonecutterRecipe;
 import net.neoforged.neoforge.network.PacketDistributor;
+import org.ae2craftcore.Ae2craftcore;
 import org.ae2craftcore.blocks.menu.RecipeTerminalMenu;
 import org.ae2craftcore.network.packet.RecipeTerminalClearPacket;
 import org.ae2craftcore.network.packet.RecipeTerminalDeleteRecipePacket;
@@ -44,8 +46,8 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
 
     private static final int SAVE_X = RecipeTerminalMenu.ENCODING_X + 127;
     private static final int SAVE_Y = 180;
-    private static final int SAVE_W = 18;
-    private static final int SAVE_H = 20;
+    private static final int SAVE_W = 16;
+    private static final int SAVE_H = 16;
 
     private static final int PROC_SCROLL_X = RecipeTerminalMenu.ENCODING_X + 7;
     private static final int PROC_SCROLL_Y = RecipeTerminalMenu.ENCODING_Y + 7;
@@ -107,7 +109,7 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
             EncodingMode.STONECUTTING
     };
 
-    private static final ResourceLocation BACKGROUND_TEXTURE = ResourceLocation.fromNamespaceAndPath("ae2craftcore", "textures/gui/container/recipe_terminal.png");
+    private static final ResourceLocation BACKGROUND_TEXTURE = ResourceLocation.fromNamespaceAndPath(Ae2craftcore.MODID, "textures/gui/container/recipe_terminal.png");
     private static final Blitter CRAFTING_BG = Blitter.texture("guis/pattern_modes.png").src(0, 0, 124, 66);
     private static final Blitter PROCESSING_BG = Blitter.texture("guis/pattern_modes.png").src(0, 70, 124, 66);
     private static final Blitter SMITHING_BG = Blitter.texture("guis/pattern_modes.png").src(128, 70, 124, 66);
@@ -301,8 +303,10 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
     }
 
     private void drawToolbarButton(GuiGraphics guiGraphics, int x, int y, boolean hovered) {
-        (hovered ? Icon.TOOLBAR_BUTTON_BACKGROUND_HOVER : Icon.TOOLBAR_BUTTON_BACKGROUND).getBlitter().dest(x, y).blit(guiGraphics);
-        Icon.WHITE_ARROW_DOWN.getBlitter().dest(x + 1, y + 2).blit(guiGraphics);
+        int yOffset = hovered ? 1 : 0;
+        var bgIcon = hovered ? Icon.TOOLBAR_BUTTON_BACKGROUND_HOVER : Icon.TOOLBAR_BUTTON_BACKGROUND;
+        bgIcon.getBlitter().dest(x - 1, y + yOffset, 18, 20).zOffset(2).blit(guiGraphics);
+        Icon.WHITE_ARROW_DOWN.getBlitter().dest(x, y + 1 + yOffset).zOffset(3).blit(guiGraphics);
     }
 
     private void drawScrollButtons(GuiGraphics guiGraphics, int x, int y) {
@@ -385,33 +389,33 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
             if (this.isInside(x, y, CRAFT_SUB_X, CRAFT_SUB_Y, BUTTON_MINI, BUTTON_MINI)) {
                 var title = Component.translatable(this.substitutionsEnabled ? "gui.tooltips.ae2.SubstitutionsOn" : "gui.tooltips.ae2.SubstitutionsOff");
                 var desc = Component.translatable(this.substitutionsEnabled ? "gui.tooltips.ae2.SubstitutionsDescEnabled" : "gui.tooltips.ae2.SubstitutionsDescDisabled");
-                guiGraphics.renderComponentTooltip(this.font, List.of(title, desc), mouseX, mouseY);
+                this.renderCustomTooltip(guiGraphics, title, desc, mouseX, mouseY);
                 return;
             }
             if (this.isInside(x, y, CRAFT_CLEAR_X, CRAFT_CLEAR_Y, BUTTON_MINI, BUTTON_MINI)) {
-                guiGraphics.renderComponentTooltip(this.font, List.of(Component.translatable("gui.tooltips.ae2.Clear"), Component.translatable("gui.tooltips.ae2.ClearSettings")), mouseX, mouseY);
+                this.renderCustomTooltip(guiGraphics, Component.translatable("gui.tooltips.ae2.Clear"), Component.translatable("gui.tooltips.ae2.ClearSettings"), mouseX, mouseY);
                 return;
             }
             if (this.isInside(x, y, CRAFT_FLUID_X, CRAFT_FLUID_Y, BUTTON_MINI, BUTTON_MINI)) {
                 var title = Component.translatable("gui.tooltips.ae2.FluidSubstitutions");
                 var desc = Component.translatable(this.fluidSubstitutionsEnabled ? "gui.tooltips.ae2.FluidSubstitutionsDescEnabled" : "gui.tooltips.ae2.FluidSubstitutionsDescDisabled");
-                guiGraphics.renderComponentTooltip(this.font, List.of(title, desc), mouseX, mouseY);
+                this.renderCustomTooltip(guiGraphics, title, desc, mouseX, mouseY);
                 return;
             }
         } else if (this.encodingMode == EncodingMode.SMITHING_TABLE) {
             if (this.isInside(x, y, SMITH_SUB_X, SMITH_SUB_Y, BUTTON_MINI, BUTTON_MINI)) {
                 var title = Component.translatable(this.substitutionsEnabled ? "gui.tooltips.ae2.SubstitutionsOn" : "gui.tooltips.ae2.SubstitutionsOff");
                 var desc = Component.translatable(this.substitutionsEnabled ? "gui.tooltips.ae2.SubstitutionsDescEnabled" : "gui.tooltips.ae2.SubstitutionsDescDisabled");
-                guiGraphics.renderComponentTooltip(this.font, List.of(title, desc), mouseX, mouseY);
+                this.renderCustomTooltip(guiGraphics, title, desc, mouseX, mouseY);
                 return;
             }
             if (this.isInside(x, y, SMITH_CLEAR_X, SMITH_CLEAR_Y, BUTTON_MINI, BUTTON_MINI)) {
-                guiGraphics.renderComponentTooltip(this.font, List.of(Component.translatable("gui.tooltips.ae2.Clear"), Component.translatable("gui.tooltips.ae2.ClearSettings")), mouseX, mouseY);
+                this.renderCustomTooltip(guiGraphics, Component.translatable("gui.tooltips.ae2.Clear"), Component.translatable("gui.tooltips.ae2.ClearSettings"), mouseX, mouseY);
                 return;
             }
         } else if (this.encodingMode == EncodingMode.PROCESSING) {
             if (this.isInside(x, y, PROC_CLEAR_X, PROC_CLEAR_Y, BUTTON_MINI, BUTTON_MINI)) {
-                guiGraphics.renderComponentTooltip(this.font, List.of(Component.translatable("gui.tooltips.ae2.Clear"), Component.translatable("gui.tooltips.ae2.ClearSettings")), mouseX, mouseY);
+                this.renderCustomTooltip(guiGraphics, Component.translatable("gui.tooltips.ae2.Clear"), Component.translatable("gui.tooltips.ae2.ClearSettings"), mouseX, mouseY);
                 return;
             }
         }
@@ -424,7 +428,9 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
         }
 
         if (this.isInside(x, y, SAVE_X, SAVE_Y, SAVE_W, SAVE_H)) {
-            guiGraphics.renderTooltip(this.font, Component.translatable("gui.tooltips.ae2.Encode"), mouseX, mouseY);
+            var title = Component.translatable("gui.tooltips.ae2.Encode");
+            var desc = Component.translatable("gui.tooltips.ae2.EncodeDescription");
+            this.renderCustomTooltip(guiGraphics, title, desc, mouseX, mouseY);
             return;
         }
 
@@ -440,6 +446,25 @@ public class RecipeTerminalScreen extends AbstractContainerScreen<RecipeTerminal
             var level = this.minecraft.level;
             guiGraphics.renderTooltip(this.font, stoneRecipe.value().getResultItem(level.registryAccess()), mouseX, mouseY);
         }
+    }
+
+    private void renderCustomTooltip(GuiGraphics guiGraphics, Component title, Component desc, int mouseX, int mouseY) {
+        var tooltip = new ArrayList<Component>();
+        tooltip.add(title.copy().withStyle(ChatFormatting.WHITE));
+
+        String descText = desc.getString();
+        int limit = 30;
+        var sb = new StringBuilder(descText);
+        int i = 0;
+        while (i + limit < sb.length() && (i = sb.lastIndexOf(" ", i + limit)) != -1) {
+            sb.replace(i, i + 1, "\n");
+        }
+
+        for (var line : sb.toString().split("\n")) {
+            tooltip.add(Component.literal(line).withStyle(ChatFormatting.GRAY));
+        }
+
+        guiGraphics.renderComponentTooltip(this.font, tooltip, mouseX, mouseY);
     }
 
     @Override
