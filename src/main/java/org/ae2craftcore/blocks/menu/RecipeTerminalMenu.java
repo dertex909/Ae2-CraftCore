@@ -228,6 +228,7 @@ public class RecipeTerminalMenu extends AEBaseMenu {
 
     public void setEncodingMode(EncodingMode mode) {
         this.encodingMode = mode != null ? mode : EncodingMode.PROCESSING;
+        if (this.part != null) this.part.getLogic().setMode(this.encodingMode);
     }
 
     public void clearEncodingSlots() {
@@ -398,6 +399,16 @@ public class RecipeTerminalMenu extends AEBaseMenu {
         }
 
         @Override
+        public int getMaxStackSize() {
+            return this.mode == EncodingMode.PROCESSING ? 999999 : 1;
+        }
+
+        @Override
+        public int getMaxStackSize(@NotNull ItemStack stack) {
+            return this.mode == EncodingMode.PROCESSING ? 999999 : 1;
+        }
+
+        @Override
         public boolean isActive() {
             return RecipeTerminalMenu.this.encodingMode == this.mode;
         }
@@ -408,6 +419,16 @@ public class RecipeTerminalMenu extends AEBaseMenu {
             super(inv, index);
             ((SlotAccessor) this).ae2craftcore$setX(x);
             ((SlotAccessor) this).ae2craftcore$setY(y);
+        }
+
+        @Override
+        public int getMaxStackSize() {
+            return 999999;
+        }
+
+        @Override
+        public int getMaxStackSize(@NotNull ItemStack stack) {
+            return 999999;
         }
 
         @Override
@@ -425,6 +446,16 @@ public class RecipeTerminalMenu extends AEBaseMenu {
             super(inv, index);
             ((SlotAccessor) this).ae2craftcore$setX(x);
             ((SlotAccessor) this).ae2craftcore$setY(y);
+        }
+
+        @Override
+        public int getMaxStackSize() {
+            return 999999;
+        }
+
+        @Override
+        public int getMaxStackSize(@NotNull ItemStack stack) {
+            return 999999;
         }
 
         @Override

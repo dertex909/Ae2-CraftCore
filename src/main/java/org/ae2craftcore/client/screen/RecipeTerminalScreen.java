@@ -12,6 +12,7 @@ import appeng.crafting.pattern.AEPatternDecoder;
 import appeng.parts.encoding.EncodingMode;
 import appeng.api.stacks.AEItemKey;
 import appeng.core.definitions.AEItems;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.Component;
@@ -190,25 +191,25 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
 
         if (currentMode == EncodingMode.PROCESSING) {
             Icon.S_CLEAR.getBlitter().dest(x + PROC_CLEAR_X, y + PROC_CLEAR_Y).blit(guiGraphics);
-            this.drawAe2Scrollbar(guiGraphics, x + PROC_SCROLL_X, y + PROC_SCROLL_Y, PROC_SCROLL_H, this.menu.getProcessingScrollOffset(), PROC_SCROLL_MAX);
+            this.drawAe2Scrollbar(guiGraphics, x + PROC_SCROLL_X, y + PROC_SCROLL_Y, this.menu.getProcessingScrollOffset());
         }
 
         this.drawToolbarButton(guiGraphics, x + SAVE_X, y + SAVE_Y, this.isInside(mouseX, mouseY, SAVE_X, SAVE_Y, SAVE_W, SAVE_H));
     }
 
-    private void drawAe2Scrollbar(GuiGraphics guiGraphics, int x, int y, int height, int value, int maxValue) {
+    private void drawAe2Scrollbar(GuiGraphics guiGraphics, int x, int y, int value) {
         var enabledSprite = ResourceLocation.fromNamespaceAndPath("ae2", "small_scroller");
         var disabledSprite = ResourceLocation.fromNamespaceAndPath("ae2", "small_scroller_disabled");
 
         int handleHeight = 15;
         int yOffset;
         ResourceLocation sprite;
-        if (maxValue == 0) {
+        if (RecipeTerminalScreen.PROC_SCROLL_MAX == 0) {
             yOffset = 0;
             sprite = disabledSprite;
         } else {
-            int availableHeight = height - handleHeight;
-            yOffset = value * availableHeight / maxValue;
+            int availableHeight = RecipeTerminalScreen.PROC_SCROLL_H - handleHeight;
+            yOffset = value * availableHeight / RecipeTerminalScreen.PROC_SCROLL_MAX;
             sprite = enabledSprite;
         }
 
@@ -482,6 +483,136 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
         }
 
         return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+    }
+
+    @Override
+    protected void renderTooltip(@NotNull GuiGraphics guiGraphics, int mouseX, int mouseY) {
+        if (this.hoveredSlot != null && this.hoveredSlot.hasItem()) {
+            if (this.hoveredSlot instanceof RecipeTerminalMenu.RecipeTerminalPhantomSlot
+                    || this.hoveredSlot instanceof RecipeTerminalMenu.RecipeTerminalProcessingInputSlot
+                    || this.hoveredSlot instanceof RecipeTerminalMenu.RecipeTerminalProcessingOutputSlot) {
+
+                var itemStack = this.hoveredSlot.getItem();
+                var tooltip = new ArrayList<>(this.getTooltipFromContainerItem(itemStack));
+
+                if (this.menu.getEncodingMode() == EncodingMode.PROCESSING && this.menu.isProcessingOutputSlot(this.hoveredSlot)) {
+                    boolean isPrimary = this.hoveredSlot.getContainerSlot() == 0;
+                    if (isPrimary) {
+                        tooltip.add(Component.translatable("gui.ae2.PatternEncoding.primary_processing_result_tooltip").withStyle(ChatFormatting.GOLD));
+                        tooltip.add(Component.translatable("gui.ae2.PatternEncoding.primary_processing_result_hint").withStyle(ChatFormatting.GRAY));
+                    } else {
+                        tooltip.add(Component.translatable("gui.ae2.PatternEncoding.secondary_processing_result_tooltip").withStyle(ChatFormatting.GOLD));
+                        tooltip.add(Component.translatable("gui.ae2.PatternEncoding.secondary_processing_result_hint").withStyle(ChatFormatting.GRAY));
+                    }
+                }
+
+                if (this.menu.getEncodingMode() == EncodingMode.PROCESSING) {
+                    tooltip.add(Component.translatable("gui.tooltips.ae2.ModifyAmountAction", Component.translatable("gui.tooltips.ae2.MiddleClick").withStyle(ChatFormatting.YELLOW)).withStyle(ChatFormatting.GRAY));
+                }
+
+                guiGraphics.renderComponentTooltip(this.font, tooltip, mouseX, mouseY);
+                return;
+            }
+        }
+
+        super.renderTooltip(guiGraphics, mouseX, mouseY);
+
+        int x = mouseX - this.leftPos;
+        int y = mouseY - this.topPos;
+
+        var currentMode = this.menu.getEncodingMode();
+
+        if (currentMode == EncodingMode.CRAFTING) {
+            if (this.isInside(x, y, CRAFT_SUB_X, CRAFT_SUB_Y, BUTTON_MINI, BUTTON_MINI)) {
+                var title = Component.translatable(this.substitutionsEnabled ? "gui.tooltips.ae2.SubstitutionsOn" : "gui.tooltips.ae2.SubstitutionsOff");
+                var desc = Component.translatable(this.substitutionsEnabled ? "gui.tooltips.ae2.SubstitutionsDescEnabled" : "gui.tooltips.ae2.SubstitutionsDescDisabled");
+                this.renderCustomTooltip(guiGraphics, title, desc, mouseX, mouseY);
+                return;
+            }
+            if (this.isInside(x, y, CRAFT_CLEAR_X, CRAFT_CLEAR_Y, BUTTON_MINI, BUTTON_MINI)) {
+                this.renderCustomTooltip(guiGraphics, Component.translatable("gui.tooltips.ae2.Clear"), Component.translatable("gui.tooltips.ae2.ClearSettings"), mouseX, mouseY);
+                return;
+            }
+            if (this.isInside(x, y, CRAFT_FLUID_X, CRAFT_FLUID_Y, BUTTON_MINI, BUTTON_MINI)) {
+                var title = Component.translatable("gui.tooltips.ae2.FluidSubstitutions");
+                var desc = Component.translatable(this.fluidSubstitutionsEnabled ? "gui.tooltips.ae2.FluidSubstitutionsDescEnabled" : "gui.tooltips.ae2.FluidSubstitutionsDescDisabled");
+                this.renderCustomTooltip(guiGraphics, title, desc, mouseX, mouseY);
+                return;
+            }
+        } else if (currentMode == EncodingMode.SMITHING_TABLE) {
+            if (this.isInside(x, y, SMITH_SUB_X, SMITH_SUB_Y, BUTTON_MINI, BUTTON_MINI)) {
+                var title = Component.translatable(this.substitutionsEnabled ? "gui.tooltips.ae2.SubstitutionsOn" : "gui.tooltips.ae2.SubstitutionsOff");
+                var desc = Component.translatable(this.substitutionsEnabled ? "gui.tooltips.ae2.SubstitutionsDescEnabled" : "gui.tooltips.ae2.SubstitutionsDescDisabled");
+                this.renderCustomTooltip(guiGraphics, title, desc, mouseX, mouseY);
+                return;
+            }
+            if (this.isInside(x, y, SMITH_CLEAR_X, SMITH_CLEAR_Y, BUTTON_MINI, BUTTON_MINI)) {
+                this.renderCustomTooltip(guiGraphics, Component.translatable("gui.tooltips.ae2.Clear"), Component.translatable("gui.tooltips.ae2.ClearSettings"), mouseX, mouseY);
+                return;
+            }
+        } else if (currentMode == EncodingMode.PROCESSING) {
+            if (this.isInside(x, y, PROC_CLEAR_X, PROC_CLEAR_Y, BUTTON_MINI, BUTTON_MINI)) {
+                this.renderCustomTooltip(guiGraphics, Component.translatable("gui.tooltips.ae2.Clear"), Component.translatable("gui.tooltips.ae2.ClearSettings"), mouseX, mouseY);
+                return;
+            }
+        }
+
+        for (int i = 0; i < MODE_ORDER.length; i++) {
+            if (this.isInside(x, y, TABS_X, TABS_Y + i * TAB_STEP_Y, TAB_W, TAB_H)) {
+                guiGraphics.renderTooltip(this.font, this.getModeTooltip(MODE_ORDER[i]), mouseX, mouseY);
+                return;
+            }
+        }
+
+        if (this.isInside(x, y, SAVE_X, SAVE_Y, SAVE_W, SAVE_H)) {
+            var title = Component.translatable("gui.tooltips.ae2.Encode");
+            var desc = Component.translatable("gui.tooltips.ae2.EncodeDescription");
+            this.renderCustomTooltip(guiGraphics, title, desc, mouseX, mouseY);
+        }
+    }
+
+    private void renderCustomTooltip(GuiGraphics guiGraphics, Component title, Component desc, int mouseX, int mouseY) {
+        var tooltip = new ArrayList<Component>();
+        tooltip.add(title.copy().withStyle(ChatFormatting.WHITE));
+
+        String descText = desc.getString();
+        int limit = 35;
+        var paragraphs = descText.split("\n");
+        for (var paragraph : paragraphs) {
+            var words = paragraph.split(" ");
+            var currentLine = new StringBuilder();
+
+            for (var word : words) {
+                if (currentLine.length() + word.length() + (!currentLine.isEmpty() ? 1 : 0) <= limit) {
+                    if (!currentLine.isEmpty()) currentLine.append(" ");
+                    currentLine.append(word);
+                } else {
+                    if (!currentLine.isEmpty()) {
+                        tooltip.add(Component.literal(currentLine.toString()).withStyle(ChatFormatting.GRAY));
+                        currentLine = new StringBuilder();
+                    }
+                    while (word.length() > limit) {
+                        tooltip.add(Component.literal(word.substring(0, limit)).withStyle(ChatFormatting.GRAY));
+                        word = word.substring(limit);
+                    }
+                    currentLine.append(word);
+                }
+            }
+            if (!currentLine.isEmpty()) {
+                tooltip.add(Component.literal(currentLine.toString()).withStyle(ChatFormatting.GRAY));
+            }
+        }
+
+        guiGraphics.renderComponentTooltip(this.font, tooltip, mouseX, mouseY);
+    }
+
+    private Component getModeTooltip(EncodingMode mode) {
+        return switch (mode) {
+            case CRAFTING -> Component.translatable("item.ae2.crafting_pattern");
+            case PROCESSING -> Component.translatable("item.ae2.processing_pattern");
+            case SMITHING_TABLE -> Component.translatable("item.ae2.smithing_table_pattern");
+            case STONECUTTING -> Component.translatable("item.ae2.stonecutting_pattern");
+        };
     }
 
     private String formatStackSize(int count) {
