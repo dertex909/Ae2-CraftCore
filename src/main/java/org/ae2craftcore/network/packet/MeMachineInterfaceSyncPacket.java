@@ -20,10 +20,9 @@ public record MeMachineInterfaceSyncPacket(BlockPos pos, String customName) impl
 
     @SuppressWarnings("unused")
     public static final StreamCodec<FriendlyByteBuf, MeMachineInterfaceSyncPacket> STREAM_CODEC = StreamCodec.of((buf, value) -> {
-                buf.writeBlockPos(value.pos());
-                buf.writeUtf(value.customName());
-            }, buf -> new MeMachineInterfaceSyncPacket(buf.readBlockPos(), buf.readUtf())
-    );
+        buf.writeBlockPos(value.pos());
+        buf.writeUtf(value.customName());
+    }, buf -> new MeMachineInterfaceSyncPacket(buf.readBlockPos(), buf.readUtf()));
 
     @Override
     public @NotNull Type<? extends CustomPacketPayload> type() {

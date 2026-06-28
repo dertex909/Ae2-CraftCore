@@ -5,6 +5,7 @@ import appeng.menu.slot.FakeSlot;
 import appeng.parts.encoding.EncodingMode;
 import appeng.api.inventories.InternalInventory;
 import appeng.api.stacks.GenericStack;
+import appeng.menu.guisync.GuiSync;
 import net.minecraft.core.NonNullList;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.SimpleContainer;
@@ -60,10 +61,16 @@ public class RecipeTerminalMenu extends AEBaseMenu {
     private final List<Slot> processingOutputSlots = new ArrayList<>();
     private int processingScrollOffset = 0;
     private String selectedGroup = "";
-    private EncodingMode encodingMode = EncodingMode.PROCESSING;
     private final List<ItemStack> clientRecipes = new ArrayList<>();
     private final List<String> clientGroups = new ArrayList<>();
     private boolean firstSync = true;
+
+    @GuiSync(97)
+    public EncodingMode mode = EncodingMode.PROCESSING;
+    @GuiSync(96)
+    public boolean substitute = false;
+    @GuiSync(95)
+    public boolean substituteFluids = true;
 
     public RecipeTerminalMenu(int containerId, Inventory playerInventory, RecipeTerminalPart part) {
         super(ModMenuTypes.RECIPE_TERMINAL.get(), containerId, playerInventory, part);
@@ -117,6 +124,14 @@ public class RecipeTerminalMenu extends AEBaseMenu {
     @Override
     public void broadcastChanges() {
         super.broadcastChanges();
+
+        if (isServerSide() && this.part != null) {
+            var logic = this.part.getLogic();
+            if (this.mode != logic.getMode()) this.mode = logic.getMode();
+            this.substitute = logic.isSubstitution();
+            this.substituteFluids = logic.isFluidSubstitution();
+        }
+
         if (this.firstSync) {
             this.firstSync = false;
             this.syncRecipesToClient();
@@ -228,12 +243,12 @@ public class RecipeTerminalMenu extends AEBaseMenu {
     }
 
     public EncodingMode getEncodingMode() {
-        return this.encodingMode;
+        return this.mode;
     }
 
     public void setEncodingMode(EncodingMode mode) {
-        this.encodingMode = mode != null ? mode : EncodingMode.PROCESSING;
-        if (this.part != null) this.part.getLogic().setMode(this.encodingMode);
+        this.mode = mode != null ? mode : EncodingMode.PROCESSING;
+        if (this.part != null) this.part.getLogic().setMode(this.mode);
     }
 
     public void clearEncodingSlots() {
@@ -318,7 +333,7 @@ public class RecipeTerminalMenu extends AEBaseMenu {
     }
 
     public class RecipeTerminalPhantomSlot extends FakeSlot {
-        private final EncodingMode mode;
+        final EncodingMode mode;
 
         public RecipeTerminalPhantomSlot(InternalInventory inv, int index, int x, int y, EncodingMode mode) {
             super(inv, index);
@@ -339,7 +354,7 @@ public class RecipeTerminalMenu extends AEBaseMenu {
 
         @Override
         public boolean isActive() {
-            return RecipeTerminalMenu.this.encodingMode == this.mode;
+            return RecipeTerminalMenu.this.mode == this.mode;
         }
     }
 
@@ -362,7 +377,7 @@ public class RecipeTerminalMenu extends AEBaseMenu {
 
         @Override
         public boolean isActive() {
-            if (RecipeTerminalMenu.this.encodingMode != EncodingMode.PROCESSING) return false;
+            if (RecipeTerminalMenu.this.mode != EncodingMode.PROCESSING) return false;
             int row = this.getContainerSlot() / 3;
             int scroll = RecipeTerminalMenu.this.processingScrollOffset;
             int effectiveRow = row - scroll;
@@ -389,7 +404,7 @@ public class RecipeTerminalMenu extends AEBaseMenu {
 
         @Override
         public boolean isActive() {
-            if (RecipeTerminalMenu.this.encodingMode != EncodingMode.PROCESSING) return false;
+            if (RecipeTerminalMenu.this.mode != EncodingMode.PROCESSING) return false;
             int row = this.getContainerSlot();
             int scroll = RecipeTerminalMenu.this.processingScrollOffset;
             int effectiveRow = row - scroll;
@@ -427,7 +442,7 @@ public class RecipeTerminalMenu extends AEBaseMenu {
 
         @Override
         public boolean isActive() {
-            return RecipeTerminalMenu.this.encodingMode == this.mode;
+            return RecipeTerminalMenu.this.mode == this.mode;
         }
     }
 }

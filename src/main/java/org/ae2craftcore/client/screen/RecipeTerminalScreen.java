@@ -94,8 +94,6 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
 
     private int groupScrollOffset = 0;
     private int recipeScrollOffset = 0;
-    private boolean substitutionsEnabled = true;
-    private boolean fluidSubstitutionsEnabled = true;
 
     private boolean draggingScrollbar = false;
     private int activeScrollbarType = 0;
@@ -179,15 +177,15 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
         }
 
         if (currentMode == EncodingMode.CRAFTING) {
-            var subIcon = this.substitutionsEnabled ? Icon.S_SUBSTITUTION_ENABLED : Icon.S_SUBSTITUTION_DISABLED;
+            var subIcon = this.menu.substitute ? Icon.S_SUBSTITUTION_ENABLED : Icon.S_SUBSTITUTION_DISABLED;
             subIcon.getBlitter().dest(x + CRAFT_SUB_X, y + CRAFT_SUB_Y).blit(guiGraphics);
             Icon.S_CLEAR.getBlitter().dest(x + CRAFT_CLEAR_X, y + CRAFT_CLEAR_Y).blit(guiGraphics);
-            var fluidIcon = this.fluidSubstitutionsEnabled ? Icon.S_FLUID_SUBSTITUTION_ENABLED : Icon.S_FLUID_SUBSTITUTION_DISABLED;
+            var fluidIcon = this.menu.substituteFluids ? Icon.S_FLUID_SUBSTITUTION_ENABLED : Icon.S_FLUID_SUBSTITUTION_DISABLED;
             fluidIcon.getBlitter().dest(x + CRAFT_FLUID_X, y + CRAFT_FLUID_Y).blit(guiGraphics);
         }
 
         if (currentMode == EncodingMode.SMITHING_TABLE) {
-            var subIcon = this.substitutionsEnabled ? Icon.S_SUBSTITUTION_ENABLED : Icon.S_SUBSTITUTION_DISABLED;
+            var subIcon = this.menu.substitute ? Icon.S_SUBSTITUTION_ENABLED : Icon.S_SUBSTITUTION_DISABLED;
             subIcon.getBlitter().dest(x + SMITH_SUB_X, y + SMITH_SUB_Y).blit(guiGraphics);
             Icon.S_CLEAR.getBlitter().dest(x + SMITH_CLEAR_X, y + SMITH_CLEAR_Y).blit(guiGraphics);
         }
@@ -322,7 +320,7 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
 
         if (currentMode == EncodingMode.CRAFTING && button == 0) {
             if (this.isInside(x, y, CRAFT_SUB_X, CRAFT_SUB_Y, BUTTON_MINI, BUTTON_MINI)) {
-                this.substitutionsEnabled = !this.substitutionsEnabled;
+                PacketDistributor.sendToServer(new RecipeTerminalUpdateSettingsPacket(!this.menu.substitute, this.menu.substituteFluids));
                 this.playClick();
                 return true;
             }
@@ -333,7 +331,7 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
                 return true;
             }
             if (this.isInside(x, y, CRAFT_FLUID_X, CRAFT_FLUID_Y, BUTTON_MINI, BUTTON_MINI)) {
-                this.fluidSubstitutionsEnabled = !this.fluidSubstitutionsEnabled;
+                PacketDistributor.sendToServer(new RecipeTerminalUpdateSettingsPacket(this.menu.substitute, !this.menu.substituteFluids));
                 this.playClick();
                 return true;
             }
@@ -341,7 +339,7 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
 
         if (currentMode == EncodingMode.SMITHING_TABLE && button == 0) {
             if (this.isInside(x, y, SMITH_SUB_X, SMITH_SUB_Y, BUTTON_MINI, BUTTON_MINI)) {
-                this.substitutionsEnabled = !this.substitutionsEnabled;
+                PacketDistributor.sendToServer(new RecipeTerminalUpdateSettingsPacket(!this.menu.substitute, this.menu.substituteFluids));
                 this.playClick();
                 return true;
             }
@@ -364,6 +362,7 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
             if (this.isInside(x, y, PROC_SCROLL_X - 2, PROC_SCROLL_Y, PROC_SCROLL_W, PROC_SCROLL_H)) {
                 this.draggingScrollbar = true;
                 this.activeScrollbarType = 1;
+                this.setDragging(true);
 
                 int handleHeight = 15;
                 int currentScroll = this.menu.getProcessingScrollOffset();
@@ -395,7 +394,7 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
         if (this.isInside(x, y, SAVE_X, SAVE_Y, SAVE_W, SAVE_H)) {
             String selected = this.menu.getSelectedGroup();
             if (!selected.isEmpty()) {
-                PacketDistributor.sendToServer(new RecipeTerminalSavePacket(selected, this.menu.getEncodingMode(), null, this.substitutionsEnabled, this.fluidSubstitutionsEnabled));
+                PacketDistributor.sendToServer(new RecipeTerminalSavePacket(selected, this.menu.getEncodingMode(), null, this.menu.substitute, this.menu.substituteFluids));
                 this.playClick();
             }
             return true;
@@ -504,6 +503,7 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
         if (button == 0) {
             this.draggingScrollbar = false;
             this.activeScrollbarType = 0;
+            this.setDragging(false);
         }
         return super.mouseReleased(mouseX, mouseY, button);
     }
@@ -566,8 +566,8 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
 
         if (currentMode == EncodingMode.CRAFTING) {
             if (this.isInside(x, y, CRAFT_SUB_X, CRAFT_SUB_Y, BUTTON_MINI, BUTTON_MINI)) {
-                var title = Component.translatable(this.substitutionsEnabled ? "gui.tooltips.ae2.SubstitutionsOn" : "gui.tooltips.ae2.SubstitutionsOff");
-                var desc = Component.translatable(this.substitutionsEnabled ? "gui.tooltips.ae2.SubstitutionsDescEnabled" : "gui.tooltips.ae2.SubstitutionsDescDisabled");
+                var title = Component.translatable(this.menu.substitute ? "gui.tooltips.ae2.SubstitutionsOn" : "gui.tooltips.ae2.SubstitutionsOff");
+                var desc = Component.translatable(this.menu.substitute ? "gui.tooltips.ae2.SubstitutionsDescEnabled" : "gui.tooltips.ae2.SubstitutionsDescDisabled");
                 this.renderCustomTooltip(guiGraphics, title, desc, mouseX, mouseY);
                 return;
             }
@@ -577,14 +577,14 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
             }
             if (this.isInside(x, y, CRAFT_FLUID_X, CRAFT_FLUID_Y, BUTTON_MINI, BUTTON_MINI)) {
                 var title = Component.translatable("gui.tooltips.ae2.FluidSubstitutions");
-                var desc = Component.translatable(this.fluidSubstitutionsEnabled ? "gui.tooltips.ae2.FluidSubstitutionsDescEnabled" : "gui.tooltips.ae2.FluidSubstitutionsDescDisabled");
+                var desc = Component.translatable(this.menu.substituteFluids ? "gui.tooltips.ae2.FluidSubstitutionsDescEnabled" : "gui.tooltips.ae2.FluidSubstitutionsDescDisabled");
                 this.renderCustomTooltip(guiGraphics, title, desc, mouseX, mouseY);
                 return;
             }
         } else if (currentMode == EncodingMode.SMITHING_TABLE) {
             if (this.isInside(x, y, SMITH_SUB_X, SMITH_SUB_Y, BUTTON_MINI, BUTTON_MINI)) {
-                var title = Component.translatable(this.substitutionsEnabled ? "gui.tooltips.ae2.SubstitutionsOn" : "gui.tooltips.ae2.SubstitutionsOff");
-                var desc = Component.translatable(this.substitutionsEnabled ? "gui.tooltips.ae2.SubstitutionsDescEnabled" : "gui.tooltips.ae2.SubstitutionsDescDisabled");
+                var title = Component.translatable(this.menu.substitute ? "gui.tooltips.ae2.SubstitutionsOn" : "gui.tooltips.ae2.SubstitutionsOff");
+                var desc = Component.translatable(this.menu.substitute ? "gui.tooltips.ae2.SubstitutionsDescEnabled" : "gui.tooltips.ae2.SubstitutionsDescDisabled");
                 this.renderCustomTooltip(guiGraphics, title, desc, mouseX, mouseY);
                 return;
             }

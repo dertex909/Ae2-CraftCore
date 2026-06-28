@@ -17,10 +17,8 @@ public record RecipeTerminalSelectGroupPacket(String groupName) implements Custo
 
     public static final Type<RecipeTerminalSelectGroupPacket> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(Ae2craftcore.MODID, "recipe_terminal_select_group"));
 
-    public static final StreamCodec<FriendlyByteBuf, RecipeTerminalSelectGroupPacket> STREAM_CODEC = StreamCodec.of(
-            (buf, value) -> buf.writeUtf(value.groupName()),
-            buf -> new RecipeTerminalSelectGroupPacket(buf.readUtf())
-    );
+    public static final StreamCodec<FriendlyByteBuf, RecipeTerminalSelectGroupPacket> STREAM_CODEC = StreamCodec.of((buf, value) ->
+            buf.writeUtf(value.groupName()), buf -> new RecipeTerminalSelectGroupPacket(buf.readUtf()));
 
     @Override
     public @NotNull Type<? extends CustomPacketPayload> type() {

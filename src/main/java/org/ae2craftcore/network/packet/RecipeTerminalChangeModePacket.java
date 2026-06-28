@@ -19,10 +19,8 @@ public record RecipeTerminalChangeModePacket(EncodingMode mode) implements Custo
     public static final Type<RecipeTerminalChangeModePacket> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(Ae2craftcore.MODID, "recipe_terminal_change_mode"));
 
     @SuppressWarnings("unused")
-    public static final StreamCodec<FriendlyByteBuf, RecipeTerminalChangeModePacket> STREAM_CODEC = StreamCodec.of(
-            (buf, value) -> buf.writeEnum(value.mode()),
-            buf -> new RecipeTerminalChangeModePacket(buf.readEnum(EncodingMode.class))
-    );
+    public static final StreamCodec<FriendlyByteBuf, RecipeTerminalChangeModePacket> STREAM_CODEC = StreamCodec.of((buf, value) ->
+            buf.writeEnum(value.mode()), buf -> new RecipeTerminalChangeModePacket(buf.readEnum(EncodingMode.class)));
 
     @Override
     public @NotNull Type<? extends CustomPacketPayload> type() {

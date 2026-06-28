@@ -20,16 +20,13 @@ public record RecipeTerminalDeleteRecipePacket(ItemStack patternToDelete) implem
     public static final Type<RecipeTerminalDeleteRecipePacket> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(Ae2craftcore.MODID, "recipe_terminal_delete_recipe"));
 
     @SuppressWarnings("unused")
-    public static final StreamCodec<FriendlyByteBuf, RecipeTerminalDeleteRecipePacket> STREAM_CODEC = StreamCodec.of(
-            (buf, value) -> {
-                var registryBuf = (RegistryFriendlyByteBuf) buf;
-                ItemStack.OPTIONAL_STREAM_CODEC.encode(registryBuf, value.patternToDelete());
-            },
-            buf -> {
-                var registryBuf = (RegistryFriendlyByteBuf) buf;
-                return new RecipeTerminalDeleteRecipePacket(ItemStack.OPTIONAL_STREAM_CODEC.decode(registryBuf));
-            }
-    );
+    public static final StreamCodec<FriendlyByteBuf, RecipeTerminalDeleteRecipePacket> STREAM_CODEC = StreamCodec.of((buf, value) -> {
+        var registryBuf = (RegistryFriendlyByteBuf) buf;
+        ItemStack.OPTIONAL_STREAM_CODEC.encode(registryBuf, value.patternToDelete());
+    }, buf -> {
+        var registryBuf = (RegistryFriendlyByteBuf) buf;
+        return new RecipeTerminalDeleteRecipePacket(ItemStack.OPTIONAL_STREAM_CODEC.decode(registryBuf));
+    });
 
     @Override
     public @NotNull Type<? extends CustomPacketPayload> type() {
