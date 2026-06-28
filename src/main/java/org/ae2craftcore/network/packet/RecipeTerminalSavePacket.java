@@ -27,12 +27,13 @@ import org.ae2craftcore.registry.annotations.PayloadDirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 
 import static appeng.api.config.Actionable.MODULATE;
 
 @NetworkPayload(direction = PayloadDirection.TO_SERVER)
-public record RecipeTerminalSavePacket(String groupName, String modeName, String stonecuttingRecipeId, boolean substitutionsEnabled, boolean fluidSubstitutionsEnabled)
+public record RecipeTerminalSavePacket(String groupName, String modeName, String stonecuttingRecipeId,
+                                       boolean substitutionsEnabled, boolean fluidSubstitutionsEnabled)
         implements CustomPacketPayload {
 
     public static final Type<RecipeTerminalSavePacket> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(Ae2craftcore.MODID, "recipe_terminal_save"));
@@ -112,16 +113,16 @@ public record RecipeTerminalSavePacket(String groupName, String modeName, String
         var ingredients = new ItemStack[9];
         var craftingGrid = NonNullList.withSize(9, ItemStack.EMPTY);
         var hasInput = false;
+        var inputInv = menu.getPart().getLogic().getEncodedInputInv();
 
-        for (int i = 0; i < ingredients.length; i++) {
-            var stack = menu.getPhantomContainer().getItem(i);
-            if (stack.isEmpty()) {
+        for (int i = 0; i < 9; i++) {
+            var stack = inputInv.getStack(i);
+            if (stack == null) {
                 ingredients[i] = ItemStack.EMPTY;
                 continue;
             }
 
-            var ingredient = stack.copy();
-            ingredient.setCount(1);
+            var ingredient = GenericStack.wrapInItemStack(stack);
             ingredients[i] = ingredient;
             craftingGrid.set(i, ingredient);
             hasInput = true;
@@ -142,37 +143,46 @@ public record RecipeTerminalSavePacket(String groupName, String modeName, String
 
     @Nullable
     private static ItemStack encodeProcessingPattern(RecipeTerminalMenu menu) {
-        var inputs = new GenericStack[81];
+        var logic = menu.getPart().getLogic();
+        var inputInv = logic.getEncodedInputInv();
+        var outputInv = logic.getEncodedOutputInv();
+
+        var inputs = new ArrayList<GenericStack>();
         var hasInput = false;
-        for (int i = 0; i < inputs.length; i++) {
-            var stack = menu.getPhantomContainer().getItem(i);
-            inputs[i] = GenericStack.fromItemStack(stack);
-            if (inputs[i] != null) hasInput = true;
+        for (int i = 0; i < 15; i++) {
+            var stack = inputInv.getStack(i);
+            if (stack != null) {
+                inputs.add(stack);
+                hasInput = true;
+            }
         }
         if (!hasInput) return null;
 
-        var outputs = new GenericStack[27];
+        var outputs = new ArrayList<GenericStack>();
         var hasOutput = false;
-        for (int i = 0; i < outputs.length; i++) {
-            var stack = menu.getPhantomContainer().getItem(81 + i);
-            outputs[i] = GenericStack.fromItemStack(stack);
-            if (outputs[i] != null) hasOutput = true;
+        for (int i = 0; i < 3; i++) {
+            var stack = outputInv.getStack(i);
+            if (stack != null) {
+                outputs.add(stack);
+                hasOutput = true;
+            }
         }
         if (!hasOutput) return null;
 
-        return PatternDetailsHelper.encodeProcessingPattern(Arrays.asList(inputs), Arrays.asList(outputs));
+        return PatternDetailsHelper.encodeProcessingPattern(inputs, outputs);
     }
 
     @Nullable
     private static ItemStack encodeSmithingTablePattern(RecipeTerminalMenu menu, Player player, boolean substitutionsEnabled) {
-        var templateStack = menu.getPhantomContainer().getItem(0);
-        var baseStack = menu.getPhantomContainer().getItem(1);
-        var additionStack = menu.getPhantomContainer().getItem(2);
-        if (templateStack.isEmpty() || baseStack.isEmpty() || additionStack.isEmpty()) return null;
+        var inputInv = menu.getPart().getLogic().getEncodedInputInv();
+        var templateStack = inputInv.getStack(0);
+        var baseStack = inputInv.getStack(1);
+        var additionStack = inputInv.getStack(2);
+        if (templateStack == null || baseStack == null || additionStack == null) return null;
 
-        var template = AEItemKey.of(templateStack);
-        var base = AEItemKey.of(baseStack);
-        var addition = AEItemKey.of(additionStack);
+        var template = AEItemKey.of(GenericStack.wrapInItemStack(templateStack));
+        var base = AEItemKey.of(GenericStack.wrapInItemStack(baseStack));
+        var addition = AEItemKey.of(GenericStack.wrapInItemStack(additionStack));
         if (template == null || base == null || addition == null) return null;
 
         var input = new SmithingRecipeInput(template.toStack(), base.toStack(), addition.toStack());
@@ -189,10 +199,11 @@ public record RecipeTerminalSavePacket(String groupName, String modeName, String
 
     @Nullable
     private static ItemStack encodeStonecuttingPattern(RecipeTerminalMenu menu, Player player, String stonecuttingRecipeId) {
-        var inputStack = menu.getPhantomContainer().getItem(0);
-        if (inputStack.isEmpty()) return null;
+        var inputInv = menu.getPart().getLogic().getEncodedInputInv();
+        var inputStack = inputInv.getStack(0);
+        if (inputStack == null) return null;
 
-        var input = AEItemKey.of(inputStack);
+        var input = AEItemKey.of(GenericStack.wrapInItemStack(inputStack));
         if (input == null) return null;
 
         var level = player.level();

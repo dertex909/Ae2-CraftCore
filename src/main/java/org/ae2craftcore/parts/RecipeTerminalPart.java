@@ -3,17 +3,21 @@ package org.ae2craftcore.parts;
 import appeng.api.parts.IPartItem;
 import appeng.api.parts.IPartModel;
 import appeng.core.AppEng;
+import appeng.helpers.IPatternTerminalLogicHost;
+import appeng.helpers.IPatternTerminalMenuHost;
 import appeng.items.parts.PartModels;
 import appeng.parts.PartModel;
+import appeng.parts.encoding.PatternEncodingLogic;
 import appeng.parts.reporting.AbstractTerminalPart;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.MenuType;
+import net.minecraft.world.level.Level;
 import org.ae2craftcore.registry.ModMenuTypes;
 
-public class RecipeTerminalPart extends AbstractTerminalPart {
+public class RecipeTerminalPart extends AbstractTerminalPart implements IPatternTerminalMenuHost, IPatternTerminalLogicHost {
 
     @PartModels
     public static final ResourceLocation MODEL_OFF = AppEng.makeId("part/pattern_encoding_terminal_off");
@@ -24,8 +28,25 @@ public class RecipeTerminalPart extends AbstractTerminalPart {
     public static final IPartModel MODELS_ON = new PartModel(MODEL_BASE, MODEL_ON, MODEL_STATUS_ON);
     public static final IPartModel MODELS_HAS_CHANNEL = new PartModel(MODEL_BASE, MODEL_ON, MODEL_STATUS_HAS_CHANNEL);
 
+    private final PatternEncodingLogic logic = new PatternEncodingLogic(this);
+
     public RecipeTerminalPart(IPartItem<?> partItem) {
         super(partItem);
+    }
+
+    @Override
+    public PatternEncodingLogic getLogic() {
+        return this.logic;
+    }
+
+    @Override
+    public Level getLevel() {
+        return super.getLevel();
+    }
+
+    @Override
+    public void markForSave() {
+        this.saveChanges();
     }
 
     @Override
@@ -41,10 +62,12 @@ public class RecipeTerminalPart extends AbstractTerminalPart {
     @Override
     public void readFromNBT(CompoundTag data, HolderLookup.Provider registries) {
         super.readFromNBT(data, registries);
+        this.logic.readFromNBT(data, registries);
     }
 
     @Override
     public void writeToNBT(CompoundTag data, HolderLookup.Provider registries) {
         super.writeToNBT(data, registries);
+        this.logic.writeToNBT(data, registries);
     }
 }
