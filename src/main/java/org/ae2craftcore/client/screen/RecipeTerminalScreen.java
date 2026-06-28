@@ -14,6 +14,7 @@ import appeng.api.stacks.AEItemKey;
 import appeng.core.definitions.AEItems;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.renderer.Rect2i;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -100,6 +101,9 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
     private static final Blitter PROCESSING_BG = Blitter.texture("guis/pattern_modes.png").src(0, 70, 124, 66);
     private static final Blitter SMITHING_BG = Blitter.texture("guis/pattern_modes.png").src(128, 70, 124, 66);
     private static final Blitter STONECUTTING_BG = Blitter.texture("guis/pattern_modes.png").src(0, 140, 124, 66);
+    private static final Blitter STONE_SLOT = STONECUTTING_BG.copy().src(124, 140, 20, 22);
+    private static final Blitter STONE_SLOT_SELECTED = STONECUTTING_BG.copy().src(124, 162, 20, 22);
+    private static final Blitter STONE_SLOT_HOVER = STONECUTTING_BG.copy().src(124, 184, 20, 22);
 
     private int groupScrollOffset = 0;
     private int recipeScrollOffset = 0;
@@ -211,23 +215,35 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
             int gridX = x + RecipeTerminalMenu.ENCODING_X + 33;
             int gridY = y + RecipeTerminalMenu.ENCODING_Y + 10;
             var matched = this.getMatchedStonecutterRecipes();
-            for (int i = 0; i < 8; i++) {
-                int recipeIndex = (this.stonecutterScrollOffset * 4) + i;
-                if (recipeIndex >= matched.size()) continue;
+            int startIndex = this.stonecutterScrollOffset * 4;
+            int endIndex = startIndex + 8;
 
-                var recipeHolder = matched.get(recipeIndex);
-                int col = i % 4;
-                int row = i / 4;
-                int itemX = gridX + col * 18;
-                int itemY = gridY + row * 18;
+            var selectedRecipe = this.menu.stonecuttingRecipeId;
 
-                var outputStack = recipeHolder.value().getResultItem(this.minecraft.level.registryAccess());
-                guiGraphics.renderFakeItem(outputStack, itemX, itemY);
-                guiGraphics.renderItemDecorations(this.font, outputStack, itemX, itemY);
+            int absMouseX = x + mouseX;
+            int absMouseY = y + mouseY;
 
-                var selectedId = this.menu.getPart().getLogic().getStonecuttingRecipeId();
-                if (selectedId != null && (selectedId.equals(recipeHolder.id()) || recipeHolder.id().toString().contains(selectedId.getPath()))) {
-                    guiGraphics.renderOutline(itemX - 1, itemY - 1, 18, 18, 0xFF4CAF50);
+            for (int i = startIndex; i < endIndex && i < matched.size(); ++i) {
+                var slotBounds = getRecipeBounds(i - startIndex, x, y);
+                var recipe = matched.get(i);
+                boolean selected = selectedIdEquals(selectedRecipe, recipe.id());
+                boolean hovered = isMouseInBounds(absMouseX, absMouseY, slotBounds);
+
+                var blitter = STONE_SLOT;
+                if (selected) {
+                    blitter = STONE_SLOT_SELECTED;
+                } else if (hovered) {
+                    blitter = STONE_SLOT_HOVER;
+                }
+
+                blitter.dest(slotBounds.getX(), slotBounds.getY()).blit(guiGraphics);
+                var resultItem = recipe.value().getResultItem(this.minecraft.level.registryAccess());
+                if (selected || hovered) {
+                    guiGraphics.renderFakeItem(resultItem, slotBounds.getX() + 2, slotBounds.getY() + 3);
+                    guiGraphics.renderItemDecorations(this.font, resultItem, slotBounds.getX() + 2, slotBounds.getY() + 3);
+                } else {
+                    guiGraphics.renderFakeItem(resultItem, slotBounds.getX() + 2, slotBounds.getY() + 2);
+                    guiGraphics.renderItemDecorations(this.font, resultItem, slotBounds.getX() + 2, slotBounds.getY() + 2);
                 }
             }
 
@@ -442,16 +458,16 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
         }
 
         if (currentMode == EncodingMode.STONECUTTING && button == 0) {
-            int gridX = x - RecipeTerminalMenu.ENCODING_X - 33;
-            int gridY = y - RecipeTerminalMenu.ENCODING_Y - 10;
-            if (gridX >= 0 && gridX < 4 * 18 && gridY >= 0 && gridY < 2 * 18) {
-                int col = gridX / 18;
-                int row = gridY / 18;
-                int clickIndex = row * 4 + col;
-                int recipeIndex = (this.stonecutterScrollOffset * 4) + clickIndex;
-                var matched = this.getMatchedStonecutterRecipes();
-                if (recipeIndex >= 0 && recipeIndex < matched.size()) {
-                    var clickedRecipe = matched.get(recipeIndex);
+            if (this.minecraft == null || this.minecraft.level == null) return true;
+
+            var matched = this.getMatchedStonecutterRecipes();
+            int startIndex = this.stonecutterScrollOffset * 4;
+            int endIndex = startIndex + 8;
+
+            for (int i = startIndex; i < endIndex && i < matched.size(); ++i) {
+                var slotBounds = getRecipeBounds(i - startIndex, this.leftPos, this.topPos);
+                if (isMouseInBounds((int) mouseX, (int) mouseY, slotBounds)) {
+                    var clickedRecipe = matched.get(i);
                     ResourceLocation recipeLoc;
                     var idObj = clickedRecipe.id();
                     if (idObj instanceof ResourceLocation rl) {
@@ -460,7 +476,7 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
                         recipeLoc = ResourceLocation.parse(idObj.toString());
                     }
                     this.menu.selectStonecutterRecipeOnServer(recipeLoc);
-                    this.playClick();
+                    this.minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_STONECUTTER_SELECT_RECIPE, 1.0F));
                     return true;
                 }
             }
@@ -690,16 +706,14 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
 
         if (currentMode == EncodingMode.STONECUTTING) {
             if (this.minecraft == null || this.minecraft.level == null) return;
-            int gridX = x - RecipeTerminalMenu.ENCODING_X - 33;
-            int gridY = y - RecipeTerminalMenu.ENCODING_Y - 10;
-            if (gridX >= 0 && gridX < 4 * 18 && gridY >= 0 && gridY < 2 * 18) {
-                int col = gridX / 18;
-                int row = gridY / 18;
-                int clickIndex = row * 4 + col;
-                int recipeIndex = (this.stonecutterScrollOffset * 4) + clickIndex;
-                var matched = this.getMatchedStonecutterRecipes();
-                if (recipeIndex >= 0 && recipeIndex < matched.size()) {
-                    var outputStack = matched.get(recipeIndex).value().getResultItem(this.minecraft.level.registryAccess());
+            var matched = this.getMatchedStonecutterRecipes();
+            int startIndex = this.stonecutterScrollOffset * 4;
+            int endIndex = startIndex + 8;
+
+            for (int i = startIndex; i < endIndex && i < matched.size(); ++i) {
+                var slotBounds = getRecipeBounds(i - startIndex, this.leftPos, this.topPos);
+                if (isMouseInBounds(mouseX, mouseY, slotBounds)) {
+                    var outputStack = matched.get(i).value().getResultItem(this.minecraft.level.registryAccess());
                     guiGraphics.renderTooltip(this.font, outputStack, mouseX, mouseY);
                     return;
                 }
@@ -922,5 +936,22 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
     }
 
     public record RecipeInfo(ItemStack patternStack, ItemStack outputStack, EncodingMode mode) {
+    }
+
+    private Rect2i getRecipeBounds(int index, int screenLeft, int screenTop) {
+        int col = index % 4;
+        int row = index / 4;
+        int slotX = screenLeft + RecipeTerminalMenu.ENCODING_X + 27 + col * 20;
+        int slotY = screenTop + RecipeTerminalMenu.ENCODING_Y + 11 + row * 22;
+        return new Rect2i(slotX, slotY, 20, 22);
+    }
+
+    private boolean isMouseInBounds(int mouseX, int mouseY, Rect2i rect) {
+        return mouseX >= rect.getX() && mouseX < rect.getX() + rect.getWidth() && mouseY >= rect.getY() && mouseY < rect.getY() + rect.getHeight();
+    }
+
+    private boolean selectedIdEquals(ResourceLocation selected, Object recipeId) {
+        if (selected == null || recipeId == null) return false;
+        return selected.equals(recipeId) || recipeId.toString().contains(selected.toString());
     }
 }

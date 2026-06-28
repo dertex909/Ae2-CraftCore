@@ -25,6 +25,7 @@ import org.ae2craftcore.parts.RecipeTerminalPart;
 import org.ae2craftcore.registry.ModMenuTypes;
 import org.ae2craftcore.items.RecipeStorageCellItem;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -71,6 +72,9 @@ public class RecipeTerminalMenu extends AEBaseMenu {
     public boolean substitute = false;
     @GuiSync(95)
     public boolean substituteFluids = true;
+    @GuiSync(94)
+    @Nullable
+    public ResourceLocation stonecuttingRecipeId;
 
     public RecipeTerminalMenu(int containerId, Inventory playerInventory, RecipeTerminalPart part) {
         super(ModMenuTypes.RECIPE_TERMINAL.get(), containerId, playerInventory, part);
@@ -131,6 +135,7 @@ public class RecipeTerminalMenu extends AEBaseMenu {
             if (this.mode != logic.getMode()) this.mode = logic.getMode();
             this.substitute = logic.isSubstitution();
             this.substituteFluids = logic.isFluidSubstitution();
+            this.stonecuttingRecipeId = logic.getStonecuttingRecipeId();
         }
 
         if (this.firstSync) {
