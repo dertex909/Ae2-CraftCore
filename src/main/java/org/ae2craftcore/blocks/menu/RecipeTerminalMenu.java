@@ -6,6 +6,7 @@ import appeng.parts.encoding.EncodingMode;
 import appeng.api.inventories.InternalInventory;
 import appeng.menu.guisync.GuiSync;
 import net.minecraft.core.NonNullList;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.player.Inventory;
@@ -76,6 +77,7 @@ public class RecipeTerminalMenu extends AEBaseMenu {
         this.part = part;
 
         this.addEncodingModeSlots();
+        this.registerClientAction("setStonecuttingRecipeId", ResourceLocation.class, this.part.getLogic()::setStonecuttingRecipeId);
 
         for (int row = 0; row < 3; ++row) {
             for (int col = 0; col < 9; ++col) {
@@ -354,6 +356,10 @@ public class RecipeTerminalMenu extends AEBaseMenu {
             this.mode = mode;
         }
 
+        public EncodingMode getMode() {
+            return this.mode;
+        }
+
         @Override
         public int getMaxStackSize() {
             return this.mode == EncodingMode.PROCESSING ? 999999 : 1;
@@ -368,6 +374,10 @@ public class RecipeTerminalMenu extends AEBaseMenu {
         public boolean isActive() {
             return RecipeTerminalMenu.this.mode == this.mode;
         }
+    }
+
+    public void selectStonecutterRecipeOnServer(ResourceLocation recipeId) {
+        this.sendClientAction("setStonecuttingRecipeId", recipeId);
     }
 
     public class RecipeTerminalProcessingInputSlot extends FakeSlot {

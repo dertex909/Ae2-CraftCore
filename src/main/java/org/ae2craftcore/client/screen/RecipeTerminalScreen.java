@@ -21,6 +21,10 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.item.crafting.RecipeHolder;
+import net.minecraft.world.item.crafting.RecipeType;
+import net.minecraft.world.item.crafting.SingleRecipeInput;
+import net.minecraft.world.item.crafting.StonecutterRecipe;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.ae2craftcore.Ae2craftcore;
 import org.ae2craftcore.blocks.menu.RecipeTerminalMenu;
@@ -50,6 +54,11 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
     private static final int PROC_SCROLL_W = 11;
     private static final int PROC_SCROLL_H = 52;
     private static final int PROC_SCROLL_MAX = 24;
+
+    private static final int STONE_SCROLL_X = RecipeTerminalMenu.ENCODING_X + 109;
+    private static final int STONE_SCROLL_Y = RecipeTerminalMenu.ENCODING_Y + 7;
+    private static final int STONE_SCROLL_W = 11;
+    private static final int STONE_SCROLL_H = 52;
 
     private static final int SCROLL_BTN_Y = 131;
     private static final int SCROLL_BTN_W = 35;
@@ -94,6 +103,7 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
 
     private int groupScrollOffset = 0;
     private int recipeScrollOffset = 0;
+    private int stonecutterScrollOffset = 0;
 
     private boolean draggingScrollbar = false;
     private int activeScrollbarType = 0;
@@ -195,6 +205,36 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
             this.drawAe2Scrollbar(guiGraphics, x + PROC_SCROLL_X, y + PROC_SCROLL_Y, this.menu.getProcessingScrollOffset());
         }
 
+        if (currentMode == EncodingMode.STONECUTTING) {
+            if (this.minecraft == null || this.minecraft.level == null) return;
+
+            int gridX = x + RecipeTerminalMenu.ENCODING_X + 33;
+            int gridY = y + RecipeTerminalMenu.ENCODING_Y + 10;
+            var matched = this.getMatchedStonecutterRecipes();
+            for (int i = 0; i < 8; i++) {
+                int recipeIndex = (this.stonecutterScrollOffset * 4) + i;
+                if (recipeIndex >= matched.size()) continue;
+
+                var recipeHolder = matched.get(recipeIndex);
+                int col = i % 4;
+                int row = i / 4;
+                int itemX = gridX + col * 18;
+                int itemY = gridY + row * 18;
+
+                var outputStack = recipeHolder.value().getResultItem(this.minecraft.level.registryAccess());
+                guiGraphics.renderFakeItem(outputStack, itemX, itemY);
+                guiGraphics.renderItemDecorations(this.font, outputStack, itemX, itemY);
+
+                var selectedId = this.menu.getPart().getLogic().getStonecuttingRecipeId();
+                if (selectedId != null && (selectedId.equals(recipeHolder.id()) || recipeHolder.id().toString().contains(selectedId.getPath()))) {
+                    guiGraphics.renderOutline(itemX - 1, itemY - 1, 18, 18, 0xFF4CAF50);
+                }
+            }
+
+            int totalRows = (matched.size() + 3) / 4;
+            int maxScroll = Math.max(0, totalRows - 2);
+            this.drawStonecutterScrollbar(guiGraphics, x + STONE_SCROLL_X, y + STONE_SCROLL_Y, this.stonecutterScrollOffset, maxScroll);
+        }
         this.drawToolbarButton(guiGraphics, x + SAVE_X, y + SAVE_Y, this.isInside(mouseX, mouseY, SAVE_X, SAVE_Y, SAVE_W, SAVE_H));
     }
 
@@ -211,6 +251,25 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
         } else {
             int availableHeight = RecipeTerminalScreen.PROC_SCROLL_H - handleHeight;
             yOffset = value * availableHeight / RecipeTerminalScreen.PROC_SCROLL_MAX;
+            sprite = enabledSprite;
+        }
+
+        Blitter.guiSprite(sprite).dest(x, y + yOffset).blit(guiGraphics);
+    }
+
+    private void drawStonecutterScrollbar(GuiGraphics guiGraphics, int x, int y, int value, int maxScroll) {
+        var enabledSprite = ResourceLocation.fromNamespaceAndPath("ae2", "small_scroller");
+        var disabledSprite = ResourceLocation.fromNamespaceAndPath("ae2", "small_scroller_disabled");
+
+        int handleHeight = 15;
+        int yOffset;
+        ResourceLocation sprite;
+        if (maxScroll == 0) {
+            yOffset = 0;
+            sprite = disabledSprite;
+        } else {
+            int availableHeight = STONE_SCROLL_H - handleHeight;
+            yOffset = value * availableHeight / maxScroll;
             sprite = enabledSprite;
         }
 
@@ -382,6 +441,53 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
             }
         }
 
+        if (currentMode == EncodingMode.STONECUTTING && button == 0) {
+            int gridX = x - RecipeTerminalMenu.ENCODING_X - 33;
+            int gridY = y - RecipeTerminalMenu.ENCODING_Y - 10;
+            if (gridX >= 0 && gridX < 4 * 18 && gridY >= 0 && gridY < 2 * 18) {
+                int col = gridX / 18;
+                int row = gridY / 18;
+                int clickIndex = row * 4 + col;
+                int recipeIndex = (this.stonecutterScrollOffset * 4) + clickIndex;
+                var matched = this.getMatchedStonecutterRecipes();
+                if (recipeIndex >= 0 && recipeIndex < matched.size()) {
+                    var clickedRecipe = matched.get(recipeIndex);
+                    ResourceLocation recipeLoc;
+                    var idObj = clickedRecipe.id();
+                    if (idObj instanceof ResourceLocation rl) {
+                        recipeLoc = rl;
+                    } else {
+                        recipeLoc = ResourceLocation.parse(idObj.toString());
+                    }
+                    this.menu.selectStonecutterRecipeOnServer(recipeLoc);
+                    this.playClick();
+                    return true;
+                }
+            }
+
+            if (this.isInside(x, y, STONE_SCROLL_X - 2, STONE_SCROLL_Y, STONE_SCROLL_W, STONE_SCROLL_H)) {
+                this.draggingScrollbar = true;
+                this.activeScrollbarType = 2;
+                this.setDragging(true);
+
+                int handleHeight = 15;
+                int currentScroll = this.stonecutterScrollOffset;
+                int totalRows = (this.getMatchedStonecutterRecipes().size() + 3) / 4;
+                int maxScroll = Math.max(0, totalRows - 2);
+                int availableHeight = STONE_SCROLL_H - handleHeight;
+                int currentHandleY = maxScroll == 0 ? 0 : (currentScroll * availableHeight / maxScroll);
+                int relY = y - STONE_SCROLL_Y;
+
+                if (relY >= currentHandleY && relY < currentHandleY + handleHeight) {
+                    this.dragYOffset = relY - currentHandleY;
+                } else {
+                    this.dragYOffset = handleHeight / 2.0;
+                    double position = Math.clamp((relY - this.dragYOffset) / (double) availableHeight, 0.0, 1.0);
+                    this.stonecutterScrollOffset = maxScroll == 0 ? 0 : (int) Math.round(position * maxScroll);
+                }
+                return true;
+            }
+        }
         for (int i = 0; i < MODE_ORDER.length; i++) {
             if (this.isInside(x, y, TABS_X, TABS_Y + i * TAB_STEP_Y, TAB_W, TAB_H)) {
                 this.menu.setEncodingMode(MODE_ORDER[i]);
@@ -495,6 +601,15 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
             return oldScroll != this.menu.getProcessingScrollOffset();
         }
 
+        if (currentMode == EncodingMode.STONECUTTING && this.isInside(x, y, RecipeTerminalMenu.ENCODING_X,
+                RecipeTerminalMenu.ENCODING_Y, 124, 66)) {
+            int totalRows = (this.getMatchedStonecutterRecipes().size() + 3) / 4;
+            int maxScroll = Math.max(0, totalRows - 2);
+            int oldScroll = this.stonecutterScrollOffset;
+            this.stonecutterScrollOffset = Math.clamp(this.stonecutterScrollOffset + direction, 0, maxScroll);
+            return oldScroll != this.stonecutterScrollOffset;
+        }
+
         return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
     }
 
@@ -520,6 +635,17 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
                 double position = Math.clamp(handleUpperEdgeY / availableHeight, 0.0, 1.0);
                 int newScroll = (int) Math.round(position * PROC_SCROLL_MAX);
                 this.menu.setProcessingScrollOffset(newScroll);
+                return true;
+            }
+
+            if (this.activeScrollbarType == 2) {
+                int handleHeight = 15;
+                double handleUpperEdgeY = y - STONE_SCROLL_Y - this.dragYOffset;
+                double availableHeight = STONE_SCROLL_H - handleHeight;
+                double position = Math.clamp(handleUpperEdgeY / availableHeight, 0.0, 1.0);
+                int totalRows = (this.getMatchedStonecutterRecipes().size() + 3) / 4;
+                int maxScroll = Math.max(0, totalRows - 2);
+                this.stonecutterScrollOffset = maxScroll == 0 ? 0 : (int) Math.round(position * maxScroll);
                 return true;
             }
         }
@@ -557,12 +683,29 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
             }
         }
 
-        super.renderTooltip(guiGraphics, mouseX, mouseY);
-
         int x = mouseX - this.leftPos;
         int y = mouseY - this.topPos;
 
         var currentMode = this.menu.getEncodingMode();
+
+        if (currentMode == EncodingMode.STONECUTTING) {
+            if (this.minecraft == null || this.minecraft.level == null) return;
+            int gridX = x - RecipeTerminalMenu.ENCODING_X - 33;
+            int gridY = y - RecipeTerminalMenu.ENCODING_Y - 10;
+            if (gridX >= 0 && gridX < 4 * 18 && gridY >= 0 && gridY < 2 * 18) {
+                int col = gridX / 18;
+                int row = gridY / 18;
+                int clickIndex = row * 4 + col;
+                int recipeIndex = (this.stonecutterScrollOffset * 4) + clickIndex;
+                var matched = this.getMatchedStonecutterRecipes();
+                if (recipeIndex >= 0 && recipeIndex < matched.size()) {
+                    var outputStack = matched.get(recipeIndex).value().getResultItem(this.minecraft.level.registryAccess());
+                    guiGraphics.renderTooltip(this.font, outputStack, mouseX, mouseY);
+                    return;
+                }
+            }
+        }
+        super.renderTooltip(guiGraphics, mouseX, mouseY);
 
         if (currentMode == EncodingMode.CRAFTING) {
             if (this.isInside(x, y, CRAFT_SUB_X, CRAFT_SUB_Y, BUTTON_MINI, BUTTON_MINI)) {
@@ -752,6 +895,27 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
     @Override
     protected boolean shouldAddToolbar() {
         return false;
+    }
+
+    private List<RecipeHolder<StonecutterRecipe>> getMatchedStonecutterRecipes() {
+        var list = new ArrayList<RecipeHolder<StonecutterRecipe>>();
+        if (this.minecraft == null || this.minecraft.level == null) return list;
+
+        var inputStack = ItemStack.EMPTY;
+        for (var slot : this.menu.slots) {
+            if (slot instanceof RecipeTerminalMenu.RecipeTerminalPhantomSlot phantomSlot && phantomSlot.getMode() == EncodingMode.STONECUTTING) {
+                inputStack = phantomSlot.getItem();
+                break;
+            }
+        }
+
+        if (inputStack.isEmpty()) return list;
+
+        var level = this.minecraft.level;
+        var recipeManager = level.getRecipeManager();
+        var recipeInput = new SingleRecipeInput(inputStack);
+        list.addAll(recipeManager.getRecipesFor(RecipeType.STONECUTTING, recipeInput, level));
+        return list;
     }
 
     public record GroupInfo(String name, int count) {
