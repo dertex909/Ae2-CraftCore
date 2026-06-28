@@ -10,7 +10,6 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.CraftingInput;
@@ -95,13 +94,14 @@ public class RecipeTerminalMenu extends AEBaseMenu {
         }
         this.addSlot(new RecipeResultSlot(EncodingMode.CRAFTING, ENCODING_SLOT_X + 98, ENCODING_SLOT_Y + 25));
 
-        for (int i = 0; i < 15; i++) {
-            int row = i / 3;
-            int col = i % 3;
-            var slot = new RecipeTerminalProcessingInputSlot(encodedInputs, i, ENCODING_SLOT_X + 16 + col * 18, ENCODING_SLOT_Y + 7 + row * 18);
-            this.processingInputSlots.add(this.addSlot(slot));
+        for (int row = 0; row < 27; row++) {
+            for (int col = 0; col < 3; col++) {
+                int index = col + row * 3;
+                var slot = new RecipeTerminalProcessingInputSlot(encodedInputs, index, ENCODING_SLOT_X + 16 + col * 18, ENCODING_SLOT_Y + 7 + row * 18);
+                this.processingInputSlots.add(this.addSlot(slot));
+            }
         }
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < 27; i++) {
             var slot = new RecipeTerminalProcessingOutputSlot(encodedOutputs, i, ENCODING_SLOT_X + 101, ENCODING_SLOT_Y + 7 + i * 18);
             this.processingOutputSlots.add(this.addSlot(slot));
         }
@@ -212,6 +212,11 @@ public class RecipeTerminalMenu extends AEBaseMenu {
             int effectiveRow = row - this.processingScrollOffset;
             ((SlotAccessor) slot).ae2craftcore$setY(ENCODING_SLOT_Y + 7 + effectiveRow * 18);
         }
+        for (int i = 0; i < this.processingOutputSlots.size(); i++) {
+            var slot = this.processingOutputSlots.get(i);
+            int effectiveRow = i - this.processingScrollOffset;
+            ((SlotAccessor) slot).ae2craftcore$setY(ENCODING_SLOT_Y + 7 + effectiveRow * 18);
+        }
     }
 
     public String getSelectedGroup() {
@@ -245,7 +250,7 @@ public class RecipeTerminalMenu extends AEBaseMenu {
             var itemstack1 = slot.getItem();
             itemstack = itemstack1.copy();
 
-            int playerInventoryStart = 31;
+            int playerInventoryStart = 123;
             int hotbarStart = playerInventoryStart + 27;
             int hotbarEnd = hotbarStart + 9;
 
@@ -384,7 +389,11 @@ public class RecipeTerminalMenu extends AEBaseMenu {
 
         @Override
         public boolean isActive() {
-            return RecipeTerminalMenu.this.encodingMode == EncodingMode.PROCESSING;
+            if (RecipeTerminalMenu.this.encodingMode != EncodingMode.PROCESSING) return false;
+            int row = this.getContainerSlot();
+            int scroll = RecipeTerminalMenu.this.processingScrollOffset;
+            int effectiveRow = row - scroll;
+            return effectiveRow >= 0 && effectiveRow < 3;
         }
     }
 

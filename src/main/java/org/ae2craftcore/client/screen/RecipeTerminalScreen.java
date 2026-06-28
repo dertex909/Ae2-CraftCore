@@ -49,7 +49,7 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
     private static final int PROC_SCROLL_Y = RecipeTerminalMenu.ENCODING_Y + 7;
     private static final int PROC_SCROLL_W = 11;
     private static final int PROC_SCROLL_H = 52;
-    private static final int PROC_SCROLL_MAX = 4;
+    private static final int PROC_SCROLL_MAX = 24;
 
     private static final int SCROLL_BTN_Y = 131;
     private static final int SCROLL_BTN_W = 35;
