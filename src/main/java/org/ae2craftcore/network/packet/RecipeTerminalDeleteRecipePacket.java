@@ -9,6 +9,7 @@ import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import org.ae2craftcore.Ae2craftcore;
 import org.ae2craftcore.blocks.menu.RecipeTerminalMenu;
+import org.ae2craftcore.items.RecipeStorageCellItem;
 import org.ae2craftcore.registry.annotations.NetworkPayload;
 import org.ae2craftcore.registry.annotations.PacketHandler;
 import org.ae2craftcore.registry.annotations.PayloadDirection;
@@ -44,13 +45,8 @@ public record RecipeTerminalDeleteRecipePacket(ItemStack patternToDelete) implem
                 if (node == null) return;
                 var grid = node.getGrid();
                 if (grid == null) return;
-                var storage = grid.getStorageService();
-                if (storage == null) return;
-                var inv = storage.getInventory();
-                if (inv == null) return;
-
-                var key = appeng.api.stacks.AEItemKey.of(packet.patternToDelete());
-                inv.extract(key, 1, appeng.api.config.Actionable.MODULATE, new appeng.me.helpers.PlayerSource(player));
+                var cells = RecipeStorageCellItem.getCellsForGrid(grid);
+                for (var cell : cells) if (cell.removePattern(packet.patternToDelete())) break;
 
                 menu.syncRecipesToClient();
             }

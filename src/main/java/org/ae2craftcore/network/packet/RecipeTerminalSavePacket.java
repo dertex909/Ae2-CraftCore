@@ -8,6 +8,7 @@ import appeng.parts.encoding.EncodingMode;
 import net.minecraft.core.NonNullList;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.chat.Component;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
@@ -21,6 +22,7 @@ import net.minecraft.world.item.crafting.SmithingRecipeInput;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import org.ae2craftcore.Ae2craftcore;
 import org.ae2craftcore.blocks.menu.RecipeTerminalMenu;
+import org.ae2craftcore.items.RecipeStorageCellItem;
 import org.ae2craftcore.registry.annotations.NetworkPayload;
 import org.ae2craftcore.registry.annotations.PacketHandler;
 import org.ae2craftcore.registry.annotations.PayloadDirection;
@@ -75,13 +77,20 @@ public record RecipeTerminalSavePacket(String groupName, String modeName, String
                 if (node == null) return;
                 var grid = node.getGrid();
                 if (grid == null) return;
-                var storage = grid.getStorageService();
-                if (storage == null) return;
-                var inv = storage.getInventory();
-                if (inv == null) return;
 
-                var key = AEItemKey.of(encodedPattern);
-                inv.insert(key, 1, MODULATE, new PlayerSource(player));
+                var cells = RecipeStorageCellItem.getCellsForGrid(grid);
+                boolean saved = false;
+                for (var cell : cells) {
+                    if (cell.getPatterns().size() < 128) {
+                        cell.addPattern(encodedPattern);
+                        saved = true;
+                        break;
+                    }
+                }
+
+                if (!saved) {
+                    player.displayClientMessage(Component.literal("§cNo active Recipe Storage Cells with available space found in the network!"), true);
+                }
 
                 menu.syncRecipesToClient();
             } catch (Exception e) {
@@ -149,7 +158,7 @@ public record RecipeTerminalSavePacket(String groupName, String modeName, String
 
         var inputs = new ArrayList<GenericStack>();
         var hasInput = false;
-        for (int i = 0; i < 15; i++) {
+        for (int i = 0; i < inputInv.size(); i++) {
             var stack = inputInv.getStack(i);
             if (stack != null) {
                 inputs.add(stack);
@@ -160,7 +169,7 @@ public record RecipeTerminalSavePacket(String groupName, String modeName, String
 
         var outputs = new ArrayList<GenericStack>();
         var hasOutput = false;
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < outputInv.size(); i++) {
             var stack = outputInv.getStack(i);
             if (stack != null) {
                 outputs.add(stack);

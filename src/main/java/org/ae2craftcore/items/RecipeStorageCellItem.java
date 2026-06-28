@@ -1,18 +1,16 @@
 package org.ae2craftcore.items;
 
-import appeng.api.config.Actionable;
 import appeng.api.networking.security.IActionHost;
-import appeng.api.networking.security.IActionSource;
 import appeng.api.networking.IGrid;
 import appeng.api.storage.MEStorage;
 import appeng.api.storage.cells.CellState;
 import appeng.api.storage.cells.ICellHandler;
 import appeng.api.storage.cells.ISaveProvider;
 import appeng.api.storage.cells.StorageCell;
-import appeng.api.stacks.AEKey;
 import appeng.api.stacks.AEItemKey;
 import appeng.api.crafting.IPatternDetails;
-import appeng.api.crafting.PatternDetailsHelper;
+import appeng.blockentity.storage.DriveBlockEntity;
+import appeng.blockentity.storage.MEChestBlockEntity;
 import appeng.crafting.pattern.AEPatternDecoder;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
@@ -25,6 +23,7 @@ import org.ae2craftcore.blocks.blockentity.SfpModuleBlockEntity;
 import org.ae2craftcore.blocks.blockentity.OpticalInterfaceBlockEntity;
 import org.ae2craftcore.blocks.blockentity.CryostatBlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import org.ae2craftcore.util.ICellContainerHost;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -33,7 +32,17 @@ import java.util.*;
 @RegisterItem(name = "recipe_storage_cell", stacksTo = 1)
 public class RecipeStorageCellItem extends Item {
 
-    public static final Set<RecipeStorageCell> ACTIVE_CELLS = Collections.synchronizedSet(Collections.newSetFromMap(new WeakHashMap<>()));
+    public static final Set<RecipeStorageCell> ACTIVE_CELLS = Collections.synchronizedSet(new HashSet<>());
+
+    private static void pruneCells() {
+        synchronized (ACTIVE_CELLS) {
+            ACTIVE_CELLS.removeIf(cell -> {
+                if (cell == null) return true;
+                if (cell.host instanceof BlockEntity be) return be.isRemoved();
+                return false;
+            });
+        }
+    }
 
     public RecipeStorageCellItem(Properties properties) {
         super(properties);
@@ -76,8 +85,9 @@ public class RecipeStorageCellItem extends Item {
     public static List<ItemStack> getAllPatternsForGrid(IGrid grid) {
         var list = new ArrayList<ItemStack>();
         if (grid == null) return list;
+        pruneCells();
         synchronized (ACTIVE_CELLS) {
-            for (var cell : ACTIVE_CELLS) if (cell != null && cell.getGrid() == grid) list.addAll(cell.getPatterns());
+            for (var cell : ACTIVE_CELLS) if (cell != null && cell.belongsToGrid(grid)) list.addAll(cell.getPatterns());
         }
         return list;
     }
@@ -85,12 +95,26 @@ public class RecipeStorageCellItem extends Item {
     public static List<IPatternDetails> getPatternsForGrid(IGrid grid, Level level) {
         if (!isQuantumComputerValidForGrid(grid, level)) return List.of();
         var list = new ArrayList<IPatternDetails>();
+        pruneCells();
         synchronized (ACTIVE_CELLS) {
             for (var cell : ACTIVE_CELLS) {
-                if (cell != null && cell.getGrid() == grid) for (var patternStack : cell.getPatterns()) {
+                if (cell != null && cell.belongsToGrid(grid)) for (var patternStack : cell.getPatterns()) {
                     var details = AEPatternDecoder.INSTANCE.decodePattern(AEItemKey.of(patternStack), level);
                     if (details != null) list.add(details);
                 }
+            }
+        }
+        return list;
+    }
+
+    public static List<RecipeStorageCell> getCellsForGrid(IGrid grid) {
+        var list = new ArrayList<RecipeStorageCell>();
+        if (grid == null) return list;
+        pruneCells();
+        synchronized (ACTIVE_CELLS) {
+            for (var cell : ACTIVE_CELLS) {
+                if (cell == null) continue;
+                if (cell.belongsToGrid(grid)) list.add(cell);
             }
         }
         return list;
@@ -126,11 +150,55 @@ public class RecipeStorageCellItem extends Item {
             return Collections.unmodifiableList(this.patterns);
         }
 
+        public void addPattern(ItemStack pattern) {
+            this.patterns.add(pattern.copyWithCount(1));
+            this.persist();
+        }
+
+        public boolean removePattern(ItemStack pattern) {
+            var toRemove = new ArrayList<ItemStack>();
+            for (var p : this.patterns) if (ItemStack.isSameItemSameComponents(p, pattern)) toRemove.add(p);
+            if (!toRemove.isEmpty()) {
+                this.patterns.removeAll(toRemove);
+                this.persist();
+                return true;
+            }
+            return false;
+        }
+
+        public boolean belongsToGrid(IGrid grid) {
+            if (grid == null) return false;
+
+            var directGrid = getGrid();
+            if (directGrid == grid) return true;
+
+            if (host instanceof ICellContainerHost containerHost) {
+                if (containerHost.ae2craftcore$getGrid() == grid && containerHost.ae2craftcore$containsCell(this.cellStack)) {
+                    return true;
+                }
+            }
+
+            for (var drive : grid.getMachines(DriveBlockEntity.class)) {
+                if (drive instanceof ICellContainerHost containerHost) {
+                    if (containerHost.ae2craftcore$containsCell(this.cellStack)) return true;
+                }
+            }
+
+            for (var chest : grid.getMachines(MEChestBlockEntity.class)) {
+                if (chest instanceof ICellContainerHost containerHost) {
+                    if (containerHost.ae2craftcore$containsCell(this.cellStack)) return true;
+                }
+            }
+
+            return false;
+        }
+
         public IGrid getGrid() {
             if (host instanceof IActionHost actionHost) {
                 var node = actionHost.getActionableNode();
                 if (node != null) return node.getGrid();
             }
+            if (host instanceof ICellContainerHost containerHost) return containerHost.ae2craftcore$getGrid();
             return null;
         }
 
@@ -169,43 +237,6 @@ public class RecipeStorageCellItem extends Item {
         @Override
         public Component getDescription() {
             return Component.literal("Recipe Storage Cell");
-        }
-
-        @Override
-        public long insert(AEKey what, long amount, Actionable mode, IActionSource source) {
-            if (amount <= 0) return 0;
-            if (!(what instanceof AEItemKey itemKey)) return 0;
-            var stack = itemKey.toStack();
-            if (!PatternDetailsHelper.isEncodedPattern(stack)) return 0;
-            if (this.patterns.size() >= 128) return 0;
-
-            if (mode == Actionable.MODULATE) {
-                this.patterns.add(stack.copyWithCount(1));
-                this.persist();
-            }
-            return 1;
-        }
-
-        @Override
-        public long extract(AEKey what, long amount, Actionable mode, IActionSource source) {
-            if (amount <= 0) return 0;
-            if (!(what instanceof AEItemKey itemKey)) return 0;
-            var stack = itemKey.toStack();
-
-            var found = ItemStack.EMPTY;
-            for (var p : this.patterns) {
-                if (ItemStack.isSameItemSameComponents(p, stack)) {
-                    found = p;
-                    break;
-                }
-            }
-            if (found.isEmpty()) return 0;
-
-            if (mode == Actionable.MODULATE) {
-                this.patterns.remove(found);
-                this.persist();
-            }
-            return 1;
         }
     }
 

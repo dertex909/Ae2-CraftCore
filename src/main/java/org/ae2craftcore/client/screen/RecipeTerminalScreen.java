@@ -515,10 +515,9 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
 
         if (this.isInside(x, y, SAVE_X, SAVE_Y, SAVE_W, SAVE_H)) {
             String selected = this.menu.getSelectedGroup();
-            if (!selected.isEmpty()) {
-                PacketDistributor.sendToServer(new RecipeTerminalSavePacket(selected, this.menu.getEncodingMode(), null, this.menu.substitute, this.menu.substituteFluids));
-                this.playClick();
-            }
+            if (selected.isEmpty()) selected = "Default";
+            PacketDistributor.sendToServer(new RecipeTerminalSavePacket(selected, this.menu.getEncodingMode(), null, this.menu.substitute, this.menu.substituteFluids));
+            this.playClick();
             return true;
         }
 
