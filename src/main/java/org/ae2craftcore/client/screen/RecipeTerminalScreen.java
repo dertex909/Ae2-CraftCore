@@ -21,7 +21,6 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.inventory.Slot;
-import net.minecraft.world.inventory.ClickType;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.ae2craftcore.Ae2craftcore;
 import org.ae2craftcore.blocks.menu.RecipeTerminalMenu;
@@ -30,7 +29,6 @@ import org.ae2craftcore.network.packet.*;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 
@@ -51,7 +49,7 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
     private static final int PROC_SCROLL_Y = RecipeTerminalMenu.ENCODING_Y + 7;
     private static final int PROC_SCROLL_W = 11;
     private static final int PROC_SCROLL_H = 52;
-    private static final int PROC_SCROLL_MAX = 4; // Максимальная прокрутка для 15 входов (5 рядов)
+    private static final int PROC_SCROLL_MAX = 4;
 
     private static final int SCROLL_BTN_Y = 131;
     private static final int SCROLL_BTN_W = 35;
@@ -102,7 +100,6 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
     private boolean draggingScrollbar = false;
     private int activeScrollbarType = 0;
     private double dragYOffset = 0;
-    private final HashSet<Slot> drag_click = new HashSet<>();
 
     public RecipeTerminalScreen(RecipeTerminalMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title, StyleManager.loadStyleDoc("/screens/recipe_terminal.json"));
@@ -470,16 +467,6 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
     }
 
     @Override
-    protected void slotClicked(Slot slot, int slotId, int mouseButton, @NotNull ClickType clickType) {
-        if (slot instanceof RecipeTerminalMenu.RecipeTerminalPhantomSlot || slot instanceof RecipeTerminalMenu.RecipeTerminalProcessingInputSlot || slot instanceof RecipeTerminalMenu.RecipeTerminalProcessingOutputSlot) {
-            PacketDistributor.sendToServer(new RecipeTerminalPhantomClickPacket(slotId, mouseButton, clickType));
-            this.menu.handlePhantomClick(slotId, mouseButton, clickType);
-            return;
-        }
-        super.slotClicked(slot, slotId, mouseButton, clickType);
-    }
-
-    @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
         int x = (int) mouseX - this.leftPos;
         int y = (int) mouseY - this.topPos;
@@ -518,7 +505,6 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
             this.draggingScrollbar = false;
             this.activeScrollbarType = 0;
         }
-        this.drag_click.clear();
         return super.mouseReleased(mouseX, mouseY, button);
     }
 
@@ -536,17 +522,6 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
                 this.menu.setProcessingScrollOffset(newScroll);
                 return true;
             }
-        }
-
-        var slot = ((AbstractContainerScreenAccessor) this).ae2craftcore$findSlot(mouseX, mouseY);
-        var itemstack = this.menu.getCarried();
-        if ((slot instanceof RecipeTerminalMenu.RecipeTerminalPhantomSlot || slot instanceof RecipeTerminalMenu.RecipeTerminalProcessingInputSlot
-                || slot instanceof RecipeTerminalMenu.RecipeTerminalProcessingOutputSlot) && !itemstack.isEmpty()) {
-            if (this.drag_click.add(slot)) {
-                PacketDistributor.sendToServer(new RecipeTerminalPhantomClickPacket(slot.index, button, ClickType.PICKUP));
-                this.menu.handlePhantomClick(slot.index, button, ClickType.PICKUP);
-            }
-            return true;
         }
 
         return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
