@@ -11,7 +11,6 @@ import appeng.api.storage.cells.ISaveProvider;
 import appeng.api.storage.cells.StorageCell;
 import appeng.api.stacks.AEKey;
 import appeng.api.stacks.AEItemKey;
-import appeng.api.stacks.KeyCounter;
 import appeng.api.crafting.IPatternDetails;
 import appeng.api.crafting.PatternDetailsHelper;
 import appeng.crafting.pattern.AEPatternDecoder;
@@ -174,20 +173,22 @@ public class RecipeStorageCellItem extends Item {
 
         @Override
         public long insert(AEKey what, long amount, Actionable mode, IActionSource source) {
-            if (!(what instanceof AEItemKey itemKey)) return amount;
+            if (amount <= 0) return 0;
+            if (!(what instanceof AEItemKey itemKey)) return 0;
             var stack = itemKey.toStack();
-            if (!PatternDetailsHelper.isEncodedPattern(stack)) return amount;
-            if (this.patterns.size() >= 128) return amount;
+            if (!PatternDetailsHelper.isEncodedPattern(stack)) return 0;
+            if (this.patterns.size() >= 128) return 0;
 
             if (mode == Actionable.MODULATE) {
-                this.patterns.add(stack);
+                this.patterns.add(stack.copyWithCount(1));
                 this.persist();
             }
-            return 0;
+            return 1;
         }
 
         @Override
         public long extract(AEKey what, long amount, Actionable mode, IActionSource source) {
+            if (amount <= 0) return 0;
             if (!(what instanceof AEItemKey itemKey)) return 0;
             var stack = itemKey.toStack();
 
@@ -205,14 +206,6 @@ public class RecipeStorageCellItem extends Item {
                 this.persist();
             }
             return 1;
-        }
-
-        @Override
-        public void getAvailableStacks(KeyCounter out) {
-            var grid = this.getGrid();
-            var level = this.getLevel();
-            if (grid != null && level != null) if (!isQuantumComputerValidForGrid(grid, level)) return;
-            for (ItemStack p : this.patterns) out.add(Objects.requireNonNull(AEItemKey.of(p)), 1);
         }
     }
 
