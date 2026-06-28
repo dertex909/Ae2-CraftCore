@@ -30,6 +30,7 @@ import org.ae2craftcore.network.packet.*;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 
@@ -97,6 +98,11 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
     private int recipeScrollOffset = 0;
     private boolean substitutionsEnabled = true;
     private boolean fluidSubstitutionsEnabled = true;
+
+    private boolean draggingScrollbar = false;
+    private int activeScrollbarType = 0;
+    private double dragYOffset = 0;
+    private final HashSet<Slot> drag_click = new HashSet<>();
 
     public RecipeTerminalScreen(RecipeTerminalMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title, StyleManager.loadStyleDoc("/screens/recipe_terminal.json"));
@@ -357,6 +363,27 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
                 this.playClick();
                 return true;
             }
+
+            if (this.isInside(x, y, PROC_SCROLL_X - 2, PROC_SCROLL_Y, PROC_SCROLL_W, PROC_SCROLL_H)) {
+                this.draggingScrollbar = true;
+                this.activeScrollbarType = 1;
+
+                int handleHeight = 15;
+                int currentScroll = this.menu.getProcessingScrollOffset();
+                int availableHeight = PROC_SCROLL_H - handleHeight;
+                int currentHandleY = currentScroll * availableHeight / PROC_SCROLL_MAX;
+                int relY = y - PROC_SCROLL_Y;
+
+                if (relY >= currentHandleY && relY < currentHandleY + handleHeight) {
+                    this.dragYOffset = relY - currentHandleY;
+                } else {
+                    this.dragYOffset = handleHeight / 2.0;
+                    double position = Math.clamp((relY - this.dragYOffset) / (double) availableHeight, 0.0, 1.0);
+                    int newScroll = (int) Math.round(position * PROC_SCROLL_MAX);
+                    this.menu.setProcessingScrollOffset(newScroll);
+                }
+                return true;
+            }
         }
 
         for (int i = 0; i < MODE_ORDER.length; i++) {
@@ -483,6 +510,46 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
         }
 
         return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+    }
+
+    @Override
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        if (button == 0) {
+            this.draggingScrollbar = false;
+            this.activeScrollbarType = 0;
+        }
+        this.drag_click.clear();
+        return super.mouseReleased(mouseX, mouseY, button);
+    }
+
+    @Override
+    public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
+        if (this.draggingScrollbar && button == 0) {
+            int y = (int) mouseY - this.topPos;
+
+            if (this.activeScrollbarType == 1) {
+                int handleHeight = 15;
+                double handleUpperEdgeY = y - PROC_SCROLL_Y - this.dragYOffset;
+                double availableHeight = PROC_SCROLL_H - handleHeight;
+                double position = Math.clamp(handleUpperEdgeY / availableHeight, 0.0, 1.0);
+                int newScroll = (int) Math.round(position * PROC_SCROLL_MAX);
+                this.menu.setProcessingScrollOffset(newScroll);
+                return true;
+            }
+        }
+
+        var slot = ((AbstractContainerScreenAccessor) this).ae2craftcore$findSlot(mouseX, mouseY);
+        var itemstack = this.menu.getCarried();
+        if ((slot instanceof RecipeTerminalMenu.RecipeTerminalPhantomSlot || slot instanceof RecipeTerminalMenu.RecipeTerminalProcessingInputSlot
+                || slot instanceof RecipeTerminalMenu.RecipeTerminalProcessingOutputSlot) && !itemstack.isEmpty()) {
+            if (this.drag_click.add(slot)) {
+                PacketDistributor.sendToServer(new RecipeTerminalPhantomClickPacket(slot.index, button, ClickType.PICKUP));
+                this.menu.handlePhantomClick(slot.index, button, ClickType.PICKUP);
+            }
+            return true;
+        }
+
+        return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
     }
 
     @Override
