@@ -4,7 +4,6 @@ import appeng.menu.AEBaseMenu;
 import appeng.menu.slot.FakeSlot;
 import appeng.parts.encoding.EncodingMode;
 import appeng.api.inventories.InternalInventory;
-import appeng.api.stacks.GenericStack;
 import appeng.menu.guisync.GuiSync;
 import net.minecraft.core.NonNullList;
 import net.minecraft.server.level.ServerPlayer;
@@ -297,14 +296,17 @@ public class RecipeTerminalMenu extends AEBaseMenu {
 
         var grid = NonNullList.withSize(9, ItemStack.EMPTY);
         var hasInput = false;
-        var inputInv = this.part.getLogic().getEncodedInputInv();
 
-        for (int i = 0; i < 9; i++) {
-            var stack = inputInv.getStack(i);
-            if (stack != null) {
-                var itemStack = GenericStack.wrapInItemStack(stack);
-                grid.set(i, itemStack);
-                hasInput = true;
+        for (var slot : this.slots) {
+            if (slot instanceof RecipeTerminalPhantomSlot phantomSlot && phantomSlot.mode == EncodingMode.CRAFTING) {
+                int index = phantomSlot.getContainerSlot();
+                if (index >= 0 && index < 9) {
+                    var itemStack = phantomSlot.getItem();
+                    if (!itemStack.isEmpty()) {
+                        grid.set(index, itemStack.copyWithCount(1));
+                        hasInput = true;
+                    }
+                }
             }
         }
         if (!hasInput) return ItemStack.EMPTY;
@@ -319,14 +321,24 @@ public class RecipeTerminalMenu extends AEBaseMenu {
         var player = this.getPlayer();
         if (player == null) return ItemStack.EMPTY;
         var level = player.level();
-        var inputInv = this.part.getLogic().getEncodedInputInv();
 
-        var templateStack = inputInv.getStack(0);
-        var baseStack = inputInv.getStack(1);
-        var additionStack = inputInv.getStack(2);
-        if (templateStack == null || baseStack == null || additionStack == null) return ItemStack.EMPTY;
+        var templateStack = ItemStack.EMPTY;
+        var baseStack = ItemStack.EMPTY;
+        var additionStack = ItemStack.EMPTY;
 
-        var input = new SmithingRecipeInput(GenericStack.wrapInItemStack(templateStack), GenericStack.wrapInItemStack(baseStack), GenericStack.wrapInItemStack(additionStack));
+        for (var slot : this.slots) {
+            if (slot instanceof RecipeTerminalPhantomSlot phantomSlot && phantomSlot.mode == EncodingMode.SMITHING_TABLE) {
+                int index = phantomSlot.getContainerSlot();
+                var itemStack = phantomSlot.getItem();
+                if (index == 0) templateStack = itemStack;
+                else if (index == 1) baseStack = itemStack;
+                else if (index == 2) additionStack = itemStack;
+            }
+        }
+
+        if (templateStack.isEmpty() || baseStack.isEmpty() || additionStack.isEmpty()) return ItemStack.EMPTY;
+
+        var input = new SmithingRecipeInput(templateStack, baseStack, additionStack);
         var recipe = level.getRecipeManager().getRecipeFor(RecipeType.SMITHING, input, level).orElse(null);
         if (recipe == null) return ItemStack.EMPTY;
         return recipe.value().assemble(input, level.registryAccess());
