@@ -4,8 +4,6 @@
   "package": "org.ae2craftcore.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
-    "DriveBlockEntityMixin",
-    "MEChestBlockEntityMixin",
     "SlotAccessor"
   ],
   "client": [

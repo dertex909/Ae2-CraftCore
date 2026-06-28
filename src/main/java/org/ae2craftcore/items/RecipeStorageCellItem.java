@@ -9,9 +9,9 @@ import appeng.api.storage.cells.ISaveProvider;
 import appeng.api.storage.cells.StorageCell;
 import appeng.api.stacks.AEItemKey;
 import appeng.api.crafting.IPatternDetails;
+import appeng.crafting.pattern.AEPatternDecoder;
 import appeng.blockentity.storage.DriveBlockEntity;
 import appeng.blockentity.storage.MEChestBlockEntity;
-import appeng.crafting.pattern.AEPatternDecoder;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -23,7 +23,6 @@ import org.ae2craftcore.blocks.blockentity.SfpModuleBlockEntity;
 import org.ae2craftcore.blocks.blockentity.OpticalInterfaceBlockEntity;
 import org.ae2craftcore.blocks.blockentity.CryostatBlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import org.ae2craftcore.util.ICellContainerHost;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -169,37 +168,26 @@ public class RecipeStorageCellItem extends Item {
         public boolean belongsToGrid(IGrid grid) {
             if (grid == null) return false;
 
-            var directGrid = getGrid();
-            if (directGrid == grid) return true;
-
-            if (host instanceof ICellContainerHost containerHost) {
-                if (containerHost.ae2craftcore$getGrid() == grid && containerHost.ae2craftcore$containsCell(this.cellStack)) {
-                    return true;
-                }
+            if (host instanceof IActionHost actionHost) {
+                var node = actionHost.getActionableNode();
+                if (node != null && node.getGrid() == grid) return true;
             }
 
             for (var drive : grid.getMachines(DriveBlockEntity.class)) {
-                if (drive instanceof ICellContainerHost containerHost) {
-                    if (containerHost.ae2craftcore$containsCell(this.cellStack)) return true;
+                var inv = drive.getInternalInventory();
+                if (inv != null) for (int i = 0; i < inv.size(); i++) {
+                    if (ItemStack.isSameItemSameComponents(inv.getStackInSlot(i), this.cellStack)) return true;
                 }
             }
 
             for (var chest : grid.getMachines(MEChestBlockEntity.class)) {
-                if (chest instanceof ICellContainerHost containerHost) {
-                    if (containerHost.ae2craftcore$containsCell(this.cellStack)) return true;
+                var inv = chest.getInternalInventory();
+                if (inv != null) for (int i = 0; i < inv.size(); i++) {
+                    if (ItemStack.isSameItemSameComponents(inv.getStackInSlot(i), this.cellStack)) return true;
                 }
             }
 
             return false;
-        }
-
-        public IGrid getGrid() {
-            if (host instanceof IActionHost actionHost) {
-                var node = actionHost.getActionableNode();
-                if (node != null) return node.getGrid();
-            }
-            if (host instanceof ICellContainerHost containerHost) return containerHost.ae2craftcore$getGrid();
-            return null;
         }
 
         public Level getLevel() {
