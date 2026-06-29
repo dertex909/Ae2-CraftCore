@@ -212,8 +212,6 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
         if (currentMode == EncodingMode.STONECUTTING) {
             if (this.minecraft == null || this.minecraft.level == null) return;
 
-            int gridX = x + RecipeTerminalMenu.ENCODING_X + 33;
-            int gridY = y + RecipeTerminalMenu.ENCODING_Y + 10;
             var matched = this.getMatchedStonecutterRecipes();
             int startIndex = this.stonecutterScrollOffset * 4;
             int endIndex = startIndex + 8;
@@ -516,7 +514,7 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
         if (this.isInside(x, y, SAVE_X, SAVE_Y, SAVE_W, SAVE_H)) {
             String selected = this.menu.getSelectedGroup();
             if (selected.isEmpty()) selected = "Default";
-            PacketDistributor.sendToServer(new RecipeTerminalSavePacket(selected, this.menu.getEncodingMode(), null, this.menu.substitute, this.menu.substituteFluids));
+            PacketDistributor.sendToServer(new RecipeTerminalSavePacket(selected, this.menu.getEncodingMode(), this.menu.stonecuttingRecipeId, this.menu.substitute, this.menu.substituteFluids));
             this.playClick();
             return true;
         }

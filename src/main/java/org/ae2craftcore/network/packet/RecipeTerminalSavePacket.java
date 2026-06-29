@@ -3,7 +3,6 @@ package org.ae2craftcore.network.packet;
 import appeng.api.crafting.PatternDetailsHelper;
 import appeng.api.stacks.AEItemKey;
 import appeng.api.stacks.GenericStack;
-import appeng.me.helpers.PlayerSource;
 import appeng.parts.encoding.EncodingMode;
 import net.minecraft.core.NonNullList;
 import net.minecraft.core.component.DataComponents;
@@ -30,8 +29,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
-
-import static appeng.api.config.Actionable.MODULATE;
 
 @NetworkPayload(direction = PayloadDirection.TO_SERVER)
 public record RecipeTerminalSavePacket(String groupName, String modeName, String stonecuttingRecipeId,
@@ -117,6 +114,12 @@ public record RecipeTerminalSavePacket(String groupName, String modeName, String
         };
     }
 
+    private static ItemStack getRealItemStack(@Nullable GenericStack stack) {
+        if (stack == null) return ItemStack.EMPTY;
+        if (stack.what() instanceof AEItemKey itemKey) return itemKey.toStack((int) stack.amount());
+        return ItemStack.EMPTY;
+    }
+
     @Nullable
     private static ItemStack encodeCraftingPattern(RecipeTerminalMenu menu, Player player, boolean substitutionsEnabled, boolean fluidSubstitutionsEnabled) {
         var ingredients = new ItemStack[9];
@@ -131,10 +134,10 @@ public record RecipeTerminalSavePacket(String groupName, String modeName, String
                 continue;
             }
 
-            var ingredient = GenericStack.wrapInItemStack(stack);
-            ingredients[i] = ingredient;
-            craftingGrid.set(i, ingredient);
-            hasInput = true;
+            var realStack = getRealItemStack(stack);
+            ingredients[i] = realStack;
+            craftingGrid.set(i, realStack);
+            if (!realStack.isEmpty()) hasInput = true;
         }
 
         if (!hasInput) return null;
@@ -189,12 +192,12 @@ public record RecipeTerminalSavePacket(String groupName, String modeName, String
         var additionStack = inputInv.getStack(2);
         if (templateStack == null || baseStack == null || additionStack == null) return null;
 
-        var template = AEItemKey.of(GenericStack.wrapInItemStack(templateStack));
-        var base = AEItemKey.of(GenericStack.wrapInItemStack(baseStack));
-        var addition = AEItemKey.of(GenericStack.wrapInItemStack(additionStack));
-        if (template == null || base == null || addition == null) return null;
+        var templateKey = templateStack.what() instanceof AEItemKey k ? k : null;
+        var baseKey = baseStack.what() instanceof AEItemKey k ? k : null;
+        var additionKey = additionStack.what() instanceof AEItemKey k ? k : null;
+        if (templateKey == null || baseKey == null || additionKey == null) return null;
 
-        var input = new SmithingRecipeInput(template.toStack(), base.toStack(), addition.toStack());
+        var input = new SmithingRecipeInput(templateKey.toStack(), baseKey.toStack(), additionKey.toStack());
         var level = player.level();
         var recipe = level.getRecipeManager().getRecipeFor(RecipeType.SMITHING, input, level).orElse(null);
         if (recipe == null) return null;
@@ -203,7 +206,7 @@ public record RecipeTerminalSavePacket(String groupName, String modeName, String
         var output = AEItemKey.of(outputStack);
         if (output == null) return null;
 
-        return PatternDetailsHelper.encodeSmithingTablePattern(recipe, template, base, addition, output, substitutionsEnabled);
+        return PatternDetailsHelper.encodeSmithingTablePattern(recipe, templateKey, baseKey, additionKey, output, substitutionsEnabled);
     }
 
     @Nullable
@@ -212,11 +215,11 @@ public record RecipeTerminalSavePacket(String groupName, String modeName, String
         var inputStack = inputInv.getStack(0);
         if (inputStack == null) return null;
 
-        var input = AEItemKey.of(GenericStack.wrapInItemStack(inputStack));
-        if (input == null) return null;
+        var inputKey = inputStack.what() instanceof AEItemKey k ? k : null;
+        if (inputKey == null) return null;
 
         var level = player.level();
-        var recipeInput = new SingleRecipeInput(input.toStack());
+        var recipeInput = new SingleRecipeInput(inputKey.toStack());
         var recipeId = stonecuttingRecipeId.isEmpty() ? null : ResourceLocation.tryParse(stonecuttingRecipeId);
         var recipe = recipeId != null
                 ? level.getRecipeManager().getRecipeFor(RecipeType.STONECUTTING, recipeInput, level, recipeId).orElse(null)
@@ -226,6 +229,6 @@ public record RecipeTerminalSavePacket(String groupName, String modeName, String
         var output = AEItemKey.of(recipe.value().getResultItem(level.registryAccess()));
         if (output == null) return null;
 
-        return PatternDetailsHelper.encodeStonecuttingPattern(recipe, input, output, false);
+        return PatternDetailsHelper.encodeStonecuttingPattern(recipe, inputKey, output, false);
     }
 }
