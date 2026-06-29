@@ -1,6 +1,5 @@
 package org.ae2craftcore.items;
 
-import appeng.api.networking.security.IActionHost;
 import appeng.api.networking.IGrid;
 import appeng.api.storage.MEStorage;
 import appeng.api.storage.cells.CellState;
@@ -22,7 +21,6 @@ import org.ae2craftcore.registry.AttachmentRegistry;
 import org.ae2craftcore.blocks.blockentity.SfpModuleBlockEntity;
 import org.ae2craftcore.blocks.blockentity.OpticalInterfaceBlockEntity;
 import org.ae2craftcore.blocks.blockentity.CryostatBlockEntity;
-import net.minecraft.world.level.block.entity.BlockEntity;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -30,18 +28,6 @@ import java.util.*;
 
 @RegisterItem(name = "recipe_storage_cell", stacksTo = 1)
 public class RecipeStorageCellItem extends Item {
-
-    public static final Set<RecipeStorageCell> ACTIVE_CELLS = Collections.synchronizedSet(new HashSet<>());
-
-    private static void pruneCells() {
-        synchronized (ACTIVE_CELLS) {
-            ACTIVE_CELLS.removeIf(cell -> {
-                if (cell == null) return true;
-                if (cell.host instanceof BlockEntity be) return be.isRemoved();
-                return false;
-            });
-        }
-    }
 
     public RecipeStorageCellItem(Properties properties) {
         super(properties);
@@ -84,37 +70,38 @@ public class RecipeStorageCellItem extends Item {
     public static List<ItemStack> getAllPatternsForGrid(IGrid grid) {
         var list = new ArrayList<ItemStack>();
         if (grid == null) return list;
-        pruneCells();
-        synchronized (ACTIVE_CELLS) {
-            for (var cell : ACTIVE_CELLS) if (cell != null && cell.belongsToGrid(grid)) list.addAll(cell.getPatterns());
+
+        for (var drive : grid.getMachines(DriveBlockEntity.class)) {
+            var inv = drive.getInternalInventory();
+            if (inv != null) for (int i = 0; i < inv.size(); i++) {
+                var stack = inv.getStackInSlot(i);
+                if (stack.getItem() instanceof RecipeStorageCellItem) {
+                    var stored = stack.get(AttachmentRegistry.STORED_PATTERNS.get());
+                    if (stored != null) list.addAll(stored);
+                }
+            }
         }
+
+        for (var chest : grid.getMachines(MEChestBlockEntity.class)) {
+            var inv = chest.getInternalInventory();
+            if (inv != null) for (int i = 0; i < inv.size(); i++) {
+                var stack = inv.getStackInSlot(i);
+                if (stack.getItem() instanceof RecipeStorageCellItem) {
+                    var stored = stack.get(AttachmentRegistry.STORED_PATTERNS.get());
+                    if (stored != null) list.addAll(stored);
+                }
+            }
+        }
+
         return list;
     }
 
     public static List<IPatternDetails> getPatternsForGrid(IGrid grid, Level level) {
         if (!isQuantumComputerValidForGrid(grid, level)) return List.of();
         var list = new ArrayList<IPatternDetails>();
-        pruneCells();
-        synchronized (ACTIVE_CELLS) {
-            for (var cell : ACTIVE_CELLS) {
-                if (cell != null && cell.belongsToGrid(grid)) for (var patternStack : cell.getPatterns()) {
-                    var details = AEPatternDecoder.INSTANCE.decodePattern(AEItemKey.of(patternStack), level);
-                    if (details != null) list.add(details);
-                }
-            }
-        }
-        return list;
-    }
-
-    public static List<RecipeStorageCell> getCellsForGrid(IGrid grid) {
-        var list = new ArrayList<RecipeStorageCell>();
-        if (grid == null) return list;
-        pruneCells();
-        synchronized (ACTIVE_CELLS) {
-            for (var cell : ACTIVE_CELLS) {
-                if (cell == null) continue;
-                if (cell.belongsToGrid(grid)) list.add(cell);
-            }
+        for (var patternStack : getAllPatternsForGrid(grid)) {
+            var details = AEPatternDecoder.INSTANCE.decodePattern(AEItemKey.of(patternStack), level);
+            if (details != null) list.add(details);
         }
         return list;
     }
@@ -128,75 +115,12 @@ public class RecipeStorageCellItem extends Item {
             this.cellStack = cellStack;
             this.host = host;
             this.load();
-            ACTIVE_CELLS.add(this);
         }
 
         private void load() {
             this.patterns.clear();
             var stored = cellStack.get(AttachmentRegistry.STORED_PATTERNS.get());
             if (stored != null) this.patterns.addAll(stored);
-        }
-
-        private void save() {
-            cellStack.set(AttachmentRegistry.STORED_PATTERNS.get(), List.copyOf(this.patterns));
-            cellStack.set(AttachmentRegistry.RECIPE_COUNT.get(), this.patterns.size());
-            var uniqueTypes = new HashSet<Item>();
-            for (var p : this.patterns) uniqueTypes.add(p.getItem());
-            cellStack.set(AttachmentRegistry.MACHINE_COUNT.get(), uniqueTypes.size());
-        }
-
-        public List<ItemStack> getPatterns() {
-            return Collections.unmodifiableList(this.patterns);
-        }
-
-        public void addPattern(ItemStack pattern) {
-            this.patterns.add(pattern.copyWithCount(1));
-            this.persist();
-        }
-
-        public boolean removePattern(ItemStack pattern) {
-            var toRemove = new ArrayList<ItemStack>();
-            for (var p : this.patterns) if (ItemStack.isSameItemSameComponents(p, pattern)) toRemove.add(p);
-            if (!toRemove.isEmpty()) {
-                this.patterns.removeAll(toRemove);
-                this.persist();
-                return true;
-            }
-            return false;
-        }
-
-        public boolean belongsToGrid(IGrid grid) {
-            if (grid == null) return false;
-
-            if (host instanceof IActionHost actionHost) {
-                var node = actionHost.getActionableNode();
-                if (node != null && node.getGrid() == grid) return true;
-            }
-
-            for (var drive : grid.getMachines(DriveBlockEntity.class)) {
-                var inv = drive.getInternalInventory();
-                if (inv != null) for (int i = 0; i < inv.size(); i++) {
-                    if (ItemStack.isSameItemSameComponents(inv.getStackInSlot(i), this.cellStack)) return true;
-                }
-            }
-
-            for (var chest : grid.getMachines(MEChestBlockEntity.class)) {
-                var inv = chest.getInternalInventory();
-                if (inv != null) for (int i = 0; i < inv.size(); i++) {
-                    if (ItemStack.isSameItemSameComponents(inv.getStackInSlot(i), this.cellStack)) return true;
-                }
-            }
-
-            return false;
-        }
-
-        public Level getLevel() {
-            if (host instanceof IActionHost actionHost) {
-                var node = actionHost.getActionableNode();
-                if (node != null) return node.getLevel();
-            }
-            if (host instanceof BlockEntity be) return be.getLevel();
-            return null;
         }
 
         @Override
@@ -218,7 +142,6 @@ public class RecipeStorageCellItem extends Item {
 
         @Override
         public void persist() {
-            this.save();
             if (host != null) host.saveChanges();
         }
 

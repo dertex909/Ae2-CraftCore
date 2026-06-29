@@ -1,19 +1,29 @@
 package org.ae2craftcore.network.packet;
 
+import appeng.api.networking.crafting.ICraftingProvider;
+import appeng.blockentity.storage.DriveBlockEntity;
+import appeng.blockentity.storage.MEChestBlockEntity;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import org.ae2craftcore.Ae2craftcore;
+import org.ae2craftcore.blocks.blockentity.MeMachineInterfaceBlockEntity;
 import org.ae2craftcore.blocks.menu.RecipeTerminalMenu;
 import org.ae2craftcore.items.RecipeStorageCellItem;
+import org.ae2craftcore.registry.AttachmentRegistry;
 import org.ae2craftcore.registry.annotations.NetworkPayload;
 import org.ae2craftcore.registry.annotations.PacketHandler;
 import org.ae2craftcore.registry.annotations.PayloadDirection;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
 
 @NetworkPayload(direction = PayloadDirection.TO_SERVER)
 public record RecipeTerminalDeleteRecipePacket(ItemStack patternToDelete) implements CustomPacketPayload {
@@ -45,8 +55,80 @@ public record RecipeTerminalDeleteRecipePacket(ItemStack patternToDelete) implem
                 if (node == null) return;
                 var grid = node.getGrid();
                 if (grid == null) return;
-                var cells = RecipeStorageCellItem.getCellsForGrid(grid);
-                for (var cell : cells) if (cell.removePattern(packet.patternToDelete())) break;
+
+                boolean deleted = false;
+
+                for (var drive : grid.getMachines(DriveBlockEntity.class)) {
+                    var inv = drive.getInternalInventory();
+                    if (inv != null) for (int i = 0; i < inv.size(); i++) {
+                        var stack = inv.getStackInSlot(i);
+                        if (stack.getItem() instanceof RecipeStorageCellItem) {
+                            var storedList = stack.get(AttachmentRegistry.STORED_PATTERNS.get());
+                            if (storedList != null && !storedList.isEmpty()) {
+                                var patterns = new ArrayList<>(storedList);
+                                var toRemove = new ArrayList<ItemStack>();
+                                for (var p : patterns) {
+                                    if (ItemStack.isSameItemSameComponents(p, packet.patternToDelete())) {
+                                        toRemove.add(p);
+                                    }
+                                }
+                                if (!toRemove.isEmpty()) {
+                                    patterns.removeAll(toRemove);
+
+                                    stack.set(AttachmentRegistry.STORED_PATTERNS.get(), List.copyOf(patterns));
+                                    stack.set(AttachmentRegistry.RECIPE_COUNT.get(), patterns.size());
+                                    var uniqueTypes = new HashSet<Item>();
+                                    for (var p : patterns) uniqueTypes.add(p.getItem());
+                                    stack.set(AttachmentRegistry.MACHINE_COUNT.get(), uniqueTypes.size());
+                                    inv.setItemDirect(i, stack);
+                                    drive.saveChanges();
+                                    deleted = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    if (deleted) break;
+                }
+
+                if (!deleted) for (var chest : grid.getMachines(MEChestBlockEntity.class)) {
+                    var inv = chest.getInternalInventory();
+                    if (inv != null) for (int i = 0; i < inv.size(); i++) {
+                        var stack = inv.getStackInSlot(i);
+                        if (stack.getItem() instanceof RecipeStorageCellItem) {
+                            var storedList = stack.get(AttachmentRegistry.STORED_PATTERNS.get());
+                            if (storedList != null && !storedList.isEmpty()) {
+                                var patterns = new ArrayList<>(storedList);
+                                var toRemove = new ArrayList<ItemStack>();
+                                for (var p : patterns) {
+                                    if (ItemStack.isSameItemSameComponents(p, packet.patternToDelete())) {
+                                        toRemove.add(p);
+                                    }
+                                }
+                                if (!toRemove.isEmpty()) {
+                                    patterns.removeAll(toRemove);
+
+                                    stack.set(AttachmentRegistry.STORED_PATTERNS.get(), List.copyOf(patterns));
+                                    stack.set(AttachmentRegistry.RECIPE_COUNT.get(), patterns.size());
+                                    var uniqueTypes = new HashSet<Item>();
+                                    for (var p : patterns) uniqueTypes.add(p.getItem());
+                                    stack.set(AttachmentRegistry.MACHINE_COUNT.get(), uniqueTypes.size());
+
+                                    inv.setItemDirect(i, stack);
+                                    chest.saveChanges();
+
+                                    deleted = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    if (deleted) break;
+                }
+
+                for (var machine : grid.getMachines(MeMachineInterfaceBlockEntity.class)) {
+                    ICraftingProvider.requestUpdate(machine.getMainNode());
+                }
 
                 menu.syncRecipesToClient();
             }

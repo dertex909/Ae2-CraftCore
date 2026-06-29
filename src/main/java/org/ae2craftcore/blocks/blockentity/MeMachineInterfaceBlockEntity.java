@@ -21,7 +21,6 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.Item;
-import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.capabilities.Capabilities;
@@ -46,7 +45,7 @@ public class MeMachineInterfaceBlockEntity extends AENetworkedPoweredBlockEntity
 
     public MeMachineInterfaceBlockEntity(BlockPos pos, BlockState state) {
         super(TYPE, pos, state);
-        this.getMainNode().setFlags(GridFlags.REQUIRE_CHANNEL).setIdlePowerUsage(100);
+        this.getMainNode().addService(ICraftingProvider.class, this).setFlags(GridFlags.REQUIRE_CHANNEL).setIdlePowerUsage(100);
         this.setInternalMaxPower(1000);
         this.setPowerSides(getGridConnectableSides(getOrientation()));
     }
@@ -82,28 +81,6 @@ public class MeMachineInterfaceBlockEntity extends AENetworkedPoweredBlockEntity
         }
     }
 
-    private boolean canMachineProcessPattern(BlockState machineState, IPatternDetails pattern, Level level) {
-        if (level == null || machineState == null || pattern == null || this.machineDirection == null) return false;
-
-        var targetPos = this.worldPosition.relative(this.machineDirection);
-        var handler = level.getCapability(Capabilities.ItemHandler.BLOCK, targetPos, this.machineDirection.getOpposite());
-        if (handler == null) return false;
-
-        var inputs = pattern.getInputs();
-        if (inputs.length == 0) return false;
-
-        var primaryInput = inputs[0];
-        var possible = primaryInput.getPossibleInputs();
-        if (possible.length == 0) return false;
-
-        var inputStack = possible[0];
-        if (inputStack.what() instanceof AEItemKey itemKey) {
-            var testStack = itemKey.toStack((int) inputStack.amount());
-            for (int i = 0; i < handler.getSlots(); i++) if (handler.isItemValid(i, testStack)) return true;
-        }
-        return false;
-    }
-
     @Override
     public List<IPatternDetails> getAvailablePatterns() {
         if (this.level == null || this.level.isClientSide) return List.of();
@@ -112,25 +89,22 @@ public class MeMachineInterfaceBlockEntity extends AENetworkedPoweredBlockEntity
 
         var allPatterns = RecipeStorageCellItem.getPatternsForGrid(grid, this.level);
         var filtered = new ArrayList<IPatternDetails>();
-        var machinePos = this.worldPosition.relative(this.machineDirection);
-        var machineState = this.level.getBlockState(machinePos);
-        if (!machineState.isAir()) for (var pattern : allPatterns) {
-            if (this.canMachineProcessPattern(machineState, pattern, this.level)) {
-                var definition = pattern.getDefinition();
-                boolean matchesGroup = true;
-                if (definition != null) {
-                    var stack = definition.toStack();
-                    var customData = stack.get(DataComponents.CUSTOM_DATA);
-                    if (customData != null) {
-                        var tag = customData.copyTag();
-                        if (tag.contains("RecipeMachineGroup")) {
-                            String patternGroup = tag.getString("RecipeMachineGroup");
-                            matchesGroup = patternGroup.equalsIgnoreCase(this.getInterfaceName());
-                        }
+
+        for (var pattern : allPatterns) {
+            var definition = pattern.getDefinition();
+            boolean matchesGroup = true;
+            if (definition != null) {
+                var stack = definition.toStack();
+                var customData = stack.get(DataComponents.CUSTOM_DATA);
+                if (customData != null) {
+                    var tag = customData.copyTag();
+                    if (tag.contains("RecipeMachineGroup")) {
+                        String patternGroup = tag.getString("RecipeMachineGroup");
+                        matchesGroup = patternGroup.equalsIgnoreCase(this.getInterfaceName());
                     }
                 }
-                if (matchesGroup) filtered.add(pattern);
             }
+            if (matchesGroup) filtered.add(pattern);
         }
         return filtered;
     }

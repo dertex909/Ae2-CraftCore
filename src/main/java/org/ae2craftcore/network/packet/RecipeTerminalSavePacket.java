@@ -1,8 +1,11 @@
 package org.ae2craftcore.network.packet;
 
 import appeng.api.crafting.PatternDetailsHelper;
+import appeng.api.networking.crafting.ICraftingProvider;
 import appeng.api.stacks.AEItemKey;
 import appeng.api.stacks.GenericStack;
+import appeng.blockentity.storage.DriveBlockEntity;
+import appeng.blockentity.storage.MEChestBlockEntity;
 import appeng.parts.encoding.EncodingMode;
 import net.minecraft.core.NonNullList;
 import net.minecraft.core.component.DataComponents;
@@ -12,6 +15,7 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.item.crafting.CraftingInput;
@@ -20,8 +24,10 @@ import net.minecraft.world.item.crafting.SingleRecipeInput;
 import net.minecraft.world.item.crafting.SmithingRecipeInput;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import org.ae2craftcore.Ae2craftcore;
+import org.ae2craftcore.blocks.blockentity.MeMachineInterfaceBlockEntity;
 import org.ae2craftcore.blocks.menu.RecipeTerminalMenu;
 import org.ae2craftcore.items.RecipeStorageCellItem;
+import org.ae2craftcore.registry.AttachmentRegistry;
 import org.ae2craftcore.registry.annotations.NetworkPayload;
 import org.ae2craftcore.registry.annotations.PacketHandler;
 import org.ae2craftcore.registry.annotations.PayloadDirection;
@@ -29,6 +35,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
 
 @NetworkPayload(direction = PayloadDirection.TO_SERVER)
 public record RecipeTerminalSavePacket(String groupName, String modeName, String stonecuttingRecipeId,
@@ -75,18 +83,70 @@ public record RecipeTerminalSavePacket(String groupName, String modeName, String
                 var grid = node.getGrid();
                 if (grid == null) return;
 
-                var cells = RecipeStorageCellItem.getCellsForGrid(grid);
                 boolean saved = false;
-                for (var cell : cells) {
-                    if (cell.getPatterns().size() < 128) {
-                        cell.addPattern(encodedPattern);
-                        saved = true;
-                        break;
+
+                for (var drive : grid.getMachines(DriveBlockEntity.class)) {
+                    var inv = drive.getInternalInventory();
+                    if (inv != null) for (int i = 0; i < inv.size(); i++) {
+                        var stack = inv.getStackInSlot(i);
+                        if (stack.getItem() instanceof RecipeStorageCellItem) {
+                            var storedList = stack.get(AttachmentRegistry.STORED_PATTERNS.get());
+                            var patterns = storedList != null ? new ArrayList<>(storedList) : new ArrayList<ItemStack>();
+                            if (patterns.size() < 128) {
+                                patterns.add(encodedPattern.copyWithCount(1));
+
+                                stack.set(AttachmentRegistry.STORED_PATTERNS.get(), List.copyOf(patterns));
+                                stack.set(AttachmentRegistry.RECIPE_COUNT.get(), patterns.size());
+                                var uniqueTypes = new HashSet<Item>();
+                                for (var p : patterns) uniqueTypes.add(p.getItem());
+                                stack.set(AttachmentRegistry.MACHINE_COUNT.get(), uniqueTypes.size());
+
+                                inv.setItemDirect(i, stack);
+                                drive.saveChanges();
+
+                                saved = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (saved) break;
+                }
+
+                if (!saved) {
+                    for (var chest : grid.getMachines(MEChestBlockEntity.class)) {
+                        var inv = chest.getInternalInventory();
+                        if (inv != null) for (int i = 0; i < inv.size(); i++) {
+                            var stack = inv.getStackInSlot(i);
+                            if (stack.getItem() instanceof RecipeStorageCellItem) {
+                                var storedList = stack.get(AttachmentRegistry.STORED_PATTERNS.get());
+                                var patterns = storedList != null ? new ArrayList<>(storedList) : new ArrayList<ItemStack>();
+                                if (patterns.size() < 128) {
+                                    patterns.add(encodedPattern.copyWithCount(1));
+
+                                    stack.set(AttachmentRegistry.STORED_PATTERNS.get(), List.copyOf(patterns));
+                                    stack.set(AttachmentRegistry.RECIPE_COUNT.get(), patterns.size());
+                                    var uniqueTypes = new HashSet<Item>();
+                                    for (var p : patterns) uniqueTypes.add(p.getItem());
+                                    stack.set(AttachmentRegistry.MACHINE_COUNT.get(), uniqueTypes.size());
+
+                                    inv.setItemDirect(i, stack);
+                                    chest.saveChanges();
+
+                                    saved = true;
+                                    break;
+                                }
+                            }
+                        }
+                        if (saved) break;
                     }
                 }
 
                 if (!saved) {
                     player.displayClientMessage(Component.literal("§cNo active Recipe Storage Cells with available space found in the network!"), true);
+                }
+
+                for (var machine : grid.getMachines(MeMachineInterfaceBlockEntity.class)) {
+                    ICraftingProvider.requestUpdate(machine.getMainNode());
                 }
 
                 menu.syncRecipesToClient();
