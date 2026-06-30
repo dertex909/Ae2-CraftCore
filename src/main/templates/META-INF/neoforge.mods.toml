@@ -32,10 +32,3 @@ type = "required"
 versionRange = "[${ae2_version},)"
 ordering = "NONE"
 side = "BOTH"
-
-[[dependencies."${mod_id}"]]
-modId = "complexityanalyzer"
-type = "required"
-versionRange = "[${ca_version},)"
-ordering = "NONE"
-side = "SERVER"

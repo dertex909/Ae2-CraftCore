@@ -78,7 +78,6 @@ sourceSets.main.resources { srcDir 'src/generated/resources' }
 
 dependencies {
     compileOnly "org.appliedenergistics:appliedenergistics2:${ae2_version}"
-    compileOnly "maven.modrinth:complexity-analyzer:${ca_version}"
 
     runtimeOnly "mezz.jei:jei-${minecraft_version}-neoforge:19.25.0.325"
 }
@@ -95,8 +94,7 @@ var generateModMetadata = tasks.register("generateModMetadata", ProcessResources
                              mod_version            : mod_version,
                              mod_authors            : mod_authors,
                              mod_description        : mod_description,
-                             ae2_version            : ae2_version,
-                             ca_version             : ca_version]
+                             ae2_version            : ae2_version]
     inputs.properties replaceProperties
     expand replaceProperties
     from "src/main/templates"
