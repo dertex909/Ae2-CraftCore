@@ -124,69 +124,89 @@ public class MeMachineInterfaceBlockEntity extends AENetworkedPoweredBlockEntity
 
     @Override
     public boolean pushPattern(IPatternDetails patternDetails, KeyCounter[] inputHolder) {
-        if (this.level == null || this.machineDirection == null || this.level.isClientSide) return false;
+        if (this.level == null || this.level.isClientSide) return false;
 
-        var targetPos = this.worldPosition.relative(this.machineDirection);
-        var side = this.machineDirection.getOpposite();
+        for (var dir : Direction.values()) {
+            var targetPos = this.worldPosition.relative(dir);
+            var side = dir.getOpposite();
 
-        var craftingMachine = ICraftingMachine.of(this.level, targetPos, side);
-        if (craftingMachine != null && craftingMachine.acceptsPlans()) {
-            return craftingMachine.pushPattern(patternDetails, inputHolder, side);
-        }
-
-        var itemHandler = this.level.getCapability(Capabilities.ItemHandler.BLOCK, targetPos, side);
-        var fluidHandler = this.level.getCapability(Capabilities.FluidHandler.BLOCK, targetPos, side);
-
-        if (itemHandler == null && fluidHandler == null) return false;
-
-        ItemStack[] simulatedSlots = null;
-        if (itemHandler != null) {
-            simulatedSlots = new ItemStack[itemHandler.getSlots()];
-            for (int i = 0; i < itemHandler.getSlots(); i++) {
-                simulatedSlots[i] = itemHandler.getStackInSlot(i).copy();
+            var craftingMachine = ICraftingMachine.of(this.level, targetPos, side);
+            if (craftingMachine != null && craftingMachine.acceptsPlans()) {
+                if (craftingMachine.pushPattern(patternDetails, inputHolder, side)) return true;
+                continue;
             }
-        }
 
-        var simulatedFluids = new ArrayList<FluidStack>();
+            var itemHandler = this.level.getCapability(Capabilities.ItemHandler.BLOCK, targetPos, side);
+            var fluidHandler = this.level.getCapability(Capabilities.FluidHandler.BLOCK, targetPos, side);
 
-        for (var counter : inputHolder) {
-            for (var key : counter.keySet()) {
-                long amount = counter.get(key);
-                if (key instanceof AEItemKey itemKey) {
-                    if (itemHandler == null) return false;
-                    var stackToInsert = itemKey.toStack((int) amount);
-                    if (!simulateInsertionInArray(simulatedSlots, stackToInsert, itemHandler)) return false;
-                } else if (key instanceof AEFluidKey fluidKey) {
-                    if (fluidHandler == null) return false;
-                    var fluidStack = fluidKey.toStack((int) amount);
+            if (itemHandler == null && fluidHandler == null) continue;
 
-                    int alreadySimulated = 0;
-                    for (var f : simulatedFluids) {
-                        if (f.getFluid() == fluidStack.getFluid()) alreadySimulated += f.getAmount();
+            ItemStack[] simulatedSlots = null;
+            if (itemHandler != null) {
+                simulatedSlots = new ItemStack[itemHandler.getSlots()];
+                for (int i = 0; i < itemHandler.getSlots(); i++) {
+                    simulatedSlots[i] = itemHandler.getStackInSlot(i).copy();
+                }
+            }
+
+            var simulatedFluids = new ArrayList<FluidStack>();
+            boolean canPush = true;
+
+            for (var counter : inputHolder) {
+                for (var key : counter.keySet()) {
+                    long amount = counter.get(key);
+                    if (key instanceof AEItemKey itemKey) {
+                        if (itemHandler == null) {
+                            canPush = false;
+                            break;
+                        }
+                        var stackToInsert = itemKey.toStack((int) amount);
+                        if (!simulateInsertionInArray(simulatedSlots, stackToInsert, itemHandler)) {
+                            canPush = false;
+                            break;
+                        }
+                    } else if (key instanceof AEFluidKey fluidKey) {
+                        if (fluidHandler == null) {
+                            canPush = false;
+                            break;
+                        }
+                        var fluidStack = fluidKey.toStack((int) amount);
+
+                        int alreadySimulated = 0;
+                        for (var f : simulatedFluids) {
+                            if (f.getFluid() == fluidStack.getFluid()) alreadySimulated += f.getAmount();
+                        }
+
+                        var testStack = new FluidStack(fluidStack.getFluid(), fluidStack.getAmount() + alreadySimulated);
+                        int inserted = fluidHandler.fill(testStack, IFluidHandler.FluidAction.SIMULATE);
+                        if (inserted < testStack.getAmount()) {
+                            canPush = false;
+                            break;
+                        }
+                        simulatedFluids.add(fluidStack);
                     }
-
-                    var testStack = new FluidStack(fluidStack.getFluid(), fluidStack.getAmount() + alreadySimulated);
-                    int inserted = fluidHandler.fill(testStack, IFluidHandler.FluidAction.SIMULATE);
-                    if (inserted < testStack.getAmount()) return false;
-                    simulatedFluids.add(fluidStack);
                 }
+                if (!canPush) break;
+            }
+
+            if (canPush) {
+                for (var counter : inputHolder) {
+                    for (var key : counter.keySet()) {
+                        long amount = counter.get(key);
+                        if (key instanceof AEItemKey itemKey && itemHandler != null) {
+                            var stack = itemKey.toStack((int) amount);
+                            ItemHandlerHelper.insertItemStacked(itemHandler, stack, false);
+                        } else if (key instanceof AEFluidKey fluidKey && fluidHandler != null) {
+                            var fluidStack = fluidKey.toStack((int) amount);
+                            fluidHandler.fill(fluidStack, IFluidHandler.FluidAction.EXECUTE);
+                        }
+                    }
+                }
+                return true;
             }
         }
 
-        for (var counter : inputHolder) {
-            for (var key : counter.keySet()) {
-                long amount = counter.get(key);
-                if (key instanceof AEItemKey itemKey && itemHandler != null) {
-                    var stack = itemKey.toStack((int) amount);
-                    ItemHandlerHelper.insertItemStacked(itemHandler, stack, false);
-                } else if (key instanceof AEFluidKey fluidKey && fluidHandler != null) {
-                    var fluidStack = fluidKey.toStack((int) amount);
-                    fluidHandler.fill(fluidStack, IFluidHandler.FluidAction.EXECUTE);
-                }
-            }
-        }
-
-        return true;
+        return false;
     }
 
     private boolean simulateInsertionInArray(ItemStack[] slots, ItemStack stack, IItemHandler handler) {
