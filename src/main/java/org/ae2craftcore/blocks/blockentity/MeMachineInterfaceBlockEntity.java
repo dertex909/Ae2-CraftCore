@@ -26,7 +26,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.capabilities.Capabilities;
@@ -349,14 +348,5 @@ public class MeMachineInterfaceBlockEntity extends AENetworkedPoweredBlockEntity
         this.machineDirection = Direction.values()[tag.getInt("MachineDirection")];
         this.customName = tag.getString("CustomName");
         this.setPowerSides(getGridConnectableSides(getOrientation()));
-    }
-
-    @Override
-    public void addAdditionalDrops(Level level, BlockPos pos, List<ItemStack> drops) {
-        super.addAdditionalDrops(level, pos, drops);
-        for (int i = 0; i < this.inv.size(); i++) {
-            var stack = this.inv.getStackInSlot(i);
-            if (!stack.isEmpty()) drops.add(stack.copy());
-        }
     }
 }
