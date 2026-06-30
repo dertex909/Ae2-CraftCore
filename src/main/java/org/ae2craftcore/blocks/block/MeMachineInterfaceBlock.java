@@ -1,5 +1,6 @@
 package org.ae2craftcore.blocks.block;
 
+import appeng.api.networking.crafting.ICraftingProvider;
 import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.InteractionResult;
@@ -17,7 +18,7 @@ import org.ae2craftcore.registry.annotations.RegisterBlock;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import appeng.api.networking.crafting.ICraftingProvider;
+import static net.minecraft.world.Containers.dropContents;
 
 @RegisterBlock(name = "me_machine_interface", strength = 3.0f, resistance = 3.0f, requiresCorrectTool = true)
 public class MeMachineInterfaceBlock extends BaseEntityBlock {
@@ -74,6 +75,17 @@ public class MeMachineInterfaceBlock extends BaseEntityBlock {
                 inter.updateAdjacentMachine();
                 ICraftingProvider.requestUpdate(inter.getMainNode());
             }
+        }
+    }
+
+    @Override
+    protected void onRemove(@NotNull BlockState state, @NotNull Level level, @NotNull BlockPos pos, @NotNull BlockState newState, boolean isMoving) {
+        if (!state.is(newState.getBlock())) {
+            var be = level.getBlockEntity(pos);
+            if (be instanceof MeMachineInterfaceBlockEntity inter) {
+                dropContents(level, pos, inter.getInternalInventory().toContainer());
+            }
+            super.onRemove(state, level, pos, newState, isMoving);
         }
     }
 }
