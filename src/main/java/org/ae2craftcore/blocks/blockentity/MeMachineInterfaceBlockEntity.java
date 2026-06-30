@@ -11,7 +11,9 @@ import appeng.api.util.AECableType;
 import appeng.api.inventories.InternalInventory;
 import appeng.blockentity.grid.AENetworkedPoweredBlockEntity;
 import appeng.util.inv.AppEngInternalInventory;
+import appeng.util.inv.InternalInventoryHost;
 import appeng.api.implementations.blockentities.ICraftingMachine;
+import appeng.me.helpers.MachineSource;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
@@ -40,11 +42,13 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 
+import static appeng.api.config.Actionable.MODULATE;
+
 @RegisterBlockEntity(name = "me_machine_interface", blocks = {MeMachineInterfaceBlock.class})
-public class MeMachineInterfaceBlockEntity extends AENetworkedPoweredBlockEntity implements ICraftingProvider, MenuProvider {
+public class MeMachineInterfaceBlockEntity extends AENetworkedPoweredBlockEntity implements ICraftingProvider, MenuProvider, InternalInventoryHost {
     public static BlockEntityType<MeMachineInterfaceBlockEntity> TYPE;
 
-    private final AppEngInternalInventory inv = new AppEngInternalInventory(this, 0);
+    private final AppEngInternalInventory inv = new AppEngInternalInventory(this, 9);
 
     private Direction machineDirection = Direction.NORTH;
     private String customName = "Recipe";
@@ -216,6 +220,42 @@ public class MeMachineInterfaceBlockEntity extends AENetworkedPoweredBlockEntity
         }
 
         return remaining.isEmpty();
+    }
+
+    @Override
+    public boolean isClientSide() {
+        return this.level == null || this.level.isClientSide();
+    }
+
+    @Override
+    public void saveChangedInventory(AppEngInternalInventory inv) {
+        this.setChanged();
+    }
+
+    @Override
+    public void onChangeInventory(AppEngInternalInventory inv, int slot) {
+        if (this.level == null || this.level.isClientSide) return;
+
+        var stack = inv.getStackInSlot(slot);
+        if (!stack.isEmpty()) {
+            var grid = this.getMainNode().getGrid();
+            if (grid != null) {
+                var storage = grid.getStorageService().getInventory();
+                var actionSource = new MachineSource(this.getMainNode()::getNode);
+                var key = AEItemKey.of(stack);
+
+                if (key != null) {
+                    long inserted = storage.insert(key, stack.getCount(), MODULATE, actionSource);
+
+                    if (inserted >= stack.getCount()) {
+                        inv.setItemDirect(slot, ItemStack.EMPTY);
+                    } else if (inserted > 0) {
+                        stack.shrink((int) inserted);
+                        inv.setItemDirect(slot, stack);
+                    }
+                }
+            }
+        }
     }
 
     @Override
