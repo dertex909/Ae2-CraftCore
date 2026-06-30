@@ -2,6 +2,7 @@ package org.ae2craftcore.blocks.blockentity;
 
 import appeng.api.crafting.IPatternDetails;
 import appeng.api.networking.GridFlags;
+import appeng.api.networking.IGridNodeListener;
 import appeng.api.networking.crafting.ICraftingProvider;
 import appeng.api.stacks.AEItemKey;
 import appeng.api.stacks.AEFluidKey;
@@ -317,6 +318,12 @@ public class MeMachineInterfaceBlockEntity extends AENetworkedPoweredBlockEntity
         var tag = new CompoundTag();
         this.saveAdditional(tag, registries);
         return tag;
+    }
+
+    @Override
+    public void onMainNodeStateChanged(IGridNodeListener.State reason) {
+        super.onMainNodeStateChanged(reason);
+        if (this.level != null && !this.level.isClientSide) ICraftingProvider.requestUpdate(this.getMainNode());
     }
 
     @Override

@@ -3,6 +3,8 @@ package org.ae2craftcore.blocks.blockentity;
 import appeng.api.networking.GridHelper;
 import appeng.api.networking.IGridNodeListener;
 import appeng.api.networking.IManagedGridNode;
+import appeng.api.networking.crafting.ICraftingProvider;
+import org.ae2craftcore.items.RecipeStorageCellItem;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -28,6 +30,7 @@ import appeng.util.inv.AppEngInternalInventory;
 import java.util.EnumSet;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static appeng.api.orientation.RelativeSide.FRONT;
 
@@ -52,12 +55,14 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity {
         }
     }
 
+    public static final Set<SfpModuleBlockEntity> LOADED_SFP_MODULES = ConcurrentHashMap.newKeySet();
+
     private final AppEngInternalInventory inv = new AppEngInternalInventory(this, 0);
 
-    private int delayTicks = 100;
     private int checkTimer = 0;
     private boolean needsTrace = true;
     private boolean connectionsCreated = false;
+    private boolean lastQuantumComputerValid = false;
 
     private long lastOutputPacked = 0L;
     private boolean hasLastOutput = false;
@@ -76,6 +81,7 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity {
     private final IManagedGridNode[] extraNodes = new IManagedGridNode[31];
 
     private static final IGridNodeListener<SfpModuleBlockEntity> MULTI_CHANNEL_LISTENER = (host, node) -> {
+        host.markNeedsTrace();
     };
 
     public void markNeedsTrace() {
@@ -91,6 +97,7 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity {
             this.extraNodes[i] = GridHelper.createManagedNode(this, MULTI_CHANNEL_LISTENER);
             this.extraNodes[i].setFlags(GridFlags.REQUIRE_CHANNEL);
         }
+        LOADED_SFP_MODULES.add(this);
     }
 
     @Override
@@ -260,6 +267,15 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity {
                 this.hasLastOutput = false;
             }
         }
+
+        var grid = this.getMainNode().getGrid();
+        boolean currentQuantumComputerValid = RecipeStorageCellItem.isQuantumComputerValidForGrid(grid, this.level);
+        if (currentQuantumComputerValid != this.lastQuantumComputerValid) {
+            this.lastQuantumComputerValid = currentQuantumComputerValid;
+            if (grid != null) for (var machine : grid.getMachines(MeMachineInterfaceBlockEntity.class)) {
+                ICraftingProvider.requestUpdate(machine.getMainNode());
+            }
+        }
     }
 
     private void setOpticalInterfacePower(BlockPos pos, boolean power) {
@@ -273,11 +289,6 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity {
 
     public static void tick(Level level, BlockPos pos, BlockState state, SfpModuleBlockEntity blockEntity) {
         if (level.isClientSide) return;
-
-        if (blockEntity.delayTicks > 0) {
-            blockEntity.delayTicks--;
-            return;
-        }
 
         for (var node : blockEntity.extraNodes) if (node != null && !node.isReady()) node.create(level, pos);
 
@@ -345,8 +356,15 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity {
     }
 
     @Override
+    public void onMainNodeStateChanged(appeng.api.networking.IGridNodeListener.State reason) {
+        super.onMainNodeStateChanged(reason);
+        this.markNeedsTrace();
+    }
+
+    @Override
     public void setRemoved() {
         super.setRemoved();
+        LOADED_SFP_MODULES.remove(this);
         for (var node : this.extraNodes) if (node != null) node.destroy();
         if (this.level != null && !this.level.isClientSide && this.hasLastOutput) {
             this.setOpticalInterfacePower(BlockPos.of(this.lastOutputPacked), false);
@@ -358,6 +376,7 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity {
     @Override
     public void onChunkUnloaded() {
         super.onChunkUnloaded();
+        LOADED_SFP_MODULES.remove(this);
         for (var node : this.extraNodes) if (node != null) node.destroy();
     }
 }

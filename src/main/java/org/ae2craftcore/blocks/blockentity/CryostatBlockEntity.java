@@ -289,6 +289,9 @@ public class CryostatBlockEntity extends BlockEntity implements MenuProvider {
 
         this.pushStatesToComponents();
         this.setChanged();
+        for (var sfp : SfpModuleBlockEntity.LOADED_SFP_MODULES) {
+            sfp.triggerImmediateTrace();
+        }
     }
 
     public static void tick(Level level, BlockPos pos, BlockState state, CryostatBlockEntity blockEntity) {
