@@ -34,14 +34,14 @@ public class RecipeTerminalMenu extends AEBaseMenu {
     public static final int IMAGE_WIDTH = 322;
     public static final int IMAGE_HEIGHT = 236;
 
-    public static final int MACHINE_LIST_X = 8;
-    public static final int MACHINE_LIST_Y = 22;
-    public static final int MACHINE_LIST_WIDTH = 140;
+    public static final int MACHINE_LIST_X = 6;
+    public static final int MACHINE_LIST_Y = 16;
+    public static final int MACHINE_LIST_WIDTH = 132;
     public static final int MACHINE_LIST_HEIGHT = 108;
 
-    public static final int RECIPE_LIST_X = 156;
-    public static final int RECIPE_LIST_Y = 22;
-    public static final int RECIPE_LIST_WIDTH = 158;
+    public static final int RECIPE_LIST_X = 171;
+    public static final int RECIPE_LIST_Y = 16;
+    public static final int RECIPE_LIST_WIDTH = 132;
     public static final int RECIPE_LIST_HEIGHT = 108;
 
     public static final int ENCODING_X = 173;
