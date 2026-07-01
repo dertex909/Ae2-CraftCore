@@ -192,6 +192,9 @@ public class MultiblockValidator {
 
         for (var offset : INJECTOR_OFFSETS) {
             tempPos.set(originX + offset.getX(), originY + offset.getY(), originZ + offset.getZ());
+            if (!level.isLoaded(tempPos)) {
+                return new ValidationResult(false, "Injector chunk is not loaded", tempPos.immutable(), offset);
+            }
             var state = level.getBlockState(tempPos);
             if (state.is(PicInjectorBlock.HOLDER.get())) {
                 var be = level.getBlockEntity(tempPos);

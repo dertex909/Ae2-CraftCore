@@ -136,10 +136,12 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity {
             var facing = blockState.getValue(SfpModuleBlock.FACING);
             long neighborPacked = BlockPos.offset(currentPacked, facing);
             tempPos.set(neighborPacked);
-            var state = this.level.getBlockState(tempPos);
-            if (state.getBlock() instanceof FiberOpticCableBlock) {
-                nextPacked = neighborPacked;
-                hasNext = true;
+            if (this.level.isLoaded(tempPos)) {
+                var state = this.level.getBlockState(tempPos);
+                if (state.getBlock() instanceof FiberOpticCableBlock) {
+                    nextPacked = neighborPacked;
+                    hasNext = true;
+                }
             }
         }
 
@@ -158,6 +160,7 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity {
             int outputCount = 0;
 
             tempPos.set(currentPacked);
+            if (!this.level.isLoaded(tempPos)) return new TraceResult(false, null);
             var currentState = this.level.getBlockState(tempPos);
             if (!(currentState.getBlock() instanceof FiberOpticCableBlock)) return new TraceResult(false, null);
 
@@ -169,6 +172,7 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity {
                 if (neighborPacked == worldPosPacked) continue;
 
                 tempPos.set(neighborPacked);
+                if (!this.level.isLoaded(tempPos)) continue;
                 var state = this.level.getBlockState(tempPos);
                 if (state.getBlock() instanceof FiberOpticCableBlock) {
                     if (!visitedCables.contains(neighborPacked)) {
@@ -190,6 +194,7 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity {
 
                 long neighborPacked = BlockPos.offset(currentPacked, d);
                 tempPos.set(neighborPacked);
+                if (!this.level.isLoaded(tempPos)) continue;
                 var state = this.level.getBlockState(tempPos);
                 if (state.getBlock() instanceof FiberOpticCableBlock) {
                     totalConnectionsAtCurrent++;
@@ -220,12 +225,14 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity {
         }
 
         int outputInterfaceConnections = 0;
+        if (!this.level.isLoaded(outputPos)) return new TraceResult(false, null);
         var outState = this.level.getBlockState(outputPos);
         if (outState.hasProperty(OpticalInterfaceBlock.FACING)) {
             var outFacing = outState.getValue(OpticalInterfaceBlock.FACING);
             for (var d : DIRECTIONS) {
                 long neighborPacked = BlockPos.offset(outputPos.asLong(), d);
                 tempPos.set(neighborPacked);
+                if (!this.level.isLoaded(tempPos)) continue;
                 var state = this.level.getBlockState(tempPos);
                 if (state.getBlock() instanceof FiberOpticCableBlock) if (d == outFacing) outputInterfaceConnections++;
             }

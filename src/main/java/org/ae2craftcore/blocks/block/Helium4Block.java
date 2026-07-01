@@ -88,9 +88,11 @@ public class Helium4Block extends Block {
 
                         spawnPos.set(tx, ty, tz);
 
+                        if (!level.isLoaded(spawnPos)) continue;
                         var spawnState = level.getBlockState(spawnPos);
                         if (spawnState.isAir()) {
                             belowPos.set(tx, ty - 1, tz);
+                            if (!level.isLoaded(belowPos)) continue;
                             var belowState = level.getBlockState(belowPos);
                             if (!belowState.isAir() && belowState.isFaceSturdy(level, belowPos, UP)) {
                                 level.setBlockAndUpdate(spawnPos.immutable(), SNOW.defaultBlockState());

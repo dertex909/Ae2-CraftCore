@@ -70,6 +70,7 @@ public class MeMachineInterfaceBlockEntity extends AENetworkedPoweredBlockEntity
 
         for (var dir : Direction.values()) {
             var targetPos = this.worldPosition.relative(dir);
+            if (!this.level.isLoaded(targetPos)) continue;
             var handler = this.level.getCapability(Capabilities.ItemHandler.BLOCK, targetPos, dir.getOpposite());
             if (handler != null) {
                 foundDir = dir;
@@ -128,6 +129,7 @@ public class MeMachineInterfaceBlockEntity extends AENetworkedPoweredBlockEntity
 
         for (var dir : Direction.values()) {
             var targetPos = this.worldPosition.relative(dir);
+            if (!this.level.isLoaded(targetPos)) continue;
             var side = dir.getOpposite();
 
             var craftingMachine = ICraftingMachine.of(this.level, targetPos, side);

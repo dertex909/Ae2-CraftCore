@@ -33,8 +33,10 @@ public record MeMachineInterfaceSyncPacket(BlockPos pos, String customName) impl
     public static void handle(MeMachineInterfaceSyncPacket packet, IPayloadContext context) {
         context.enqueueWork(() -> {
             var level = context.player().level();
-            var be = level.getBlockEntity(packet.pos());
-            if (be instanceof MeMachineInterfaceBlockEntity inter) inter.setCustomName(packet.customName());
+            if (level.isLoaded(packet.pos())) {
+                var be = level.getBlockEntity(packet.pos());
+                if (be instanceof MeMachineInterfaceBlockEntity inter) inter.setCustomName(packet.customName());
+            }
         });
     }
 }
