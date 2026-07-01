@@ -334,9 +334,9 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
             int rowTop = RecipeTerminalMenu.RECIPE_LIST_Y + LIST_PADDING_TOP + i * ROW_HEIGHT;
             int bgLeft = RecipeTerminalMenu.RECIPE_LIST_X + 2;
             int bgRight = RecipeTerminalMenu.RECIPE_LIST_X + RecipeTerminalMenu.RECIPE_LIST_WIDTH - 2;
-            int bgBottom = rowTop + ROW_BG_HEIGHT;
             boolean hovered = this.isInside(mouseX, mouseY, bgLeft, rowTop, bgRight - bgLeft, ROW_BG_HEIGHT);
-            guiGraphics.fill(x + bgLeft, y + rowTop, x + bgRight, y + bgBottom, hovered ? 0xFFC5CAD8 : 0xFFB7BBCB);
+            guiGraphics.blit(MACHINE_ROW_TEXTURE, x + bgLeft, y + rowTop, 0, hovered ? 22 : 0, 128, 22, 128, 44);
+
             var recipe = filtered.get(actualIndex);
             var displayStack = recipe.outputStack().isEmpty() ? recipe.patternStack() : recipe.outputStack();
             int itemY = rowTop + RECIPE_ROW_ITEM_OFFSET_Y;
