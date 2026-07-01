@@ -14,11 +14,11 @@
   "upgrades": [
     {
       "card": "ae2craftcore:luck_card_3",
-      "chance_bonus": 0.05
+      "chance_bonus": 0.10
     },
     {
       "card": "ae2craftcore:luck_card_4",
-      "chance_bonus": 0.10
+      "chance_bonus": 0.20
     }
   ]
 }
