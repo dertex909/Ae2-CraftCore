@@ -144,9 +144,6 @@ public class RecipeTerminalMenu extends AEBaseMenu {
         }
     }
 
-    public void setQuantumValid() {
-    }
-
     public void syncRecipesToClient() {
         if (this.part == null) return;
         var node = this.part.getGridNode();
@@ -154,7 +151,6 @@ public class RecipeTerminalMenu extends AEBaseMenu {
         var grid = node.getGrid();
         if (grid == null) return;
 
-        boolean isQuantumValid = RecipeStorageCellItem.isQuantumComputerValidForGrid(grid, this.part.getLevel());
         var list = RecipeStorageCellItem.getAllPatternsForGrid(grid);
 
         var groups = new ArrayList<String>();
@@ -169,7 +165,7 @@ public class RecipeTerminalMenu extends AEBaseMenu {
         }
 
         if (this.getPlayer() instanceof ServerPlayer serverPlayer) {
-            PacketDistributor.sendToPlayer(serverPlayer, new RecipeTerminalSyncPacket(list, groups, isQuantumValid));
+            PacketDistributor.sendToPlayer(serverPlayer, new RecipeTerminalSyncPacket(list, groups));
         }
     }
 

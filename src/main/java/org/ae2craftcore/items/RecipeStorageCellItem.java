@@ -18,9 +18,6 @@ import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.Level;
 import org.ae2craftcore.registry.annotations.RegisterItem;
 import org.ae2craftcore.registry.AttachmentRegistry;
-import org.ae2craftcore.blocks.blockentity.SfpModuleBlockEntity;
-import org.ae2craftcore.blocks.blockentity.OpticalInterfaceBlockEntity;
-import org.ae2craftcore.blocks.blockentity.CryostatBlockEntity;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -39,32 +36,6 @@ public class RecipeStorageCellItem extends Item {
         int machineCount = stack.getOrDefault(AttachmentRegistry.MACHINE_COUNT.get(), 0);
         tooltipComponents.add(Component.literal("§7Recipes (Patterns): §e" + count + " §8/ §7128"));
         tooltipComponents.add(Component.literal("§7Machines: §e" + machineCount + " §8/ §716"));
-    }
-
-    public static boolean isQuantumComputerValidForGrid(IGrid grid, Level level) {
-        if (grid == null || level == null) return false;
-        var machines = grid.getMachines(SfpModuleBlockEntity.class);
-        if (machines == null || machines.isEmpty()) return false;
-        for (var sfp : machines) {
-            if (sfp.hasActiveConnection()) {
-                var interfacePos = sfp.getConnectedInterfacePos();
-                if (interfacePos != null && level.isLoaded(interfacePos)) {
-                    var be = level.getBlockEntity(interfacePos);
-                    if (be instanceof OpticalInterfaceBlockEntity opt && opt.hasLinkedCore()) {
-                        var corePos = opt.getLinkedCorePos();
-                        if (corePos != null && level.isLoaded(corePos)) {
-                            var coreBe = level.getBlockEntity(corePos);
-                            if (coreBe instanceof CryostatBlockEntity cryostat) {
-                                if (cryostat.isStructureValid() && cryostat.areInventoriesValid() && cryostat.isMePowered()) {
-                                    return true;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        return false;
     }
 
     public static List<ItemStack> getAllPatternsForGrid(IGrid grid) {
@@ -97,7 +68,6 @@ public class RecipeStorageCellItem extends Item {
     }
 
     public static List<IPatternDetails> getPatternsForGrid(IGrid grid, Level level) {
-        if (!isQuantumComputerValidForGrid(grid, level)) return List.of();
         var list = new ArrayList<IPatternDetails>();
         for (var patternStack : getAllPatternsForGrid(grid)) {
             var details = AEPatternDecoder.INSTANCE.decodePattern(AEItemKey.of(patternStack), level);

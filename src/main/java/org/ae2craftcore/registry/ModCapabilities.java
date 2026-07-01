@@ -14,9 +14,7 @@ public class ModCapabilities {
     @SubscribeEvent
     public static void registerCapabilities(RegisterCapabilitiesEvent event) {
         event.registerBlockEntity(AECapabilities.IN_WORLD_GRID_NODE_HOST, LogicAssemblerBlockEntity.TYPE, (be, context) -> be);
-        event.registerBlockEntity(AECapabilities.IN_WORLD_GRID_NODE_HOST, SfpModuleBlockEntity.TYPE, (be, context) -> be);
         event.registerBlockEntity(AECapabilities.IN_WORLD_GRID_NODE_HOST, MeMachineInterfaceBlockEntity.TYPE, (be, context) -> be);
-        event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, PicInjectorBlockEntity.TYPE, SidedInvWrapper::new);
         event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, LogicAssemblerBlockEntity.TYPE, SidedInvWrapper::new);
         event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, MeMachineInterfaceBlockEntity.TYPE, (be, context) -> be.getInternalInventory().toItemHandler());
     }

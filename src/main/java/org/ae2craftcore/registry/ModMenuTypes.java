@@ -19,15 +19,6 @@ public class ModMenuTypes {
     public static final DeferredHolder<MenuType<?>, MenuType<LogicAssemblerMenu>> LOGIC_ASSEMBLER = MENU_TYPES.register(
             "logic_assembler", () -> IMenuTypeExtension.create((containerId, inv, buf) -> new LogicAssemblerMenu(containerId, inv)));
 
-    public static final DeferredHolder<MenuType<?>, MenuType<MultiblockMonitorMenu>> MULTIBLOCK_MONITOR = MENU_TYPES.register(
-            "multiblock_monitor", () -> IMenuTypeExtension.create((containerId, inv, buf) -> new MultiblockMonitorMenu(containerId)));
-
-    public static final DeferredHolder<MenuType<?>, MenuType<PicInjectorMenu>> PIC_INJECTOR = MENU_TYPES.register(
-            "pic_injector", () -> IMenuTypeExtension.create((containerId, inv, buf) -> new PicInjectorMenu(containerId, inv)));
-
-    public static final DeferredHolder<MenuType<?>, MenuType<CryostatMenu>> CRYOSTAT = MENU_TYPES.register(
-            "cryostat", () -> IMenuTypeExtension.create((containerId, inv, buf) -> new CryostatMenu(containerId, inv)));
-
     public static final DeferredHolder<MenuType<?>, MenuType<MeMachineInterfaceMenu>> ME_MACHINE_INTERFACE = MENU_TYPES.register(
             "me_machine_interface", () -> IMenuTypeExtension.create(MeMachineInterfaceMenu::new));
 
