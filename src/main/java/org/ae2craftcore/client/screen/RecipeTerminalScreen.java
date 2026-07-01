@@ -72,8 +72,11 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
     private static final int RECIPE_SCROLL_Y = 19;
 
     private static final int LIST_ROWS = 5;
-    private static final int MACHINE_ROW_HEIGHT = 18;
-    private static final int RECIPE_ROW_HEIGHT = 18;
+    private static final int ROW_HEIGHT = 23;
+
+    private static final int MACHINE_ROW_BG_HEIGHT = 22;
+    private static final int MACHINE_LIST_PADDING_TOP = 3;
+    private static final int MACHINE_ROW_TEXT_OFFSET_Y = (MACHINE_ROW_BG_HEIGHT - 8) / 2;
 
     private static final int CRAFT_CLEAR_X = RecipeTerminalMenu.ENCODING_X + 62;
     private static final int CRAFT_CLEAR_Y = RecipeTerminalMenu.ENCODING_Y + 6;
@@ -156,8 +159,8 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
     @Override
     public void drawFG(GuiGraphics guiGraphics, int offsetX, int offsetY, int mouseX, int mouseY) {
         guiGraphics.drawString(this.font, this.title, this.titleLabelX, this.titleLabelY, 0x333342, false);
-        guiGraphics.drawString(this.font, Component.translatable("gui.ae2craftcore.recipe_terminal.machines"), RecipeTerminalMenu.MACHINE_LIST_X, 13, 0xFF403E53, false);
-        guiGraphics.drawString(this.font, Component.translatable("gui.ae2craftcore.recipe_terminal.recipes"), RecipeTerminalMenu.RECIPE_LIST_X, 13, 0xFF403E53, false);
+        guiGraphics.drawString(this.font, Component.translatable("gui.ae2craftcore.recipe_terminal.machines"), 50, 6, 0xFF403E53, false);
+        guiGraphics.drawString(this.font, Component.translatable("gui.ae2craftcore.recipe_terminal.recipes"), 220, 6, 0xFF403E53, false);
         guiGraphics.drawString(this.font, Component.translatable("gui.ae2.PatternEncoding"), RecipeTerminalMenu.ENCODING_X, this.inventoryLabelY, 0xFF403E53, false);
         guiGraphics.drawString(this.font, this.playerInventoryTitle, this.inventoryLabelX, this.inventoryLabelY, 0xFF403E53, false);
 
@@ -324,7 +327,7 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
             int actualIndex = i + this.recipeScrollOffset;
             if (actualIndex >= filtered.size()) continue;
 
-            int rowY = RecipeTerminalMenu.RECIPE_LIST_Y + 5 + i * RECIPE_ROW_HEIGHT;
+            int rowY = RecipeTerminalMenu.RECIPE_LIST_Y + 5 + i * ROW_HEIGHT;
             boolean hovered = this.isInside(mouseX, mouseY, RecipeTerminalMenu.RECIPE_LIST_X + 2, rowY - 2, RecipeTerminalMenu.RECIPE_LIST_WIDTH - 4, 17);
             guiGraphics.fill(x + RecipeTerminalMenu.RECIPE_LIST_X + 2, y + rowY - 2, x + RecipeTerminalMenu.RECIPE_LIST_X + RecipeTerminalMenu.RECIPE_LIST_WIDTH - 2, y + rowY + 16, hovered ? 0xFFC5CAD8 : 0xFFB7BBCB);
 
@@ -346,15 +349,20 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
 
             var group = groups.get(actualIndex);
             boolean selected = group.name().equalsIgnoreCase(this.menu.getSelectedGroup());
-            int rowY = RecipeTerminalMenu.MACHINE_LIST_Y + 5 + i * MACHINE_ROW_HEIGHT;
-            guiGraphics.fill(RecipeTerminalMenu.MACHINE_LIST_X + 2, rowY - 2, RecipeTerminalMenu.MACHINE_LIST_X + RecipeTerminalMenu.MACHINE_LIST_WIDTH - 2, rowY + 13, selected ? 0xFFD9DDEB : 0x00FFFFFF);
+            int rowTop = RecipeTerminalMenu.MACHINE_LIST_Y + MACHINE_LIST_PADDING_TOP + i * ROW_HEIGHT;
+            int bgLeft = RecipeTerminalMenu.MACHINE_LIST_X + 2;
+            int bgRight = RecipeTerminalMenu.MACHINE_LIST_X + RecipeTerminalMenu.MACHINE_LIST_WIDTH - 2;
+            int bgBottom = rowTop + MACHINE_ROW_BG_HEIGHT;
+            guiGraphics.fill(bgLeft, rowTop, bgRight, bgBottom, selected ? 0xFFD9DDEB : 0x00FFFFFF);
+            int textY = rowTop + MACHINE_ROW_TEXT_OFFSET_Y;
 
             String displayName = group.name();
             if (this.font.width(displayName) > 101) {
                 displayName = this.font.plainSubstrByWidth(displayName, 96) + "..";
             }
-            guiGraphics.drawString(this.font, displayName, RecipeTerminalMenu.MACHINE_LIST_X + 5, rowY, selected ? 0x27304A : 0x42475A, false);
-            guiGraphics.drawString(this.font, String.valueOf(group.count()), RecipeTerminalMenu.MACHINE_LIST_X + RecipeTerminalMenu.MACHINE_LIST_WIDTH - 14, rowY, 0x656A7C, false);
+
+            guiGraphics.drawString(this.font, displayName, RecipeTerminalMenu.MACHINE_LIST_X + 5, textY, selected ? 0x27304A : 0x42475A, false);
+            guiGraphics.drawString(this.font, String.valueOf(group.count()), RecipeTerminalMenu.MACHINE_LIST_X + RecipeTerminalMenu.MACHINE_LIST_WIDTH - 14, textY, 0x656A7C, false);
         }
     }
 
@@ -364,7 +372,7 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
             int actualIndex = i + this.recipeScrollOffset;
             if (actualIndex >= filtered.size()) continue;
             var recipe = filtered.get(actualIndex);
-            int rowY = RecipeTerminalMenu.RECIPE_LIST_Y + 7 + i * RECIPE_ROW_HEIGHT;
+            int rowY = RecipeTerminalMenu.RECIPE_LIST_Y + 7 + i * ROW_HEIGHT;
             String name = recipe.outputStack().isEmpty() ? recipe.patternStack().getHoverName().getString() : recipe.outputStack().getHoverName().getString();
             if (this.font.width(name) > 85) name = this.font.plainSubstrByWidth(name, 80) + "..";
             guiGraphics.drawString(this.font, name, RecipeTerminalMenu.RECIPE_LIST_X + 42, rowY, 0x42475A, false);
@@ -526,15 +534,23 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
 
         if (this.isInside(x, y, RecipeTerminalMenu.MACHINE_LIST_X, RecipeTerminalMenu.MACHINE_LIST_Y,
                 RecipeTerminalMenu.MACHINE_LIST_WIDTH, RecipeTerminalMenu.MACHINE_LIST_HEIGHT)) {
-            int index = (y - RecipeTerminalMenu.MACHINE_LIST_Y) / MACHINE_ROW_HEIGHT;
-            var groups = this.getGroups();
-            int actualIndex = index + this.groupScrollOffset;
-            if (actualIndex >= 0 && actualIndex < groups.size()) {
-                String clickedGroup = groups.get(actualIndex).name();
-                this.menu.setSelectedGroup(clickedGroup);
-                this.recipeScrollOffset = 0;
-                PacketDistributor.sendToServer(new RecipeTerminalSelectGroupPacket(clickedGroup));
-                this.playClick();
+            int relativeY = y - RecipeTerminalMenu.MACHINE_LIST_Y - MACHINE_LIST_PADDING_TOP;
+
+            if (relativeY >= 0) {
+                int index = relativeY / ROW_HEIGHT;
+                int rowOffset = relativeY % ROW_HEIGHT;
+
+                if (rowOffset < MACHINE_ROW_BG_HEIGHT) {
+                    var groups = this.getGroups();
+                    int actualIndex = index + this.groupScrollOffset;
+                    if (actualIndex >= 0 && actualIndex < groups.size()) {
+                        String clickedGroup = groups.get(actualIndex).name();
+                        this.menu.setSelectedGroup(clickedGroup);
+                        this.recipeScrollOffset = 0;
+                        PacketDistributor.sendToServer(new RecipeTerminalSelectGroupPacket(clickedGroup));
+                        this.playClick();
+                    }
+                }
             }
             return true;
         }
@@ -591,11 +607,11 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
 
         if (this.isInside(x, y, RecipeTerminalMenu.RECIPE_LIST_X, RecipeTerminalMenu.RECIPE_LIST_Y,
                 RecipeTerminalMenu.RECIPE_LIST_WIDTH, RecipeTerminalMenu.RECIPE_LIST_HEIGHT)) {
-            int itemIndex = (y - RecipeTerminalMenu.RECIPE_LIST_Y) / RECIPE_ROW_HEIGHT;
+            int itemIndex = (y - RecipeTerminalMenu.RECIPE_LIST_Y) / ROW_HEIGHT;
             var filtered = this.getFilteredRecipes();
             int actualIndex = itemIndex + this.recipeScrollOffset;
             if (actualIndex >= 0 && actualIndex < filtered.size()) {
-                int rowY = RecipeTerminalMenu.RECIPE_LIST_Y + 4 + itemIndex * RECIPE_ROW_HEIGHT;
+                int rowY = RecipeTerminalMenu.RECIPE_LIST_Y + 4 + itemIndex * ROW_HEIGHT;
                 if (this.isInside(x, y, RecipeTerminalMenu.RECIPE_LIST_X + RecipeTerminalMenu.RECIPE_LIST_WIDTH - 14, rowY + 2, 12, 12)) {
                     PacketDistributor.sendToServer(new RecipeTerminalDeleteRecipePacket(filtered.get(actualIndex).patternStack()));
                     this.playClick();
