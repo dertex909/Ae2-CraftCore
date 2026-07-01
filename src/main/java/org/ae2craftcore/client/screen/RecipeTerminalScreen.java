@@ -63,20 +63,23 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
 
     private static final int MACHINE_SCROLL_X = 138;
     private static final int MACHINE_SCROLL_Y = 19;
+    private static final int RECIPE_SCROLL_X = 303;
+    private static final int RECIPE_SCROLL_Y = 19;
 
     private static final int SCROLL_W = 11;
     private static final int SCROLL_H = 114;
     private static final int SCROLLER_WIDTH = 12;
     private static final int SCROLLER_HEIGHT = 15;
-    private static final int RECIPE_SCROLL_X = 303;
-    private static final int RECIPE_SCROLL_Y = 19;
-
     private static final int LIST_ROWS = 5;
     private static final int ROW_HEIGHT = 23;
+    private static final int ROW_BG_HEIGHT = 22;
+    private static final int LIST_PADDING_TOP = 3;
 
-    private static final int MACHINE_ROW_BG_HEIGHT = 22;
-    private static final int MACHINE_LIST_PADDING_TOP = 3;
-    private static final int MACHINE_ROW_TEXT_OFFSET_Y = (MACHINE_ROW_BG_HEIGHT - 8) / 2;
+    private static final int MACHINE_ROW_TEXT_OFFSET_Y = (ROW_BG_HEIGHT - 8) / 2;
+    private static final int RECIPE_ROW_TEXT_OFFSET_Y = (ROW_BG_HEIGHT - 8) / 2;
+    private static final int RECIPE_ROW_ITEM_OFFSET_Y = (ROW_BG_HEIGHT - 16) / 2;
+    private static final int RECIPE_ROW_ICON_OFFSET_Y = (ROW_BG_HEIGHT - 12) / 2;
+    private static final int RECIPE_ROW_CLEAR_OFFSET_Y = (ROW_BG_HEIGHT - 8) / 2;
 
     private static final int CRAFT_CLEAR_X = RecipeTerminalMenu.ENCODING_X + 62;
     private static final int CRAFT_CLEAR_Y = RecipeTerminalMenu.ENCODING_Y + 6;
@@ -159,8 +162,8 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
     @Override
     public void drawFG(GuiGraphics guiGraphics, int offsetX, int offsetY, int mouseX, int mouseY) {
         guiGraphics.drawString(this.font, this.title, this.titleLabelX, this.titleLabelY, 0x333342, false);
-        guiGraphics.drawString(this.font, Component.translatable("gui.ae2craftcore.recipe_terminal.machines"), 50, 6, 0xFF403E53, false);
-        guiGraphics.drawString(this.font, Component.translatable("gui.ae2craftcore.recipe_terminal.recipes"), 220, 6, 0xFF403E53, false);
+        guiGraphics.drawString(this.font, Component.translatable("gui.ae2craftcore.recipe_terminal.machines"), RecipeTerminalMenu.MACHINE_LIST_X + 1, 6, 0xFF403E53, false);
+        guiGraphics.drawString(this.font, Component.translatable("gui.ae2craftcore.recipe_terminal.recipes"), RecipeTerminalMenu.RECIPE_LIST_X + 1, 6, 0xFF403E53, false);
         guiGraphics.drawString(this.font, Component.translatable("gui.ae2.PatternEncoding"), RecipeTerminalMenu.ENCODING_X, this.inventoryLabelY, 0xFF403E53, false);
         guiGraphics.drawString(this.font, this.playerInventoryTitle, this.inventoryLabelX, this.inventoryLabelY, 0xFF403E53, false);
 
@@ -326,18 +329,21 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
         for (int i = 0; i < LIST_ROWS; i++) {
             int actualIndex = i + this.recipeScrollOffset;
             if (actualIndex >= filtered.size()) continue;
-
-            int rowY = RecipeTerminalMenu.RECIPE_LIST_Y + 5 + i * ROW_HEIGHT;
-            boolean hovered = this.isInside(mouseX, mouseY, RecipeTerminalMenu.RECIPE_LIST_X + 2, rowY - 2, RecipeTerminalMenu.RECIPE_LIST_WIDTH - 4, 17);
-            guiGraphics.fill(x + RecipeTerminalMenu.RECIPE_LIST_X + 2, y + rowY - 2, x + RecipeTerminalMenu.RECIPE_LIST_X + RecipeTerminalMenu.RECIPE_LIST_WIDTH - 2, y + rowY + 16, hovered ? 0xFFC5CAD8 : 0xFFB7BBCB);
-
+            int rowTop = RecipeTerminalMenu.RECIPE_LIST_Y + LIST_PADDING_TOP + i * ROW_HEIGHT;
+            int bgLeft = RecipeTerminalMenu.RECIPE_LIST_X + 2;
+            int bgRight = RecipeTerminalMenu.RECIPE_LIST_X + RecipeTerminalMenu.RECIPE_LIST_WIDTH - 2;
+            int bgBottom = rowTop + ROW_BG_HEIGHT;
+            boolean hovered = this.isInside(mouseX, mouseY, bgLeft, rowTop, bgRight - bgLeft, ROW_BG_HEIGHT);
+            guiGraphics.fill(x + bgLeft, y + rowTop, x + bgRight, y + bgBottom, hovered ? 0xFFC5CAD8 : 0xFFB7BBCB);
             var recipe = filtered.get(actualIndex);
             var displayStack = recipe.outputStack().isEmpty() ? recipe.patternStack() : recipe.outputStack();
-            guiGraphics.renderFakeItem(displayStack, x + RecipeTerminalMenu.RECIPE_LIST_X + 4, y + rowY - 1);
-            guiGraphics.renderItemDecorations(this.font, displayStack, x + RecipeTerminalMenu.RECIPE_LIST_X + 4, y + rowY - 1);
-
-            this.getModeIcon(recipe.mode()).getBlitter().dest(x + RecipeTerminalMenu.RECIPE_LIST_X + 24, y + rowY + 3).blit(guiGraphics);
-            Icon.S_CLEAR.getBlitter().dest(x + RecipeTerminalMenu.RECIPE_LIST_X + RecipeTerminalMenu.RECIPE_LIST_WIDTH - 13, y + rowY + 4).blit(guiGraphics);
+            int itemY = rowTop + RECIPE_ROW_ITEM_OFFSET_Y;
+            guiGraphics.renderFakeItem(displayStack, x + RecipeTerminalMenu.RECIPE_LIST_X + 4, y + itemY);
+            guiGraphics.renderItemDecorations(this.font, displayStack, x + RecipeTerminalMenu.RECIPE_LIST_X + 4, y + itemY);
+            int iconY = rowTop + RECIPE_ROW_ICON_OFFSET_Y;
+            this.getModeIcon(recipe.mode()).getBlitter().dest(x + RecipeTerminalMenu.RECIPE_LIST_X + 24, y + iconY).blit(guiGraphics);
+            int clearY = rowTop + RECIPE_ROW_CLEAR_OFFSET_Y;
+            Icon.S_CLEAR.getBlitter().dest(x + RecipeTerminalMenu.RECIPE_LIST_X + RecipeTerminalMenu.RECIPE_LIST_WIDTH - 13, y + clearY).blit(guiGraphics);
         }
     }
 
@@ -349,16 +355,16 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
 
             var group = groups.get(actualIndex);
             boolean selected = group.name().equalsIgnoreCase(this.menu.getSelectedGroup());
-            int rowTop = RecipeTerminalMenu.MACHINE_LIST_Y + MACHINE_LIST_PADDING_TOP + i * ROW_HEIGHT;
+            int rowTop = RecipeTerminalMenu.MACHINE_LIST_Y + LIST_PADDING_TOP + i * ROW_HEIGHT;
             int bgLeft = RecipeTerminalMenu.MACHINE_LIST_X + 2;
             int bgRight = RecipeTerminalMenu.MACHINE_LIST_X + RecipeTerminalMenu.MACHINE_LIST_WIDTH - 2;
-            int bgBottom = rowTop + MACHINE_ROW_BG_HEIGHT;
+            int bgBottom = rowTop + ROW_BG_HEIGHT;
             guiGraphics.fill(bgLeft, rowTop, bgRight, bgBottom, selected ? 0xFFD9DDEB : 0x00FFFFFF);
             int textY = rowTop + MACHINE_ROW_TEXT_OFFSET_Y;
 
             String displayName = group.name();
             if (this.font.width(displayName) > 101) {
-                displayName = this.font.plainSubstrByWidth(displayName, 96) + "..";
+                displayName = this.font.plainSubstrByWidth(displayName, 96) + "...";
             }
 
             guiGraphics.drawString(this.font, displayName, RecipeTerminalMenu.MACHINE_LIST_X + 5, textY, selected ? 0x27304A : 0x42475A, false);
@@ -372,10 +378,12 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
             int actualIndex = i + this.recipeScrollOffset;
             if (actualIndex >= filtered.size()) continue;
             var recipe = filtered.get(actualIndex);
-            int rowY = RecipeTerminalMenu.RECIPE_LIST_Y + 7 + i * ROW_HEIGHT;
+            int rowTop = RecipeTerminalMenu.RECIPE_LIST_Y + LIST_PADDING_TOP + i * ROW_HEIGHT;
+            int textY = rowTop + RECIPE_ROW_TEXT_OFFSET_Y;
+
             String name = recipe.outputStack().isEmpty() ? recipe.patternStack().getHoverName().getString() : recipe.outputStack().getHoverName().getString();
-            if (this.font.width(name) > 85) name = this.font.plainSubstrByWidth(name, 80) + "..";
-            guiGraphics.drawString(this.font, name, RecipeTerminalMenu.RECIPE_LIST_X + 42, rowY, 0x42475A, false);
+            if (this.font.width(name) > 85) name = this.font.plainSubstrByWidth(name, 80) + "...";
+            guiGraphics.drawString(this.font, name, RecipeTerminalMenu.RECIPE_LIST_X + 42, textY, 0x42475A, false);
         }
     }
 
@@ -534,13 +542,13 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
 
         if (this.isInside(x, y, RecipeTerminalMenu.MACHINE_LIST_X, RecipeTerminalMenu.MACHINE_LIST_Y,
                 RecipeTerminalMenu.MACHINE_LIST_WIDTH, RecipeTerminalMenu.MACHINE_LIST_HEIGHT)) {
-            int relativeY = y - RecipeTerminalMenu.MACHINE_LIST_Y - MACHINE_LIST_PADDING_TOP;
+            int relativeY = y - RecipeTerminalMenu.MACHINE_LIST_Y - LIST_PADDING_TOP;
 
             if (relativeY >= 0) {
                 int index = relativeY / ROW_HEIGHT;
                 int rowOffset = relativeY % ROW_HEIGHT;
 
-                if (rowOffset < MACHINE_ROW_BG_HEIGHT) {
+                if (rowOffset < ROW_BG_HEIGHT) {
                     var groups = this.getGroups();
                     int actualIndex = index + this.groupScrollOffset;
                     if (actualIndex >= 0 && actualIndex < groups.size()) {
@@ -607,14 +615,25 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
 
         if (this.isInside(x, y, RecipeTerminalMenu.RECIPE_LIST_X, RecipeTerminalMenu.RECIPE_LIST_Y,
                 RecipeTerminalMenu.RECIPE_LIST_WIDTH, RecipeTerminalMenu.RECIPE_LIST_HEIGHT)) {
-            int itemIndex = (y - RecipeTerminalMenu.RECIPE_LIST_Y) / ROW_HEIGHT;
-            var filtered = this.getFilteredRecipes();
-            int actualIndex = itemIndex + this.recipeScrollOffset;
-            if (actualIndex >= 0 && actualIndex < filtered.size()) {
-                int rowY = RecipeTerminalMenu.RECIPE_LIST_Y + 4 + itemIndex * ROW_HEIGHT;
-                if (this.isInside(x, y, RecipeTerminalMenu.RECIPE_LIST_X + RecipeTerminalMenu.RECIPE_LIST_WIDTH - 14, rowY + 2, 12, 12)) {
-                    PacketDistributor.sendToServer(new RecipeTerminalDeleteRecipePacket(filtered.get(actualIndex).patternStack()));
-                    this.playClick();
+            int relativeY = y - RecipeTerminalMenu.RECIPE_LIST_Y - LIST_PADDING_TOP;
+
+            if (relativeY >= 0) {
+                int index = relativeY / ROW_HEIGHT;
+                int rowOffset = relativeY % ROW_HEIGHT;
+
+                if (rowOffset < ROW_BG_HEIGHT) {
+                    var filtered = this.getFilteredRecipes();
+                    int actualIndex = index + this.recipeScrollOffset;
+                    if (actualIndex >= 0 && actualIndex < filtered.size()) {
+                        int rowTop = RecipeTerminalMenu.RECIPE_LIST_Y + LIST_PADDING_TOP + index * ROW_HEIGHT;
+
+                        int clearX = RecipeTerminalMenu.RECIPE_LIST_X + RecipeTerminalMenu.RECIPE_LIST_WIDTH - 13;
+                        int clearY = rowTop + RECIPE_ROW_CLEAR_OFFSET_Y;
+                        if (this.isInside(x, y, clearX, clearY, 12, 12)) {
+                            PacketDistributor.sendToServer(new RecipeTerminalDeleteRecipePacket(filtered.get(actualIndex).patternStack()));
+                            this.playClick();
+                        }
+                    }
                 }
             }
             return true;

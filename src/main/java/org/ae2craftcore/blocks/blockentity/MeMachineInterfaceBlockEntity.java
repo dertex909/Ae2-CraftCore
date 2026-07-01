@@ -74,7 +74,7 @@ public class MeMachineInterfaceBlockEntity extends AENetworkedPoweredBlockEntity
             if (handler != null) {
                 foundDir = dir;
                 var state = this.level.getBlockState(targetPos);
-                foundName = state.getBlock().getName().getString() + " recipe";
+                foundName = state.getBlock().getName().getString();
                 break;
             }
         }
