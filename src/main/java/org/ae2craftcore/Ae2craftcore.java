@@ -24,7 +24,6 @@ public class Ae2craftcore {
         AutoBlockRegistry.register(modEventBus);
         AutoItemRegistry.register(modEventBus);
         AttachmentRegistry.register(modEventBus);
-        ModSounds.register(modEventBus);
         AutoCreativeTabsRegistry.register(modEventBus);
         ModMenuTypes.register(modEventBus);
         ModRecipeTypes.register(modEventBus);

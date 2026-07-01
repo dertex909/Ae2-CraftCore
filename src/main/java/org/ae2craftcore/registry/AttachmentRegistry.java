@@ -16,14 +16,6 @@ public final class AttachmentRegistry {
     public static final DeferredRegister.DataComponents DATA_COMPONENTS =
             DeferredRegister.createDataComponents(Registries.DATA_COMPONENT_TYPE, Ae2craftcore.MODID);
 
-    public static final Supplier<DataComponentType<Double>> VESSEL_ENERGY = DATA_COMPONENTS.registerComponentType(
-            "vessel_energy", builder -> builder.persistent(Codec.DOUBLE).networkSynchronized(ByteBufCodecs.DOUBLE)
-    );
-
-    public static final Supplier<DataComponentType<Integer>> VESSEL_STATE = DATA_COMPONENTS.registerComponentType(
-            "vessel_state", builder -> builder.persistent(Codec.INT).networkSynchronized(ByteBufCodecs.INT)
-    );
-
     public static final Supplier<DataComponentType<Integer>> RECIPE_COUNT = DATA_COMPONENTS.registerComponentType(
             "recipe_count", builder -> builder.persistent(Codec.INT).networkSynchronized(ByteBufCodecs.INT)
     );
