@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "ae2craftcore:block/me_machine_interface"
+    }
+  }
+}
