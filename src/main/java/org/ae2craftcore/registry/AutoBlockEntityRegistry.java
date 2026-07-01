@@ -31,7 +31,7 @@ public class AutoBlockEntityRegistry {
 
     private static void scanAndRegister() {
         Ae2craftcore.LOGGER.info("AutoBlockEntityRegistry: Scanning for annotated block entities...");
-        for (String className : RegistryScanHelper.findAnnotatedClasses(RegisterBlockEntity.class))
+        for (var className : RegistryScanHelper.findAnnotatedClasses(RegisterBlockEntity.class))
             registerClass(className);
     }
 
@@ -45,7 +45,7 @@ public class AutoBlockEntityRegistry {
             String name = anno.name();
             var blockClasses = anno.blocks();
 
-            ObjectArrayList<Supplier<Block>> blockSuppliers = new ObjectArrayList<>();
+            var blockSuppliers = new ObjectArrayList<Supplier<Block>>();
             for (var blockClass : blockClasses) {
                 var holders = AutoBlockRegistry.getHoldersFor(blockClass);
                 blockSuppliers.addAll(holders);

@@ -97,7 +97,12 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity {
             this.extraNodes[i] = GridHelper.createManagedNode(this, MULTI_CHANNEL_LISTENER);
             this.extraNodes[i].setFlags(GridFlags.REQUIRE_CHANNEL);
         }
-        LOADED_SFP_MODULES.add(this);
+    }
+
+    @Override
+    public void onLoad() {
+        super.onLoad();
+        if (this.level != null && !this.level.isClientSide) LOADED_SFP_MODULES.add(this);
     }
 
     @Override
@@ -361,16 +366,19 @@ public class SfpModuleBlockEntity extends AENetworkedPoweredBlockEntity {
         this.markNeedsTrace();
     }
 
-    @Override
-    public void setRemoved() {
-        super.setRemoved();
-        LOADED_SFP_MODULES.remove(this);
-        for (var node : this.extraNodes) if (node != null) node.destroy();
+    public void onBlockBroken() {
         if (this.level != null && !this.level.isClientSide && this.hasLastOutput) {
             this.setOpticalInterfacePower(BlockPos.of(this.lastOutputPacked), false);
             this.lastOutputPacked = 0L;
             this.hasLastOutput = false;
         }
+    }
+
+    @Override
+    public void setRemoved() {
+        super.setRemoved();
+        LOADED_SFP_MODULES.remove(this);
+        for (var node : this.extraNodes) if (node != null) node.destroy();
     }
 
     @Override

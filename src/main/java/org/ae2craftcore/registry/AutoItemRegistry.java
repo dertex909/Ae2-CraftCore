@@ -88,8 +88,10 @@ public class AutoItemRegistry {
 
         try {
             var handle = lookup.unreflectConstructor(clazz.getConstructor(Item.Properties.class));
-            var props = buildProperties(anno, name);
-            return () -> (Item) handle.invoke(props);
+            return () -> {
+                var props = buildProperties(anno, name);
+                return (Item) handle.invoke(props);
+            };
         } catch (NoSuchMethodException ignored) {
         }
 

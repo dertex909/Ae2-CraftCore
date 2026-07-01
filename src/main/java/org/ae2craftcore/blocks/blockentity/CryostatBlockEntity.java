@@ -290,7 +290,9 @@ public class CryostatBlockEntity extends BlockEntity implements MenuProvider {
         this.pushStatesToComponents();
         this.setChanged();
         for (var sfp : SfpModuleBlockEntity.LOADED_SFP_MODULES) {
-            sfp.triggerImmediateTrace();
+            if (sfp != null && sfp.getLevel() == this.level && !sfp.isRemoved() && this.level.isLoaded(sfp.getBlockPos())) {
+                sfp.triggerImmediateTrace();
+            }
         }
     }
 
@@ -315,13 +317,16 @@ public class CryostatBlockEntity extends BlockEntity implements MenuProvider {
         return new CryostatMenu(containerId, playerInventory, this.getContainer());
     }
 
-    @Override
-    public void setRemoved() {
+    public void onBlockBroken() {
         if (this.level != null && !this.level.isClientSide) {
             this.structureValid = false;
             this.pushStatesToComponents();
             this.registeredComponents.clear();
         }
+    }
+
+    @Override
+    public void setRemoved() {
         super.setRemoved();
     }
 

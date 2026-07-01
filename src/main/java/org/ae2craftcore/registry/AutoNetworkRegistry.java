@@ -23,8 +23,8 @@ public class AutoNetworkRegistry {
 
         Ae2craftcore.LOGGER.info("AutoNetworkRegistry: Scanning for network payloads...");
 
-        Reference2ObjectOpenHashMap<Class<? extends CustomPacketPayload>, NetworkPayload> payloads = new Reference2ObjectOpenHashMap<>();
-        ObjectArrayList<Method> handlers = new ObjectArrayList<>();
+        var payloads = new Reference2ObjectOpenHashMap<Class<? extends CustomPacketPayload>, NetworkPayload>();
+        var handlers = new ObjectArrayList<Method>();
 
         for (var className : RegistryScanHelper.findAnnotatedClasses(NetworkPayload.class)) {
             var clazz = RegistryScanHelper.loadClass(className);

@@ -109,6 +109,16 @@ public class SfpModuleBlock extends AEBaseEntityBlock<SfpModuleBlockEntity> impl
         }
     }
 
+    @Override
+    public void onRemove(@NotNull BlockState state, @NotNull Level level, @NotNull BlockPos pos,
+                         @NotNull BlockState newState, boolean movedByPiston) {
+        if (!state.is(newState.getBlock())) {
+            var be = level.getBlockEntity(pos);
+            if (be instanceof SfpModuleBlockEntity sfp) sfp.onBlockBroken();
+            super.onRemove(state, level, pos, newState, movedByPiston);
+        }
+    }
+
     @Nullable
     @Override
     @SuppressWarnings("unchecked")
