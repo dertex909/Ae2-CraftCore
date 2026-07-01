@@ -105,6 +105,8 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
     };
 
     private static final ResourceLocation BACKGROUND_TEXTURE = ResourceLocation.fromNamespaceAndPath(Ae2craftcore.MODID, "textures/gui/container/recipe_terminal.png");
+    private static final ResourceLocation MACHINE_ROW_TEXTURE = ResourceLocation.fromNamespaceAndPath(Ae2craftcore.MODID, "textures/gui/container/machine_row.png");
+
     private static final Blitter CRAFTING_BG = Blitter.texture("guis/pattern_modes.png").src(0, 0, 124, 66);
     private static final Blitter PROCESSING_BG = Blitter.texture("guis/pattern_modes.png").src(0, 70, 124, 66);
     private static final Blitter SMITHING_BG = Blitter.texture("guis/pattern_modes.png").src(128, 70, 124, 66);
@@ -357,10 +359,8 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
             boolean selected = group.name().equalsIgnoreCase(this.menu.getSelectedGroup());
             int rowTop = RecipeTerminalMenu.MACHINE_LIST_Y + LIST_PADDING_TOP + i * ROW_HEIGHT;
             int bgLeft = RecipeTerminalMenu.MACHINE_LIST_X + 2;
-            int bgRight = RecipeTerminalMenu.MACHINE_LIST_X + RecipeTerminalMenu.MACHINE_LIST_WIDTH - 2;
-            int bgBottom = rowTop + ROW_BG_HEIGHT;
-            guiGraphics.fill(bgLeft, rowTop, bgRight, bgBottom, selected ? 0xFFD9DDEB : 0x00FFFFFF);
             int textY = rowTop + MACHINE_ROW_TEXT_OFFSET_Y;
+            guiGraphics.blit(MACHINE_ROW_TEXTURE, bgLeft, rowTop, 0, selected ? 22 : 0, 128, 22, 128, 44);
 
             String displayName = group.name();
             if (this.font.width(displayName) > 101) {
