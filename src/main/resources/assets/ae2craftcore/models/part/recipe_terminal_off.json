@@ -1,0 +1,8 @@
+{
+  "parent": "ae2:part/display_off",
+  "textures": {
+    "lightsBright": "ae2craftcore:part/recipe_terminal_bright",
+    "lightsMedium": "ae2craftcore:part/recipe_terminal_medium",
+    "lightsDark": "ae2craftcore:part/recipe_terminal_dark"
+  }
+}

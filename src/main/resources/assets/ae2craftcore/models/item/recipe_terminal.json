@@ -1,3 +1,9 @@
 {
-  "parent": "ae2:item/display_base"
+  "parent": "ae2:item/display_base",
+  "textures": {
+    "front": "ae2craftcore:part/recipe_terminal",
+    "front_bright": "ae2craftcore:part/recipe_terminal_bright",
+    "front_medium": "ae2craftcore:part/recipe_terminal_medium",
+    "front_dark": "ae2craftcore:part/recipe_terminal_dark"
+  }
 }
