@@ -258,6 +258,31 @@ public class RecipeTerminalMenu extends AEBaseMenu {
         this.part.getLogic().getEncodedOutputInv().clear();
     }
 
+    public boolean canCycleProcessingOutputs() {
+        return this.mode == EncodingMode.PROCESSING && this.processingOutputSlots.stream()
+                .filter(s -> !s.getItem().isEmpty()).count() > 1;
+    }
+
+    public void cycleProcessingOutputs() {
+        if (this.mode != EncodingMode.PROCESSING) return;
+
+        var newOutputs = new ItemStack[this.processingOutputSlots.size()];
+        for (int i = 0; i < this.processingOutputSlots.size(); i++) {
+            newOutputs[i] = ItemStack.EMPTY;
+            if (!this.processingOutputSlots.get(i).getItem().isEmpty()) {
+                for (int j = 1; j < this.processingOutputSlots.size(); j++) {
+                    var nextItem = this.processingOutputSlots.get((i + j) % this.processingOutputSlots.size()).getItem();
+                    if (!nextItem.isEmpty()) {
+                        newOutputs[i] = nextItem;
+                        break;
+                    }
+                }
+            }
+        }
+
+        for (int i = 0; i < newOutputs.length; i++) this.processingOutputSlots.get(i).set(newOutputs[i]);
+    }
+
     @Override
     public @NotNull ItemStack quickMoveStack(@NotNull Player player, int index) {
         var slot = this.slots.get(index);

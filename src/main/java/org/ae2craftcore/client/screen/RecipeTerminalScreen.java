@@ -95,6 +95,8 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
 
     private static final int PROC_CLEAR_X = RecipeTerminalMenu.ENCODING_X + 72;
     private static final int PROC_CLEAR_Y = RecipeTerminalMenu.ENCODING_Y + 6;
+    private static final int PROC_CYCLE_X = RecipeTerminalMenu.ENCODING_X + 89;
+    private static final int PROC_CYCLE_Y = RecipeTerminalMenu.ENCODING_Y + 6;
     private static final int BUTTON_MINI = 8;
 
     private static final EncodingMode[] MODE_ORDER = {
@@ -217,6 +219,9 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
 
         if (currentMode == EncodingMode.PROCESSING) {
             Icon.S_CLEAR.getBlitter().dest(x + PROC_CLEAR_X, y + PROC_CLEAR_Y).blit(guiGraphics);
+            if (this.menu.canCycleProcessingOutputs()) {
+                Icon.S_CYCLE.getBlitter().dest(x + PROC_CYCLE_X, y + PROC_CYCLE_Y).blit(guiGraphics);
+            }
             this.drawAe2Scrollbar(guiGraphics, x + PROC_SCROLL_X, y + PROC_SCROLL_Y, this.menu.getProcessingScrollOffset());
         }
 
@@ -449,6 +454,13 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
             if (this.isInside(x, y, PROC_CLEAR_X, PROC_CLEAR_Y, BUTTON_MINI, BUTTON_MINI)) {
                 this.menu.clearEncodingSlots();
                 PacketDistributor.sendToServer(new RecipeTerminalClearPacket());
+                this.playClick();
+                return true;
+            }
+
+            if (this.menu.canCycleProcessingOutputs() && this.isInside(x, y, PROC_CYCLE_X, PROC_CYCLE_Y, BUTTON_MINI, BUTTON_MINI)) {
+                this.menu.cycleProcessingOutputs();
+                PacketDistributor.sendToServer(new RecipeTerminalCycleOutputsPacket());
                 this.playClick();
                 return true;
             }
@@ -825,6 +837,10 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
         } else if (currentMode == EncodingMode.PROCESSING) {
             if (this.isInside(x, y, PROC_CLEAR_X, PROC_CLEAR_Y, BUTTON_MINI, BUTTON_MINI)) {
                 this.renderCustomTooltip(guiGraphics, Component.translatable("gui.tooltips.ae2.Clear"), Component.translatable("gui.tooltips.ae2.ClearSettings"), mouseX, mouseY);
+                return;
+            }
+            if (this.menu.canCycleProcessingOutputs() && this.isInside(x, y, PROC_CYCLE_X, PROC_CYCLE_Y, BUTTON_MINI, BUTTON_MINI)) {
+                this.renderCustomTooltip(guiGraphics, Component.translatable("gui.tooltips.ae2.CycleProcessingOutput"), Component.translatable("gui.tooltips.ae2.CycleProcessingOutputTooltip"), mouseX, mouseY);
                 return;
             }
         }
