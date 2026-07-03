@@ -423,7 +423,7 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
             int textY = rowTop + RECIPE_ROW_TEXT_OFFSET_Y;
 
             String name = recipe.outputStack().isEmpty() ? recipe.patternStack().getHoverName().getString() : recipe.outputStack().getHoverName().getString();
-            if (this.font.width(name) > 85) name = this.font.plainSubstrByWidth(name, 80) + "...";
+            if (this.font.width(name) > 70) name = this.font.plainSubstrByWidth(name, 70) + "...";
             guiGraphics.drawString(this.font, name, RecipeTerminalMenu.RECIPE_LIST_X + 42, textY, 0x42475A, false);
         }
     }
@@ -833,31 +833,34 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
 
     @Override
     protected void renderTooltip(@NotNull GuiGraphics guiGraphics, int mouseX, int mouseY) {
-        if (this.hoveredSlot != null && this.hoveredSlot.hasItem()) {
+        if (this.hoveredSlot != null) {
             if (this.hoveredSlot instanceof RecipeTerminalMenu.RecipeTerminalPhantomSlot
                     || this.hoveredSlot instanceof RecipeTerminalMenu.RecipeTerminalProcessingInputSlot
                     || this.hoveredSlot instanceof RecipeTerminalMenu.RecipeTerminalProcessingOutputSlot) {
 
-                var itemStack = this.hoveredSlot.getItem();
-                var tooltip = new ArrayList<>(this.getTooltipFromContainerItem(itemStack));
+                if (this.hoveredSlot.hasItem()) {
+                    var itemStack = this.hoveredSlot.getItem();
+                    var tooltip = new ArrayList<>(this.getTooltipFromContainerItem(itemStack));
 
-                if (this.menu.getEncodingMode() == EncodingMode.PROCESSING && this.menu.isProcessingOutputSlot(this.hoveredSlot)) {
+                    if (this.menu.getEncodingMode() == EncodingMode.PROCESSING) {
+                        tooltip.add(Component.translatable("gui.tooltips.ae2.ModifyAmountAction", Component.translatable("gui.tooltips.ae2.MiddleClick")).withStyle(ChatFormatting.DARK_GRAY));
+                    }
+
+                    guiGraphics.renderComponentTooltip(this.font, tooltip, mouseX, mouseY);
+                    return;
+                } else if (this.menu.getEncodingMode() == EncodingMode.PROCESSING && this.menu.isProcessingOutputSlot(this.hoveredSlot)) {
+                    var tooltip = new ArrayList<Component>();
                     boolean isPrimary = this.hoveredSlot.getContainerSlot() == 0;
                     if (isPrimary) {
-                        tooltip.add(Component.translatable("gui.ae2.PatternEncoding.primary_processing_result_tooltip").withStyle(ChatFormatting.GOLD));
-                        tooltip.add(Component.translatable("gui.ae2.PatternEncoding.primary_processing_result_hint").withStyle(ChatFormatting.GRAY));
+                        tooltip.add(Component.translatable("gui.ae2.PatternEncoding.primary_processing_result_tooltip"));
+                        tooltip.add(Component.translatable("gui.ae2.PatternEncoding.primary_processing_result_hint").withStyle(ChatFormatting.DARK_GRAY));
                     } else {
-                        tooltip.add(Component.translatable("gui.ae2.PatternEncoding.secondary_processing_result_tooltip").withStyle(ChatFormatting.GOLD));
-                        tooltip.add(Component.translatable("gui.ae2.PatternEncoding.secondary_processing_result_hint").withStyle(ChatFormatting.GRAY));
+                        tooltip.add(Component.translatable("gui.ae2.PatternEncoding.secondary_processing_result_tooltip"));
+                        tooltip.add(Component.translatable("gui.ae2.PatternEncoding.secondary_processing_result_hint").withStyle(ChatFormatting.DARK_GRAY));
                     }
+                    guiGraphics.renderComponentTooltip(this.font, tooltip, mouseX, mouseY);
+                    return;
                 }
-
-                if (this.menu.getEncodingMode() == EncodingMode.PROCESSING) {
-                    tooltip.add(Component.translatable("gui.tooltips.ae2.ModifyAmountAction", Component.translatable("gui.tooltips.ae2.MiddleClick").withStyle(ChatFormatting.YELLOW)).withStyle(ChatFormatting.GRAY));
-                }
-
-                guiGraphics.renderComponentTooltip(this.font, tooltip, mouseX, mouseY);
-                return;
             }
         }
 
