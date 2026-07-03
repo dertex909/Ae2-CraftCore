@@ -63,7 +63,7 @@ public class RecipeTerminalMenu extends AEBaseMenu {
     private int processingScrollOffset = 0;
     private String selectedGroup = "";
     private final List<ItemStack> clientRecipes = new ArrayList<>();
-    private final List<String> clientGroups = new ArrayList<>();
+    private final List<RecipeTerminalSyncPacket.MachineGroupInfo> clientGroups = new ArrayList<>();
     private boolean firstSync = true;
 
     @GuiSync(97)
@@ -153,12 +153,32 @@ public class RecipeTerminalMenu extends AEBaseMenu {
 
         var list = RecipeStorageCellItem.getAllPatternsForGrid(grid);
 
-        var groups = new ArrayList<String>();
+        var groups = new ArrayList<RecipeTerminalSyncPacket.MachineGroupInfo>();
         try {
             var machines = grid.getMachines(MeMachineInterfaceBlockEntity.class);
             if (machines != null) for (var machine : machines) {
                 String name = machine.getInterfaceName();
-                if (name != null && !name.isEmpty() && !groups.contains(name)) groups.add(name);
+                if (name != null && !name.isEmpty()) {
+                    boolean exists = false;
+                    for (var g : groups) {
+                        if (g.name().equalsIgnoreCase(name)) {
+                            exists = true;
+                            break;
+                        }
+                    }
+                    if (!exists) {
+                        var level = machine.getLevel();
+                        var icon = ItemStack.EMPTY;
+                        if (level != null) {
+                            var targetPos = machine.getBlockPos().relative(machine.getMachineDirection());
+                            if (level.isLoaded(targetPos)) {
+                                var state = level.getBlockState(targetPos);
+                                if (!state.isAir()) icon = new ItemStack(state.getBlock().asItem());
+                            }
+                        }
+                        groups.add(new RecipeTerminalSyncPacket.MachineGroupInfo(name, icon));
+                    }
+                }
             }
         } catch (Exception e) {
             Ae2craftcore.LOGGER.error("Failed to query ME Machine Interfaces on grid: ", e);
@@ -187,10 +207,6 @@ public class RecipeTerminalMenu extends AEBaseMenu {
         return this.processingOutputSlots.contains(slot);
     }
 
-    public boolean isProcessingInputSlot(Slot slot) {
-        return this.processingInputSlots.contains(slot);
-    }
-
     public void setClientRecipes(List<ItemStack> recipes) {
         this.clientRecipes.clear();
         this.clientRecipes.addAll(recipes);
@@ -200,12 +216,12 @@ public class RecipeTerminalMenu extends AEBaseMenu {
         return this.clientRecipes;
     }
 
-    public void setClientGroups(List<String> groups) {
+    public void setClientGroups(List<RecipeTerminalSyncPacket.MachineGroupInfo> groups) {
         this.clientGroups.clear();
         this.clientGroups.addAll(groups);
     }
 
-    public List<String> getClientGroups() {
+    public List<RecipeTerminalSyncPacket.MachineGroupInfo> getClientGroups() {
         return this.clientGroups;
     }
 

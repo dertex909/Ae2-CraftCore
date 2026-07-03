@@ -368,12 +368,17 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
             guiGraphics.blit(MACHINE_ROW_TEXTURE, bgLeft, rowTop, 0, selected ? 22 : 0, 128, 22, 128, 44);
 
             String displayName = group.name();
-            if (this.font.width(displayName) > 101) {
-                displayName = this.font.plainSubstrByWidth(displayName, 96) + "...";
+            if (this.font.width(displayName) > 85) {
+                displayName = this.font.plainSubstrByWidth(displayName, 80) + "...";
             }
 
             guiGraphics.drawString(this.font, displayName, RecipeTerminalMenu.MACHINE_LIST_X + 5, textY, selected ? 0x27304A : 0x42475A, false);
-            guiGraphics.drawString(this.font, String.valueOf(group.count()), RecipeTerminalMenu.MACHINE_LIST_X + RecipeTerminalMenu.MACHINE_LIST_WIDTH - 14, textY, 0x656A7C, false);
+
+            if (!group.icon().isEmpty()) {
+                guiGraphics.renderFakeItem(group.icon(), bgLeft + 88, rowTop + 3);
+            }
+
+            guiGraphics.drawString(this.font, String.valueOf(group.count()), bgLeft + 114, textY, 0x656A7C, false);
         }
     }
 
@@ -973,13 +978,21 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
 
     private List<GroupInfo> getGroups() {
         var map = new LinkedHashMap<String, Integer>();
-        for (var group : this.menu.getClientGroups()) if (!group.isEmpty()) map.put(group, 0);
+        var iconMap = new java.util.HashMap<String, ItemStack>();
+        for (var group : this.menu.getClientGroups()) {
+            if (!group.name().isEmpty()) {
+                map.put(group.name(), 0);
+                iconMap.put(group.name(), group.icon());
+            }
+        }
         for (var pattern : this.menu.getClientRecipes()) {
-            var group = this.getPatternGroup(pattern);
-            if (!group.isEmpty()) map.put(group, map.getOrDefault(group, 0) + 1);
+            var groupName = this.getPatternGroup(pattern);
+            if (!groupName.isEmpty()) {
+                map.put(groupName, map.getOrDefault(groupName, 0) + 1);
+            }
         }
         var list = new ArrayList<GroupInfo>();
-        map.forEach((k, v) -> list.add(new GroupInfo(k, v)));
+        map.forEach((k, v) -> list.add(new GroupInfo(k, v, iconMap.getOrDefault(k, ItemStack.EMPTY))));
         return list;
     }
 
@@ -1023,7 +1036,7 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
         return list;
     }
 
-    public record GroupInfo(String name, int count) {
+    public record GroupInfo(String name, int count, ItemStack icon) {
     }
 
     public record RecipeInfo(ItemStack patternStack, ItemStack outputStack, EncodingMode mode) {

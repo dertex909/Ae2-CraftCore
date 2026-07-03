@@ -300,6 +300,10 @@ public class MeMachineInterfaceBlockEntity extends AENetworkedPoweredBlockEntity
         return this.customName;
     }
 
+    public Direction getMachineDirection() {
+        return this.machineDirection;
+    }
+
     public void setCustomName(String name) {
         this.customName = name;
         this.setChanged();

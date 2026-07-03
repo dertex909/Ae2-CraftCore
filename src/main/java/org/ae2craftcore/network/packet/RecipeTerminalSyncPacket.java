@@ -19,7 +19,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 @NetworkPayload(direction = PayloadDirection.TO_CLIENT)
-public record RecipeTerminalSyncPacket(List<ItemStack> patterns, List<String> groups) implements CustomPacketPayload {
+public record RecipeTerminalSyncPacket(List<ItemStack> patterns, List<MachineGroupInfo> groups)
+        implements CustomPacketPayload {
+
+    public record MachineGroupInfo(String name, ItemStack icon) {
+    }
 
     public static final Type<RecipeTerminalSyncPacket> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(Ae2craftcore.MODID, "recipe_terminal_sync"));
 
@@ -28,15 +32,22 @@ public record RecipeTerminalSyncPacket(List<ItemStack> patterns, List<String> gr
         registryBuf.writeInt(value.patterns().size());
         for (var stack : value.patterns()) ItemStack.OPTIONAL_STREAM_CODEC.encode(registryBuf, stack);
         registryBuf.writeInt(value.groups().size());
-        for (var g : value.groups()) registryBuf.writeUtf(g);
+        for (var g : value.groups()) {
+            registryBuf.writeUtf(g.name());
+            ItemStack.OPTIONAL_STREAM_CODEC.encode(registryBuf, g.icon());
+        }
     }, buf -> {
         var registryBuf = (RegistryFriendlyByteBuf) buf;
         int size = registryBuf.readInt();
         var list = new ArrayList<ItemStack>();
         for (int i = 0; i < size; i++) list.add(ItemStack.OPTIONAL_STREAM_CODEC.decode(registryBuf));
         int groupSize = registryBuf.readInt();
-        var groupsList = new ArrayList<String>();
-        for (int i = 0; i < groupSize; i++) groupsList.add(registryBuf.readUtf());
+        var groupsList = new ArrayList<MachineGroupInfo>();
+        for (int i = 0; i < groupSize; i++) {
+            String name = registryBuf.readUtf();
+            var icon = ItemStack.OPTIONAL_STREAM_CODEC.decode(registryBuf);
+            groupsList.add(new MachineGroupInfo(name, icon));
+        }
         return new RecipeTerminalSyncPacket(list, groupsList);
     });
 
@@ -53,7 +64,7 @@ public record RecipeTerminalSyncPacket(List<ItemStack> patterns, List<String> gr
                 menu.setClientRecipes(packet.patterns());
                 menu.setClientGroups(packet.groups());
                 if (menu.getSelectedGroup().isEmpty() && !packet.groups().isEmpty()) {
-                    String firstGroup = packet.groups().getFirst();
+                    String firstGroup = packet.groups().getFirst().name();
                     menu.setSelectedGroup(firstGroup);
                     PacketDistributor.sendToServer(new RecipeTerminalSelectGroupPacket(firstGroup));
                 }
