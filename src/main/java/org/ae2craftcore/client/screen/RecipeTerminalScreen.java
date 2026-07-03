@@ -32,10 +32,13 @@ import org.ae2craftcore.blocks.menu.RecipeTerminalMenu;
 import org.ae2craftcore.mixin.AbstractContainerScreenAccessor;
 import org.ae2craftcore.network.packet.*;
 import org.jetbrains.annotations.NotNull;
+import net.minecraft.client.gui.components.EditBox;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+
+import static java.util.Locale.ROOT;
 
 public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
 
@@ -125,6 +128,11 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
     private int activeScrollbarType = 0;
     private double dragYOffset = 0;
 
+    private EditBox machineSearchBox;
+    private EditBox recipeSearchBox;
+    private String machineSearchQuery = "";
+    private String recipeSearchQuery = "";
+
     public RecipeTerminalScreen(RecipeTerminalMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title, StyleManager.loadStyleDoc("/screens/recipe_terminal.json"));
         this.imageWidth = RecipeTerminalMenu.IMAGE_WIDTH;
@@ -138,6 +146,29 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
         this.titleLabelY = 6;
         this.inventoryLabelX = RecipeTerminalMenu.PLAYER_INV_X;
         this.inventoryLabelY = RecipeTerminalMenu.PLAYER_INV_Y - 12;
+
+        this.machineSearchBox = new EditBox(this.font, this.leftPos + 69, this.topPos + 6, 77, 12,
+                Component.translatable("gui.ae2.SearchPlaceholder"));
+        this.machineSearchBox.setBordered(false);
+        this.machineSearchBox.setTextColor(0xE0E0E0);
+        this.machineSearchBox.setHint(Component.translatable("gui.ae2.SearchPlaceholder"));
+        this.machineSearchBox.setValue(this.machineSearchQuery);
+        this.machineSearchBox.setResponder(val -> {
+            this.machineSearchQuery = val;
+            this.clampScrollOffsets();
+        });
+        this.addRenderableWidget(this.machineSearchBox);
+        this.recipeSearchBox = new EditBox(this.font, this.leftPos + 234, this.topPos + 6, 77, 12,
+                Component.translatable("gui.ae2.SearchPlaceholder"));
+        this.recipeSearchBox.setBordered(false);
+        this.recipeSearchBox.setTextColor(0xE0E0E0);
+        this.recipeSearchBox.setHint(Component.translatable("gui.ae2.SearchPlaceholder"));
+        this.recipeSearchBox.setValue(this.recipeSearchQuery);
+        this.recipeSearchBox.setResponder(val -> {
+            this.recipeSearchQuery = val;
+            this.clampScrollOffsets();
+        });
+        this.addRenderableWidget(this.recipeSearchBox);
     }
 
     @Override
@@ -399,6 +430,20 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (this.machineSearchBox != null && this.recipeSearchBox != null) {
+            boolean overMachine = this.machineSearchBox.isMouseOver(mouseX, mouseY);
+            boolean overRecipe = this.recipeSearchBox.isMouseOver(mouseX, mouseY);
+            this.machineSearchBox.setFocused(overMachine);
+            this.recipeSearchBox.setFocused(overRecipe);
+            if (overMachine || overRecipe) {
+                this.setFocused(overMachine ? this.machineSearchBox : this.recipeSearchBox);
+                if (this.machineSearchBox.mouseClicked(mouseX, mouseY, button)) return true;
+                if (this.recipeSearchBox.mouseClicked(mouseX, mouseY, button)) return true;
+            } else {
+                this.setFocused(null);
+            }
+        }
+
         if (button == 2 || (this.minecraft != null && this.minecraft.options.keyPickItem.matchesMouse(button))) {
             var slot = ((AbstractContainerScreenAccessor) this).ae2craftcore$findSlot(mouseX, mouseY);
             if ((slot instanceof RecipeTerminalMenu.RecipeTerminalProcessingInputSlot || slot instanceof RecipeTerminalMenu.RecipeTerminalProcessingOutputSlot) && slot.isActive()) {
@@ -763,6 +808,30 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
     }
 
     @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if ((this.machineSearchBox != null && this.machineSearchBox.isFocused()) || (this.recipeSearchBox != null && this.recipeSearchBox.isFocused())) {
+            if (keyCode == 256) {
+                this.setFocused(null);
+                if (this.machineSearchBox.isFocused()) this.machineSearchBox.setFocused(false);
+                if (this.recipeSearchBox.isFocused()) this.recipeSearchBox.setFocused(false);
+                return true;
+            }
+            if (this.machineSearchBox.keyPressed(keyCode, scanCode, modifiers)) return true;
+            if (this.recipeSearchBox.keyPressed(keyCode, scanCode, modifiers)) return true;
+            if (this.minecraft != null && this.minecraft.options.keyInventory.matches(keyCode, scanCode)) return true;
+        }
+        return super.keyPressed(keyCode, scanCode, modifiers);
+    }
+
+    @Override
+    public boolean charTyped(char codePoint, int modifiers) {
+        if ((this.machineSearchBox != null && this.machineSearchBox.isFocused()) || (this.recipeSearchBox != null && this.recipeSearchBox.isFocused())) {
+            return this.machineSearchBox.charTyped(codePoint, modifiers) || this.recipeSearchBox.charTyped(codePoint, modifiers) || super.charTyped(codePoint, modifiers);
+        }
+        return super.charTyped(codePoint, modifiers);
+    }
+
+    @Override
     protected void renderTooltip(@NotNull GuiGraphics guiGraphics, int mouseX, int mouseY) {
         if (this.hoveredSlot != null && this.hoveredSlot.hasItem()) {
             if (this.hoveredSlot instanceof RecipeTerminalMenu.RecipeTerminalPhantomSlot
@@ -971,7 +1040,11 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
                 }
             } catch (Exception ignored) {
             }
-            filtered.add(new RecipeInfo(pattern, outputStack, this.getPatternMode(pattern)));
+
+            String name = outputStack.isEmpty() ? pattern.getHoverName().getString() : outputStack.getHoverName().getString();
+            if (this.recipeSearchQuery == null || this.recipeSearchQuery.isEmpty() || name.toLowerCase(ROOT).contains(this.recipeSearchQuery.toLowerCase(ROOT))) {
+                filtered.add(new RecipeInfo(pattern, outputStack, this.getPatternMode(pattern)));
+            }
         }
         return filtered;
     }
@@ -992,7 +1065,11 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
             }
         }
         var list = new ArrayList<GroupInfo>();
-        map.forEach((k, v) -> list.add(new GroupInfo(k, v, iconMap.getOrDefault(k, ItemStack.EMPTY))));
+        map.forEach((k, v) -> {
+            if (this.machineSearchQuery == null || this.machineSearchQuery.isEmpty() || k.toLowerCase(ROOT).contains(this.machineSearchQuery.toLowerCase(ROOT))) {
+                list.add(new GroupInfo(k, v, iconMap.getOrDefault(k, ItemStack.EMPTY)));
+            }
+        });
         return list;
     }
 
