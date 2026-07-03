@@ -4,7 +4,8 @@
   "package": "org.ae2craftcore.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
-    "SlotAccessor"
+    "SlotAccessor",
+    "compat.MixinJeiTransfer"
   ],
   "client": [
     "AbstractContainerScreenAccessor"

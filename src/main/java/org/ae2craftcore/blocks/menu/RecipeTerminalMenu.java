@@ -1,6 +1,7 @@
 package org.ae2craftcore.blocks.menu;
 
-import appeng.menu.AEBaseMenu;
+import appeng.menu.me.common.IClientRepo;
+import appeng.menu.me.items.PatternEncodingTermMenu;
 import appeng.menu.slot.FakeSlot;
 import appeng.parts.encoding.EncodingMode;
 import appeng.api.inventories.InternalInventory;
@@ -11,6 +12,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.CraftingInput;
@@ -22,15 +24,16 @@ import org.ae2craftcore.blocks.blockentity.MeMachineInterfaceBlockEntity;
 import org.ae2craftcore.mixin.SlotAccessor;
 import org.ae2craftcore.network.packet.RecipeTerminalSyncPacket;
 import org.ae2craftcore.parts.RecipeTerminalPart;
-import org.ae2craftcore.registry.ModMenuTypes;
 import org.ae2craftcore.items.RecipeStorageCellItem;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.lang.reflect.Proxy;
+import java.util.*;
 
-public class RecipeTerminalMenu extends AEBaseMenu {
+import static org.ae2craftcore.registry.ModMenuTypes.RECIPE_TERMINAL;
+
+public class RecipeTerminalMenu extends PatternEncodingTermMenu {
     public static final int IMAGE_WIDTH = 322;
     public static final int IMAGE_HEIGHT = 236;
 
@@ -66,22 +69,27 @@ public class RecipeTerminalMenu extends AEBaseMenu {
     private final List<RecipeTerminalSyncPacket.MachineGroupInfo> clientGroups = new ArrayList<>();
     private boolean firstSync = true;
 
-    @GuiSync(97)
+    @GuiSync(297)
     public EncodingMode mode = EncodingMode.PROCESSING;
-    @GuiSync(96)
+    @GuiSync(296)
     public boolean substitute = false;
-    @GuiSync(95)
+    @GuiSync(295)
     public boolean substituteFluids = true;
-    @GuiSync(94)
+    @GuiSync(294)
     @Nullable
     public ResourceLocation stonecuttingRecipeId;
 
     public RecipeTerminalMenu(int containerId, Inventory playerInventory, RecipeTerminalPart part) {
-        super(ModMenuTypes.RECIPE_TERMINAL.get(), containerId, playerInventory, part);
+        super(RECIPE_TERMINAL.get(), containerId, playerInventory, part, false);
+
+        this.slots.clear();
         this.part = part;
 
         this.addEncodingModeSlots();
-        this.registerClientAction("setStonecuttingRecipeId", ResourceLocation.class, this.part.getLogic()::setStonecuttingRecipeId);
+        try {
+            this.registerClientAction("setStonecuttingRecipeId", ResourceLocation.class, this.part.getLogic()::setStonecuttingRecipeId);
+        } catch (IllegalArgumentException ignored) {
+        }
 
         for (int row = 0; row < 3; ++row) {
             for (int col = 0; col < 9; ++col) {
@@ -92,6 +100,8 @@ public class RecipeTerminalMenu extends AEBaseMenu {
         for (int col = 0; col < 9; ++col) {
             this.addSlot(new Slot(playerInventory, col, PLAYER_INV_X + col * 18, HOTBAR_Y));
         }
+
+        this.syncParentSlots();
     }
 
     private void addEncodingModeSlots() {
@@ -297,6 +307,12 @@ public class RecipeTerminalMenu extends AEBaseMenu {
         }
 
         for (int i = 0; i < newOutputs.length; i++) this.processingOutputSlots.get(i).set(newOutputs[i]);
+    }
+
+    @Override
+    public void initializeContents(int stateId, @NotNull List<ItemStack> items, @NotNull ItemStack carried) {
+        if (items.size() > this.slots.size()) items = items.subList(0, this.slots.size());
+        super.initializeContents(stateId, items, carried);
     }
 
     @Override
@@ -508,5 +524,92 @@ public class RecipeTerminalMenu extends AEBaseMenu {
         public boolean isActive() {
             return RecipeTerminalMenu.this.mode == this.mode;
         }
+    }
+
+    @Override
+    public IClientRepo getClientRepo() {
+        var repo = super.getClientRepo();
+        if (repo == null) try {
+            return (IClientRepo) Proxy.newProxyInstance(RecipeTerminalMenu.class.getClassLoader(), new Class<?>[]{IClientRepo.class}, (proxy, method, args) -> {
+                var returnType = method.getReturnType();
+                if (method.getName().equals("getAllEntries")) {
+                    if (returnType == Set.class) return Collections.emptySet();
+                    return Collections.emptyList();
+                }
+                if (returnType == Set.class) return Collections.emptySet();
+                if (returnType == Collection.class || returnType == List.class) return Collections.emptyList();
+                if (returnType == void.class) return null;
+                if (returnType == boolean.class) return false;
+                if (returnType == int.class) return 0;
+                if (returnType == long.class) return 0L;
+                if (returnType == float.class) return 0.0f;
+                if (returnType == double.class) return 0.0d;
+                return null;
+            });
+        } catch (Throwable e) {
+            return null;
+        }
+        return repo;
+    }
+
+    @Override
+    public @NotNull MenuType<?> getType() {
+        if (this.isClientSide()) return PatternEncodingTermMenu.TYPE;
+        return RECIPE_TERMINAL.get();
+    }
+
+    private void syncParentSlots() {
+        try {
+            FakeSlot[] parentCrafting = this.getCraftingGridSlots();
+            FakeSlot[] parentProcessingInputs = this.getProcessingInputSlots();
+            FakeSlot[] parentProcessingOutputs = this.getProcessingOutputSlots();
+
+            int craftIndex = 0;
+            for (Slot slot : this.slots) {
+                if (slot instanceof RecipeTerminalPhantomSlot pSlot && pSlot.getMode() == EncodingMode.CRAFTING) {
+                    if (craftIndex < parentCrafting.length) parentCrafting[craftIndex++] = pSlot;
+                }
+            }
+
+            int procInputIndex = 0;
+            for (Slot slot : this.processingInputSlots) {
+                if (slot instanceof FakeSlot fSlot) if (procInputIndex < parentProcessingInputs.length) {
+                    parentProcessingInputs[procInputIndex++] = fSlot;
+                }
+            }
+
+            int procOutputIndex = 0;
+            for (Slot slot : this.processingOutputSlots) {
+                if (slot instanceof FakeSlot fSlot) if (procOutputIndex < parentProcessingOutputs.length) {
+                    parentProcessingOutputs[procOutputIndex++] = fSlot;
+                }
+            }
+
+            int smithingIndex = 0;
+            for (Slot slot : this.slots) {
+                if (slot instanceof RecipeTerminalPhantomSlot pSlot && pSlot.getMode() == EncodingMode.SMITHING_TABLE) {
+                    if (smithingIndex == 0) setPrivateParentField("smithingTableTemplateSlot", pSlot);
+                    else if (smithingIndex == 1) setPrivateParentField("smithingTableBaseSlot", pSlot);
+                    else if (smithingIndex == 2) setPrivateParentField("smithingTableAdditionSlot", pSlot);
+                    smithingIndex++;
+                }
+            }
+
+            for (Slot slot : this.slots) {
+                if (slot instanceof RecipeTerminalPhantomSlot pSlot && pSlot.getMode() == EncodingMode.STONECUTTING) {
+                    setPrivateParentField("stonecuttingInputSlot", pSlot);
+                    break;
+                }
+            }
+
+        } catch (Exception e) {
+            Ae2craftcore.LOGGER.error("Failed to sync slots with parent PatternEncodingTermMenu: ", e);
+        }
+    }
+
+    private void setPrivateParentField(String fieldName, Object value) throws Exception {
+        var field = PatternEncodingTermMenu.class.getDeclaredField(fieldName);
+        field.setAccessible(true);
+        field.set(this, value);
     }
 }
