@@ -34,6 +34,7 @@ import org.jetbrains.annotations.NotNull;
 import net.minecraft.client.gui.components.EditBox;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 
@@ -133,6 +134,21 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
     private String machineSearchQuery = "";
     private String recipeSearchQuery = "";
 
+    private final List<GroupInfo> cachedGroups = new ArrayList<>();
+    private final List<RecipeInfo> cachedFilteredRecipes = new ArrayList<>();
+    private final List<RecipeHolder<StonecutterRecipe>> cachedStonecutterRecipes = new ArrayList<>();
+
+    private boolean groupsDirty = true;
+    private boolean recipesDirty = true;
+    private boolean stonecutterDirty = true;
+
+    private int lastClientRecipesSize = -1;
+    private int lastClientGroupsSize = -1;
+    private ItemStack lastFirstRecipe = ItemStack.EMPTY;
+    private ItemStack lastLastRecipe = ItemStack.EMPTY;
+    private ItemStack lastStonecutterInput = ItemStack.EMPTY;
+    private String lastSelectedGroup = "";
+
     public RecipeTerminalScreen(RecipeTerminalMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title, StyleManager.loadStyleDoc("/screens/recipe_terminal.json"));
         this.imageWidth = RecipeTerminalMenu.IMAGE_WIDTH;
@@ -155,9 +171,11 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
         this.machineSearchBox.setValue(this.machineSearchQuery);
         this.machineSearchBox.setResponder(val -> {
             this.machineSearchQuery = val;
+            this.groupsDirty = true;
             this.clampScrollOffsets();
         });
         this.addRenderableWidget(this.machineSearchBox);
+
         this.recipeSearchBox = new EditBox(this.font, this.leftPos + 234, this.topPos + 6, 77, 12,
                 Component.translatable("gui.ae2.SearchPlaceholder"));
         this.recipeSearchBox.setBordered(false);
@@ -166,6 +184,7 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
         this.recipeSearchBox.setValue(this.recipeSearchQuery);
         this.recipeSearchBox.setResponder(val -> {
             this.recipeSearchQuery = val;
+            this.recipesDirty = true;
             this.clampScrollOffsets();
         });
         this.addRenderableWidget(this.recipeSearchBox);
@@ -173,6 +192,7 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
 
     @Override
     public void render(@NotNull GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+        this.updateCachedData();
         this.clampScrollOffsets();
         super.render(guiGraphics, mouseX, mouseY, partialTick);
         this.renderTooltip(guiGraphics, mouseX, mouseY);
@@ -215,8 +235,8 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
         guiGraphics.blit(BACKGROUND_TEXTURE, x, y, 0, 0, this.imageWidth, this.imageHeight, this.imageWidth, this.imageHeight);
 
         this.drawEncodingPanel(guiGraphics, x, y, relMouseX, relMouseY);
-        this.drawScrollbar(guiGraphics, x + MACHINE_SCROLL_X, y + MACHINE_SCROLL_Y, this.groupScrollOffset, Math.max(0, this.getGroups().size() - LIST_ROWS));
-        this.drawScrollbar(guiGraphics, x + RECIPE_SCROLL_X, y + RECIPE_SCROLL_Y, this.recipeScrollOffset, Math.max(0, this.getFilteredRecipes().size() - LIST_ROWS));
+        this.drawScrollbar(guiGraphics, x + MACHINE_SCROLL_X, y + MACHINE_SCROLL_Y, this.groupScrollOffset, Math.max(0, this.cachedGroups.size() - LIST_ROWS));
+        this.drawScrollbar(guiGraphics, x + RECIPE_SCROLL_X, y + RECIPE_SCROLL_Y, this.recipeScrollOffset, Math.max(0, this.cachedFilteredRecipes.size() - LIST_ROWS));
         this.drawRecipeItems(guiGraphics, x, y, relMouseX, relMouseY);
     }
 
@@ -258,8 +278,8 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
         if (currentMode == EncodingMode.STONECUTTING) {
             if (this.minecraft == null || this.minecraft.level == null) return;
 
-            var matched = this.getMatchedStonecutterRecipes();
-            int startIndex = this.stonecutterScrollOffset * 4;
+            var matched = this.cachedStonecutterRecipes;
+            int startIndex = this.stonecutterScrollOffset << 2;
             int endIndex = startIndex + 8;
 
             var selectedRecipe = this.menu.stonecuttingRecipeId;
@@ -291,7 +311,7 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
                 }
             }
 
-            int totalRows = (matched.size() + 3) / 4;
+            int totalRows = (matched.size() + 3) >> 2;
             int maxScroll = Math.max(0, totalRows - 2);
             this.drawStonecutterScrollbar(guiGraphics, x + STONE_SCROLL_X, y + STONE_SCROLL_Y, this.stonecutterScrollOffset, maxScroll);
         }
@@ -305,12 +325,12 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
         int handleHeight = 15;
         int yOffset;
         ResourceLocation sprite;
-        if (RecipeTerminalScreen.PROC_SCROLL_MAX == 0) {
+        if (PROC_SCROLL_MAX == 0) {
             yOffset = 0;
             sprite = disabledSprite;
         } else {
-            int availableHeight = RecipeTerminalScreen.PROC_SCROLL_H - handleHeight;
-            yOffset = value * availableHeight / RecipeTerminalScreen.PROC_SCROLL_MAX;
+            int availableHeight = PROC_SCROLL_H - handleHeight;
+            yOffset = value * availableHeight / PROC_SCROLL_MAX;
             sprite = enabledSprite;
         }
 
@@ -362,7 +382,7 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
     }
 
     private void drawRecipeItems(GuiGraphics guiGraphics, int x, int y, int mouseX, int mouseY) {
-        var filtered = this.getFilteredRecipes();
+        var filtered = this.cachedFilteredRecipes;
         for (int i = 0; i < LIST_ROWS; i++) {
             int actualIndex = i + this.recipeScrollOffset;
             if (actualIndex >= filtered.size()) continue;
@@ -390,7 +410,7 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
     }
 
     private void renderMachineRows(GuiGraphics guiGraphics) {
-        var groups = this.getGroups();
+        var groups = this.cachedGroups;
         for (int i = 0; i < LIST_ROWS; i++) {
             int actualIndex = i + this.groupScrollOffset;
             if (actualIndex >= groups.size()) continue;
@@ -418,7 +438,7 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
     }
 
     private void renderRecipeRows(GuiGraphics guiGraphics) {
-        var filtered = this.getFilteredRecipes();
+        var filtered = this.cachedFilteredRecipes;
         for (int i = 0; i < LIST_ROWS; i++) {
             int actualIndex = i + this.recipeScrollOffset;
             if (actualIndex >= filtered.size()) continue;
@@ -545,8 +565,8 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
         if (currentMode == EncodingMode.STONECUTTING && button == 0) {
             if (this.minecraft == null || this.minecraft.level == null) return true;
 
-            var matched = this.getMatchedStonecutterRecipes();
-            int startIndex = this.stonecutterScrollOffset * 4;
+            var matched = this.cachedStonecutterRecipes;
+            int startIndex = this.stonecutterScrollOffset << 2;
             int endIndex = startIndex + 8;
 
             for (int i = startIndex; i < endIndex && i < matched.size(); ++i) {
@@ -573,7 +593,7 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
 
                 int handleHeight = 15;
                 int currentScroll = this.stonecutterScrollOffset;
-                int totalRows = (this.getMatchedStonecutterRecipes().size() + 3) / 4;
+                int totalRows = (matched.size() + 3) >> 2;
                 int maxScroll = Math.max(0, totalRows - 2);
                 int availableHeight = STONE_SCROLL_H - handleHeight;
                 int currentHandleY = maxScroll == 0 ? 0 : (currentScroll * availableHeight / maxScroll);
@@ -589,6 +609,7 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
                 return true;
             }
         }
+
         for (int i = 0; i < MODE_ORDER.length; i++) {
             if (this.isInside(x, y, TABS_X, TABS_Y + i * TAB_STEP_Y, TAB_W, TAB_H)) {
                 this.menu.setEncodingMode(MODE_ORDER[i]);
@@ -615,7 +636,7 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
                 int rowOffset = relativeY % ROW_HEIGHT;
 
                 if (rowOffset < ROW_BG_HEIGHT) {
-                    var groups = this.getGroups();
+                    var groups = this.cachedGroups;
                     int actualIndex = index + this.groupScrollOffset;
                     if (actualIndex >= 0 && actualIndex < groups.size()) {
                         String clickedGroup = groups.get(actualIndex).name();
@@ -631,7 +652,7 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
 
         if (button == 0) {
             if (this.isInside(x, y, MACHINE_SCROLL_X - 2, MACHINE_SCROLL_Y, SCROLL_W + 4, SCROLL_H)) {
-                int maxScroll = Math.max(0, this.getGroups().size() - LIST_ROWS);
+                int maxScroll = Math.max(0, this.cachedGroups.size() - LIST_ROWS);
                 if (maxScroll > 0) {
                     this.draggingScrollbar = true;
                     this.activeScrollbarType = 3;
@@ -655,7 +676,7 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
             }
 
             if (this.isInside(x, y, RECIPE_SCROLL_X - 2, RECIPE_SCROLL_Y, SCROLL_W + 4, SCROLL_H)) {
-                int maxScroll = Math.max(0, this.getFilteredRecipes().size() - LIST_ROWS);
+                int maxScroll = Math.max(0, this.cachedFilteredRecipes.size() - LIST_ROWS);
                 if (maxScroll > 0) {
                     this.draggingScrollbar = true;
                     this.activeScrollbarType = 4;
@@ -688,7 +709,7 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
                 int rowOffset = relativeY % ROW_HEIGHT;
 
                 if (rowOffset < ROW_BG_HEIGHT) {
-                    var filtered = this.getFilteredRecipes();
+                    var filtered = this.cachedFilteredRecipes;
                     int actualIndex = index + this.recipeScrollOffset;
                     if (actualIndex >= 0 && actualIndex < filtered.size()) {
                         int rowTop = RecipeTerminalMenu.RECIPE_LIST_Y + LIST_PADDING_TOP + index * ROW_HEIGHT;
@@ -719,7 +740,7 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
 
         if (this.isInside(x, y, RecipeTerminalMenu.MACHINE_LIST_X, RecipeTerminalMenu.MACHINE_LIST_Y,
                 RecipeTerminalMenu.MACHINE_LIST_WIDTH, RecipeTerminalMenu.MACHINE_LIST_HEIGHT)) {
-            int maxScroll = Math.max(0, this.getGroups().size() - LIST_ROWS);
+            int maxScroll = Math.max(0, this.cachedGroups.size() - LIST_ROWS);
             int oldScroll = this.groupScrollOffset;
             this.groupScrollOffset = Math.clamp(this.groupScrollOffset + direction, 0, maxScroll);
             return oldScroll != this.groupScrollOffset;
@@ -727,7 +748,7 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
 
         if (this.isInside(x, y, RecipeTerminalMenu.RECIPE_LIST_X, RecipeTerminalMenu.RECIPE_LIST_Y,
                 RecipeTerminalMenu.RECIPE_LIST_WIDTH, RecipeTerminalMenu.RECIPE_LIST_HEIGHT)) {
-            int maxScroll = Math.max(0, this.getFilteredRecipes().size() - LIST_ROWS);
+            int maxScroll = Math.max(0, this.cachedFilteredRecipes.size() - LIST_ROWS);
             int oldScroll = this.recipeScrollOffset;
             this.recipeScrollOffset = Math.clamp(this.recipeScrollOffset + direction, 0, maxScroll);
             return oldScroll != this.recipeScrollOffset;
@@ -743,7 +764,7 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
 
         if (currentMode == EncodingMode.STONECUTTING && this.isInside(x, y, RecipeTerminalMenu.ENCODING_X,
                 RecipeTerminalMenu.ENCODING_Y, 124, 66)) {
-            int totalRows = (this.getMatchedStonecutterRecipes().size() + 3) / 4;
+            int totalRows = (this.cachedStonecutterRecipes.size() + 3) >> 2;
             int maxScroll = Math.max(0, totalRows - 2);
             int oldScroll = this.stonecutterScrollOffset;
             this.stonecutterScrollOffset = Math.clamp(this.stonecutterScrollOffset + direction, 0, maxScroll);
@@ -783,7 +804,7 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
                 double handleUpperEdgeY = y - STONE_SCROLL_Y - this.dragYOffset;
                 double availableHeight = STONE_SCROLL_H - handleHeight;
                 double position = Math.clamp(handleUpperEdgeY / availableHeight, 0.0, 1.0);
-                int totalRows = (this.getMatchedStonecutterRecipes().size() + 3) / 4;
+                int totalRows = (this.cachedStonecutterRecipes.size() + 3) >> 2;
                 int maxScroll = Math.max(0, totalRows - 2);
                 this.stonecutterScrollOffset = maxScroll == 0 ? 0 : (int) Math.round(position * maxScroll);
                 return true;
@@ -793,7 +814,7 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
                 double handleUpperEdgeY = y - MACHINE_SCROLL_Y - this.dragYOffset;
                 double availableHeight = SCROLL_H - SCROLLER_HEIGHT;
                 double position = Math.clamp(handleUpperEdgeY / availableHeight, 0.0, 1.0);
-                int maxScroll = Math.max(0, this.getGroups().size() - LIST_ROWS);
+                int maxScroll = Math.max(0, this.cachedGroups.size() - LIST_ROWS);
                 this.groupScrollOffset = maxScroll == 0 ? 0 : (int) Math.round(position * maxScroll);
                 return true;
             }
@@ -802,7 +823,7 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
                 double handleUpperEdgeY = y - RECIPE_SCROLL_Y - this.dragYOffset;
                 double availableHeight = SCROLL_H - SCROLLER_HEIGHT;
                 double position = Math.clamp(handleUpperEdgeY / availableHeight, 0.0, 1.0);
-                int maxScroll = Math.max(0, this.getFilteredRecipes().size() - LIST_ROWS);
+                int maxScroll = Math.max(0, this.cachedFilteredRecipes.size() - LIST_ROWS);
                 this.recipeScrollOffset = maxScroll == 0 ? 0 : (int) Math.round(position * maxScroll);
                 return true;
             }
@@ -875,8 +896,8 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
 
         if (currentMode == EncodingMode.STONECUTTING) {
             if (this.minecraft == null || this.minecraft.level == null) return;
-            var matched = this.getMatchedStonecutterRecipes();
-            int startIndex = this.stonecutterScrollOffset * 4;
+            var matched = this.cachedStonecutterRecipes;
+            int startIndex = this.stonecutterScrollOffset << 2;
             int endIndex = startIndex + 8;
 
             for (int i = startIndex; i < endIndex && i < matched.size(); ++i) {
@@ -987,8 +1008,14 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
     }
 
     private String formatStackSize(int count) {
-        if (count >= 1_000_000) return String.format("%.1fM", count / 1_000_000.0).replace(".0", "");
-        if (count >= 10_000) return String.format("%.1fK", count / 1000.0).replace(".0", "");
+        if (count >= 1_000_000) {
+            int temp = count / 100_000;
+            return (temp % 10 == 0) ? (temp / 10) + "M" : (temp / 10.0) + "M";
+        }
+        if (count >= 10_000) {
+            int temp = count / 100;
+            return (temp % 10 == 0) ? (temp / 10) + "K" : (temp / 10.0) + "K";
+        }
         return String.valueOf(count);
     }
 
@@ -1021,22 +1048,95 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
     }
 
     private void clampScrollOffsets() {
-        this.groupScrollOffset = Math.clamp(this.groupScrollOffset, 0, Math.max(0, this.getGroups().size() - LIST_ROWS));
-        this.recipeScrollOffset = Math.clamp(this.recipeScrollOffset, 0, Math.max(0, this.getFilteredRecipes().size() - LIST_ROWS));
+        this.groupScrollOffset = Math.clamp(this.groupScrollOffset, 0, Math.max(0, this.cachedGroups.size() - LIST_ROWS));
+        this.recipeScrollOffset = Math.clamp(this.recipeScrollOffset, 0, Math.max(0, this.cachedFilteredRecipes.size() - LIST_ROWS));
     }
 
-    private List<RecipeInfo> getFilteredRecipes() {
-        var filtered = new ArrayList<RecipeInfo>();
+    private void updateCachedData() {
+        var clientRecipes = this.menu.getClientRecipes();
+        var clientGroups = this.menu.getClientGroups();
+
+        var firstRecipe = clientRecipes.isEmpty() ? ItemStack.EMPTY : clientRecipes.getFirst();
+        var lastRecipe = clientRecipes.isEmpty() ? ItemStack.EMPTY : clientRecipes.getLast();
+
+        boolean clientRecipesChanged = clientRecipes.size() != this.lastClientRecipesSize
+                || !ItemStack.matches(firstRecipe, this.lastFirstRecipe) || !ItemStack.matches(lastRecipe, this.lastLastRecipe);
+
+        boolean clientGroupsChanged = clientGroups.size() != this.lastClientGroupsSize;
+
+        if (clientRecipesChanged) {
+            this.lastClientRecipesSize = clientRecipes.size();
+            this.lastFirstRecipe = firstRecipe.copy();
+            this.lastLastRecipe = lastRecipe.copy();
+            this.groupsDirty = true;
+            this.recipesDirty = true;
+        }
+
+        if (clientGroupsChanged) {
+            this.lastClientGroupsSize = clientGroups.size();
+            this.groupsDirty = true;
+        }
+
+        String currentGroup = this.menu.getSelectedGroup();
+        if (!currentGroup.equalsIgnoreCase(this.lastSelectedGroup)) {
+            this.lastSelectedGroup = currentGroup;
+            this.recipesDirty = true;
+        }
+
+        ItemStack currentStonecutterInput = this.getStonecutterInputStack();
+        if (!ItemStack.matches(currentStonecutterInput, this.lastStonecutterInput)) {
+            this.lastStonecutterInput = currentStonecutterInput.copy();
+            this.stonecutterDirty = true;
+        }
+
+        if (this.groupsDirty) this.rebuildGroups();
+        if (this.recipesDirty) this.rebuildFilteredRecipes();
+        if (this.stonecutterDirty) this.rebuildStonecutterRecipes();
+    }
+
+    private void rebuildGroups() {
+        this.cachedGroups.clear();
+        var map = new LinkedHashMap<String, Integer>();
+        var iconMap = new HashMap<String, ItemStack>();
+
+        for (var group : this.menu.getClientGroups()) {
+            if (!group.name().isEmpty()) {
+                map.put(group.name(), 0);
+                iconMap.put(group.name(), group.icon());
+            }
+        }
+
+        for (var pattern : this.menu.getClientRecipes()) {
+            var groupName = this.getPatternGroup(pattern);
+            if (!groupName.isEmpty()) map.put(groupName, map.getOrDefault(groupName, 0) + 1);
+        }
+
+        boolean hasSearch = this.machineSearchQuery != null && !this.machineSearchQuery.isEmpty();
+        String query = hasSearch ? this.machineSearchQuery.toLowerCase(ROOT) : "";
+
+        map.forEach((k, v) -> {
+            if (!hasSearch || k.toLowerCase(ROOT).contains(query)) {
+                this.cachedGroups.add(new GroupInfo(k, v, iconMap.getOrDefault(k, ItemStack.EMPTY)));
+            }
+        });
+        this.groupsDirty = false;
+    }
+
+    private void rebuildFilteredRecipes() {
+        this.cachedFilteredRecipes.clear();
         var currentList = this.menu.getClientRecipes();
         String selected = this.menu.getSelectedGroup();
+
+        boolean hasSearch = this.recipeSearchQuery != null && !this.recipeSearchQuery.isEmpty();
+        String query = hasSearch ? this.recipeSearchQuery.toLowerCase(ROOT) : "";
+        var level = this.minecraft != null ? this.minecraft.level : null;
 
         for (var pattern : currentList) {
             if (!this.getPatternGroup(pattern).equalsIgnoreCase(selected)) continue;
 
             var outputStack = ItemStack.EMPTY;
-            try {
-                var level = this.minecraft != null ? this.minecraft.level : null;
-                if (level != null) {
+            if (level != null) {
+                try {
                     var details = AEPatternDecoder.INSTANCE.decodePattern(AEItemKey.of(pattern), level);
                     if (details != null && !details.getOutputs().isEmpty()) {
                         var firstOutput = details.getOutputs().getFirst();
@@ -1044,47 +1144,45 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
                             outputStack = itemKey.toStack((int) firstOutput.amount());
                         }
                     }
+                } catch (Exception ignored) {
                 }
-            } catch (Exception ignored) {
             }
 
             String name = outputStack.isEmpty() ? pattern.getHoverName().getString() : outputStack.getHoverName().getString();
-            if (this.recipeSearchQuery == null || this.recipeSearchQuery.isEmpty() || name.toLowerCase(ROOT).contains(this.recipeSearchQuery.toLowerCase(ROOT))) {
-                filtered.add(new RecipeInfo(pattern, outputStack, this.getPatternMode(pattern)));
+            if (!hasSearch || name.toLowerCase(ROOT).contains(query)) {
+                this.cachedFilteredRecipes.add(new RecipeInfo(pattern, outputStack, this.getPatternMode(pattern)));
             }
         }
-        return filtered;
+        this.recipesDirty = false;
     }
 
-    private List<GroupInfo> getGroups() {
-        var map = new LinkedHashMap<String, Integer>();
-        var iconMap = new java.util.HashMap<String, ItemStack>();
-        for (var group : this.menu.getClientGroups()) {
-            if (!group.name().isEmpty()) {
-                map.put(group.name(), 0);
-                iconMap.put(group.name(), group.icon());
+    private void rebuildStonecutterRecipes() {
+        this.cachedStonecutterRecipes.clear();
+        if (this.minecraft != null && this.minecraft.level != null) {
+            var inputStack = this.getStonecutterInputStack();
+            if (!inputStack.isEmpty()) {
+                var level = this.minecraft.level;
+                var recipeInput = new SingleRecipeInput(inputStack);
+                this.cachedStonecutterRecipes.addAll(level.getRecipeManager().getRecipesFor(RecipeType.STONECUTTING, recipeInput, level));
             }
         }
-        for (var pattern : this.menu.getClientRecipes()) {
-            var groupName = this.getPatternGroup(pattern);
-            if (!groupName.isEmpty()) {
-                map.put(groupName, map.getOrDefault(groupName, 0) + 1);
+        this.stonecutterDirty = false;
+    }
+
+    private ItemStack getStonecutterInputStack() {
+        for (var slot : this.menu.slots) {
+            if (slot instanceof RecipeTerminalMenu.RecipeTerminalPhantomSlot phantomSlot && phantomSlot.getMode() == EncodingMode.STONECUTTING) {
+                return phantomSlot.getItem();
             }
         }
-        var list = new ArrayList<GroupInfo>();
-        map.forEach((k, v) -> {
-            if (this.machineSearchQuery == null || this.machineSearchQuery.isEmpty() || k.toLowerCase(ROOT).contains(this.machineSearchQuery.toLowerCase(ROOT))) {
-                list.add(new GroupInfo(k, v, iconMap.getOrDefault(k, ItemStack.EMPTY)));
-            }
-        });
-        return list;
+        return ItemStack.EMPTY;
     }
 
     private String getPatternGroup(ItemStack pattern) {
         var customData = pattern.get(net.minecraft.core.component.DataComponents.CUSTOM_DATA);
         if (customData == null) return "";
-        var tag = customData.copyTag();
-        return tag.contains("RecipeMachineGroup") ? tag.getString("RecipeMachineGroup") : "";
+        if (customData.contains("RecipeMachineGroup")) return customData.copyTag().getString("RecipeMachineGroup");
+        return "";
     }
 
     private EncodingMode getPatternMode(ItemStack pattern) {
@@ -1099,27 +1197,6 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
         return false;
     }
 
-    private List<RecipeHolder<StonecutterRecipe>> getMatchedStonecutterRecipes() {
-        var list = new ArrayList<RecipeHolder<StonecutterRecipe>>();
-        if (this.minecraft == null || this.minecraft.level == null) return list;
-
-        var inputStack = ItemStack.EMPTY;
-        for (var slot : this.menu.slots) {
-            if (slot instanceof RecipeTerminalMenu.RecipeTerminalPhantomSlot phantomSlot && phantomSlot.getMode() == EncodingMode.STONECUTTING) {
-                inputStack = phantomSlot.getItem();
-                break;
-            }
-        }
-
-        if (inputStack.isEmpty()) return list;
-
-        var level = this.minecraft.level;
-        var recipeManager = level.getRecipeManager();
-        var recipeInput = new SingleRecipeInput(inputStack);
-        list.addAll(recipeManager.getRecipesFor(RecipeType.STONECUTTING, recipeInput, level));
-        return list;
-    }
-
     public record GroupInfo(String name, int count, ItemStack icon) {
     }
 
@@ -1127,8 +1204,8 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
     }
 
     private Rect2i getRecipeBounds(int index, int screenLeft, int screenTop) {
-        int col = index % 4;
-        int row = index / 4;
+        int col = index & 3;
+        int row = index >> 2;
         int slotX = screenLeft + RecipeTerminalMenu.ENCODING_X + 27 + col * 20;
         int slotY = screenTop + RecipeTerminalMenu.ENCODING_Y + 11 + row * 22;
         return new Rect2i(slotX, slotY, 20, 22);

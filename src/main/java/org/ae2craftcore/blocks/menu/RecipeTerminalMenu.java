@@ -61,13 +61,21 @@ public class RecipeTerminalMenu extends PatternEncodingTermMenu {
     public static final int HOTBAR_Y = 210;
 
     private final RecipeTerminalPart part;
-    private final List<Slot> processingInputSlots = new ArrayList<>();
-    private final List<Slot> processingOutputSlots = new ArrayList<>();
+    private final List<Slot> processingInputSlots = new ArrayList<>(81);
+    private final List<Slot> processingOutputSlots = new ArrayList<>(27);
+
+    private final Slot[] craftingInputSlots = new Slot[9];
+    private Slot smithingTemplateSlot;
+    private Slot smithingBaseSlot;
+    private Slot smithingAdditionSlot;
+    private Slot stonecutterInputSlot;
+
     private int processingScrollOffset = 0;
     private String selectedGroup = "";
     private final List<ItemStack> clientRecipes = new ArrayList<>();
     private final List<RecipeTerminalSyncPacket.MachineGroupInfo> clientGroups = new ArrayList<>();
     private boolean firstSync = true;
+    private IClientRepo cachedProxyRepo;
 
     @GuiSync(297)
     public EncodingMode mode = EncodingMode.PROCESSING;
@@ -109,9 +117,11 @@ public class RecipeTerminalMenu extends PatternEncodingTermMenu {
         var encodedInputs = logic.getEncodedInputInv().createMenuWrapper();
         var encodedOutputs = logic.getEncodedOutputInv().createMenuWrapper();
 
+        int craftIndex = 0;
         for (int row = 0; row < 3; row++) {
             for (int col = 0; col < 3; col++) {
-                this.addSlot(new RecipeTerminalPhantomSlot(encodedInputs, col + row * 3, ENCODING_SLOT_X + 7 + col * 18, ENCODING_SLOT_Y + 7 + row * 18, EncodingMode.CRAFTING));
+                var slot = new RecipeTerminalPhantomSlot(encodedInputs, col + row * 3, ENCODING_SLOT_X + 7 + col * 18, ENCODING_SLOT_Y + 7 + row * 18, EncodingMode.CRAFTING);
+                this.craftingInputSlots[craftIndex++] = this.addSlot(slot);
             }
         }
         this.addSlot(new RecipeResultSlot(EncodingMode.CRAFTING, ENCODING_SLOT_X + 98, ENCODING_SLOT_Y + 25));
@@ -128,12 +138,12 @@ public class RecipeTerminalMenu extends PatternEncodingTermMenu {
             this.processingOutputSlots.add(this.addSlot(slot));
         }
 
-        this.addSlot(new RecipeTerminalPhantomSlot(encodedInputs, 0, ENCODING_SLOT_X + 7, ENCODING_SLOT_Y + 25, EncodingMode.SMITHING_TABLE));
-        this.addSlot(new RecipeTerminalPhantomSlot(encodedInputs, 1, ENCODING_SLOT_X + 25, ENCODING_SLOT_Y + 25, EncodingMode.SMITHING_TABLE));
-        this.addSlot(new RecipeTerminalPhantomSlot(encodedInputs, 2, ENCODING_SLOT_X + 43, ENCODING_SLOT_Y + 25, EncodingMode.SMITHING_TABLE));
+        this.smithingTemplateSlot = this.addSlot(new RecipeTerminalPhantomSlot(encodedInputs, 0, ENCODING_SLOT_X + 7, ENCODING_SLOT_Y + 25, EncodingMode.SMITHING_TABLE));
+        this.smithingBaseSlot = this.addSlot(new RecipeTerminalPhantomSlot(encodedInputs, 1, ENCODING_SLOT_X + 25, ENCODING_SLOT_Y + 25, EncodingMode.SMITHING_TABLE));
+        this.smithingAdditionSlot = this.addSlot(new RecipeTerminalPhantomSlot(encodedInputs, 2, ENCODING_SLOT_X + 43, ENCODING_SLOT_Y + 25, EncodingMode.SMITHING_TABLE));
         this.addSlot(new RecipeResultSlot(EncodingMode.SMITHING_TABLE, ENCODING_SLOT_X + 101, ENCODING_SLOT_Y + 25));
 
-        this.addSlot(new RecipeTerminalPhantomSlot(encodedInputs, 0, ENCODING_SLOT_X + 7, ENCODING_SLOT_Y + 25, EncodingMode.STONECUTTING));
+        this.stonecutterInputSlot = this.addSlot(new RecipeTerminalPhantomSlot(encodedInputs, 0, ENCODING_SLOT_X + 7, ENCODING_SLOT_Y + 25, EncodingMode.STONECUTTING));
     }
 
     @Override
@@ -162,32 +172,24 @@ public class RecipeTerminalMenu extends PatternEncodingTermMenu {
         if (grid == null) return;
 
         var list = RecipeStorageCellItem.getAllPatternsForGrid(grid);
-
         var groups = new ArrayList<RecipeTerminalSyncPacket.MachineGroupInfo>();
+        var addedNames = new HashSet<String>();
+
         try {
             var machines = grid.getMachines(MeMachineInterfaceBlockEntity.class);
             if (machines != null) for (var machine : machines) {
                 String name = machine.getInterfaceName();
-                if (name != null && !name.isEmpty()) {
-                    boolean exists = false;
-                    for (var g : groups) {
-                        if (g.name().equalsIgnoreCase(name)) {
-                            exists = true;
-                            break;
+                if (name != null && !name.isEmpty() && addedNames.add(name.toLowerCase(Locale.ROOT))) {
+                    var level = machine.getLevel();
+                    var icon = ItemStack.EMPTY;
+                    if (level != null) {
+                        var targetPos = machine.getBlockPos().relative(machine.getMachineDirection());
+                        if (level.isLoaded(targetPos)) {
+                            var state = level.getBlockState(targetPos);
+                            if (!state.isAir()) icon = new ItemStack(state.getBlock().asItem());
                         }
                     }
-                    if (!exists) {
-                        var level = machine.getLevel();
-                        var icon = ItemStack.EMPTY;
-                        if (level != null) {
-                            var targetPos = machine.getBlockPos().relative(machine.getMachineDirection());
-                            if (level.isLoaded(targetPos)) {
-                                var state = level.getBlockState(targetPos);
-                                if (!state.isAir()) icon = new ItemStack(state.getBlock().asItem());
-                            }
-                        }
-                        groups.add(new RecipeTerminalSyncPacket.MachineGroupInfo(name, icon));
-                    }
+                    groups.add(new RecipeTerminalSyncPacket.MachineGroupInfo(name, icon));
                 }
             }
         } catch (Exception e) {
@@ -249,11 +251,16 @@ public class RecipeTerminalMenu extends PatternEncodingTermMenu {
     }
 
     public void updateProcessingSlots() {
-        for (int i = 0; i < this.processingInputSlots.size(); i++) {
-            var slot = this.processingInputSlots.get(i);
-            int row = i / 3;
+        int row = 0;
+        int col = 0;
+        for (var slot : this.processingInputSlots) {
             int effectiveRow = row - this.processingScrollOffset;
             ((SlotAccessor) slot).ae2craftcore$setY(ENCODING_SLOT_Y + 7 + effectiveRow * 18);
+            col++;
+            if (col == 3) {
+                col = 0;
+                row++;
+            }
         }
         for (int i = 0; i < this.processingOutputSlots.size(); i++) {
             var slot = this.processingOutputSlots.get(i);
@@ -285,19 +292,38 @@ public class RecipeTerminalMenu extends PatternEncodingTermMenu {
     }
 
     public boolean canCycleProcessingOutputs() {
-        return this.mode == EncodingMode.PROCESSING && this.processingOutputSlots.stream()
-                .filter(s -> !s.getItem().isEmpty()).count() > 1;
+        if (this.mode != EncodingMode.PROCESSING) return false;
+
+        int nonEmptyCount = 0;
+        for (var processingOutputSlot : this.processingOutputSlots) {
+            if (!processingOutputSlot.getItem().isEmpty()) {
+                nonEmptyCount++;
+                if (nonEmptyCount > 1) return true;
+            }
+        }
+        return false;
     }
 
     public void cycleProcessingOutputs() {
         if (this.mode != EncodingMode.PROCESSING) return;
 
-        var newOutputs = new ItemStack[this.processingOutputSlots.size()];
-        for (int i = 0; i < this.processingOutputSlots.size(); i++) {
+        int size = this.processingOutputSlots.size();
+        var newOutputs = new ItemStack[size];
+
+        for (int i = 0; i < size; i++) {
             newOutputs[i] = ItemStack.EMPTY;
             if (!this.processingOutputSlots.get(i).getItem().isEmpty()) {
-                for (int j = 1; j < this.processingOutputSlots.size(); j++) {
-                    var nextItem = this.processingOutputSlots.get((i + j) % this.processingOutputSlots.size()).getItem();
+                boolean found = false;
+                for (int j = i + 1; j < size; j++) {
+                    var nextItem = this.processingOutputSlots.get(j).getItem();
+                    if (!nextItem.isEmpty()) {
+                        newOutputs[i] = nextItem;
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) for (int j = 0; j < i; j++) {
+                    var nextItem = this.processingOutputSlots.get(j).getItem();
                     if (!nextItem.isEmpty()) {
                         newOutputs[i] = nextItem;
                         break;
@@ -357,16 +383,12 @@ public class RecipeTerminalMenu extends PatternEncodingTermMenu {
         var grid = NonNullList.withSize(9, ItemStack.EMPTY);
         var hasInput = false;
 
-        for (var slot : this.slots) {
-            if (slot instanceof RecipeTerminalPhantomSlot phantomSlot && phantomSlot.mode == EncodingMode.CRAFTING) {
-                int index = phantomSlot.getContainerSlot();
-                if (index >= 0 && index < 9) {
-                    var itemStack = phantomSlot.getItem();
-                    if (!itemStack.isEmpty()) {
-                        grid.set(index, itemStack.copyWithCount(1));
-                        hasInput = true;
-                    }
-                }
+        for (int i = 0; i < 9; i++) {
+            var slot = this.craftingInputSlots[i];
+            var itemStack = slot.getItem();
+            if (!itemStack.isEmpty()) {
+                grid.set(i, itemStack.copyWithCount(1));
+                hasInput = true;
             }
         }
         if (!hasInput) return ItemStack.EMPTY;
@@ -382,19 +404,9 @@ public class RecipeTerminalMenu extends PatternEncodingTermMenu {
         if (player == null) return ItemStack.EMPTY;
         var level = player.level();
 
-        var templateStack = ItemStack.EMPTY;
-        var baseStack = ItemStack.EMPTY;
-        var additionStack = ItemStack.EMPTY;
-
-        for (var slot : this.slots) {
-            if (slot instanceof RecipeTerminalPhantomSlot phantomSlot && phantomSlot.mode == EncodingMode.SMITHING_TABLE) {
-                int index = phantomSlot.getContainerSlot();
-                var itemStack = phantomSlot.getItem();
-                if (index == 0) templateStack = itemStack;
-                else if (index == 1) baseStack = itemStack;
-                else if (index == 2) additionStack = itemStack;
-            }
-        }
+        var templateStack = this.smithingTemplateSlot.getItem();
+        var baseStack = this.smithingBaseSlot.getItem();
+        var additionStack = this.smithingAdditionSlot.getItem();
 
         if (templateStack.isEmpty() || baseStack.isEmpty() || additionStack.isEmpty()) return ItemStack.EMPTY;
 
@@ -529,27 +541,30 @@ public class RecipeTerminalMenu extends PatternEncodingTermMenu {
     @Override
     public IClientRepo getClientRepo() {
         var repo = super.getClientRepo();
-        if (repo == null) try {
-            return (IClientRepo) Proxy.newProxyInstance(RecipeTerminalMenu.class.getClassLoader(), new Class<?>[]{IClientRepo.class}, (proxy, method, args) -> {
-                var returnType = method.getReturnType();
+        if (repo != null) return repo;
+
+        if (this.cachedProxyRepo == null) try {
+            this.cachedProxyRepo = (IClientRepo) Proxy.newProxyInstance(RecipeTerminalMenu.class.getClassLoader(), new Class<?>[]{IClientRepo.class}, (proxy, method, args) -> {
+                var retType = method.getReturnType();
                 if (method.getName().equals("getAllEntries")) {
-                    if (returnType == Set.class) return Collections.emptySet();
+                    if (retType == Set.class) return Collections.emptySet();
                     return Collections.emptyList();
                 }
-                if (returnType == Set.class) return Collections.emptySet();
-                if (returnType == Collection.class || returnType == List.class) return Collections.emptyList();
-                if (returnType == void.class) return null;
-                if (returnType == boolean.class) return false;
-                if (returnType == int.class) return 0;
-                if (returnType == long.class) return 0L;
-                if (returnType == float.class) return 0.0f;
-                if (returnType == double.class) return 0.0d;
+                if (retType == Set.class) return Collections.emptySet();
+                if (retType == Collection.class || retType == List.class) return Collections.emptyList();
+                if (retType == void.class) return null;
+                if (retType == boolean.class) return false;
+                if (retType == int.class) return 0;
+                if (retType == long.class) return 0L;
+                if (retType == float.class) return 0.0f;
+                if (retType == double.class) return 0.0d;
                 return null;
             });
         } catch (Throwable e) {
             return null;
         }
-        return repo;
+
+        return this.cachedProxyRepo;
     }
 
     @Override
@@ -561,46 +576,26 @@ public class RecipeTerminalMenu extends PatternEncodingTermMenu {
     private void syncParentSlots() {
         try {
             FakeSlot[] parentCrafting = this.getCraftingGridSlots();
+            for (int i = 0; i < 9; i++) {
+                if (i < parentCrafting.length) parentCrafting[i] = (FakeSlot) this.craftingInputSlots[i];
+            }
+
             FakeSlot[] parentProcessingInputs = this.getProcessingInputSlots();
+            int inputSize = Math.min(parentProcessingInputs.length, this.processingInputSlots.size());
+            for (int i = 0; i < inputSize; i++) {
+                parentProcessingInputs[i] = (FakeSlot) this.processingInputSlots.get(i);
+            }
+
             FakeSlot[] parentProcessingOutputs = this.getProcessingOutputSlots();
-
-            int craftIndex = 0;
-            for (Slot slot : this.slots) {
-                if (slot instanceof RecipeTerminalPhantomSlot pSlot && pSlot.getMode() == EncodingMode.CRAFTING) {
-                    if (craftIndex < parentCrafting.length) parentCrafting[craftIndex++] = pSlot;
-                }
+            int outputSize = Math.min(parentProcessingOutputs.length, this.processingOutputSlots.size());
+            for (int i = 0; i < outputSize; i++) {
+                parentProcessingOutputs[i] = (FakeSlot) this.processingOutputSlots.get(i);
             }
 
-            int procInputIndex = 0;
-            for (Slot slot : this.processingInputSlots) {
-                if (slot instanceof FakeSlot fSlot) if (procInputIndex < parentProcessingInputs.length) {
-                    parentProcessingInputs[procInputIndex++] = fSlot;
-                }
-            }
-
-            int procOutputIndex = 0;
-            for (Slot slot : this.processingOutputSlots) {
-                if (slot instanceof FakeSlot fSlot) if (procOutputIndex < parentProcessingOutputs.length) {
-                    parentProcessingOutputs[procOutputIndex++] = fSlot;
-                }
-            }
-
-            int smithingIndex = 0;
-            for (Slot slot : this.slots) {
-                if (slot instanceof RecipeTerminalPhantomSlot pSlot && pSlot.getMode() == EncodingMode.SMITHING_TABLE) {
-                    if (smithingIndex == 0) setPrivateParentField("smithingTableTemplateSlot", pSlot);
-                    else if (smithingIndex == 1) setPrivateParentField("smithingTableBaseSlot", pSlot);
-                    else if (smithingIndex == 2) setPrivateParentField("smithingTableAdditionSlot", pSlot);
-                    smithingIndex++;
-                }
-            }
-
-            for (Slot slot : this.slots) {
-                if (slot instanceof RecipeTerminalPhantomSlot pSlot && pSlot.getMode() == EncodingMode.STONECUTTING) {
-                    setPrivateParentField("stonecuttingInputSlot", pSlot);
-                    break;
-                }
-            }
+            setPrivateParentField("smithingTableTemplateSlot", this.smithingTemplateSlot);
+            setPrivateParentField("smithingTableBaseSlot", this.smithingBaseSlot);
+            setPrivateParentField("smithingTableAdditionSlot", this.smithingAdditionSlot);
+            setPrivateParentField("stonecuttingInputSlot", this.stonecutterInputSlot);
 
         } catch (Exception e) {
             Ae2craftcore.LOGGER.error("Failed to sync slots with parent PatternEncodingTermMenu: ", e);
