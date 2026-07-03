@@ -4,7 +4,6 @@ import appeng.client.gui.AEBaseScreen;
 import appeng.client.gui.style.StyleManager;
 import appeng.client.gui.Icon;
 import appeng.client.gui.style.Blitter;
-import appeng.client.gui.me.common.StackSizeRenderer;
 import appeng.api.stacks.GenericStack;
 import appeng.core.network.serverbound.InventoryActionPacket;
 import appeng.helpers.InventoryAction;
@@ -38,6 +37,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 
+import static appeng.client.gui.me.common.StackSizeRenderer.renderSizeLabel;
 import static java.util.Locale.ROOT;
 
 public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
@@ -185,9 +185,8 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
             if (!itemstack.isEmpty()) {
                 guiGraphics.renderFakeItem(itemstack, slot.x, slot.y);
                 int count = itemstack.getCount();
-                if (count > 1) {
-                    StackSizeRenderer.renderSizeLabel(guiGraphics, this.font, slot.x, slot.y, this.formatStackSize(count));
-                }
+                guiGraphics.renderItemDecorations(this.font, itemstack, slot.x, slot.y, count > 64 ? "" : null);
+                if (count > 64) renderSizeLabel(guiGraphics, this.font, slot.x, slot.y, this.formatStackSize(count));
                 return;
             }
         }
@@ -376,8 +375,13 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
             var recipe = filtered.get(actualIndex);
             var displayStack = recipe.outputStack().isEmpty() ? recipe.patternStack() : recipe.outputStack();
             int itemY = rowTop + RECIPE_ROW_ITEM_OFFSET_Y;
-            guiGraphics.renderFakeItem(displayStack, x + RecipeTerminalMenu.RECIPE_LIST_X + 4, y + itemY);
-            guiGraphics.renderItemDecorations(this.font, displayStack, x + RecipeTerminalMenu.RECIPE_LIST_X + 4, y + itemY);
+            int itemX = x + RecipeTerminalMenu.RECIPE_LIST_X + 4;
+
+            guiGraphics.renderFakeItem(displayStack, itemX, y + itemY);
+            int count = displayStack.getCount();
+            guiGraphics.renderItemDecorations(this.font, displayStack, itemX, y + itemY, count > 64 ? "" : null);
+            if (count > 64) renderSizeLabel(guiGraphics, this.font, itemX, y + itemY, this.formatStackSize(count));
+
             int iconY = rowTop + RECIPE_ROW_ICON_OFFSET_Y;
             this.getModeIcon(recipe.mode()).getBlitter().dest(x + RecipeTerminalMenu.RECIPE_LIST_X + 24, y + iconY).blit(guiGraphics);
             int clearY = rowTop + RECIPE_ROW_CLEAR_OFFSET_Y;
