@@ -644,6 +644,9 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
                         if (this.isInside(x, y, clearX, clearY, 12, 12)) {
                             PacketDistributor.sendToServer(new RecipeTerminalDeleteRecipePacket(filtered.get(actualIndex).patternStack()));
                             this.playClick();
+                        } else {
+                            PacketDistributor.sendToServer(new RecipeTerminalLoadRecipePacket(filtered.get(actualIndex).patternStack()));
+                            this.playClick();
                         }
                     }
                 }
