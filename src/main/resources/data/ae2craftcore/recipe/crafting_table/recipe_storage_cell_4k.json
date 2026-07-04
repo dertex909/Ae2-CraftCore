@@ -2,13 +2,10 @@
   "type": "minecraft:crafting_shapeless",
   "ingredients": [
     {
-      "item": "ae2craftcore:recipe_storage_cell_1k"
+      "item": "ae2craftcore:recipe_cell_housing"
     },
     {
-      "item": "ae2:cell_component_4k"
-    },
-    {
-      "item": "ae2craftcore:quantum_processor_2"
+      "item": "ae2craftcore:recipe_cell_component_4k"
     }
   ],
   "result": {

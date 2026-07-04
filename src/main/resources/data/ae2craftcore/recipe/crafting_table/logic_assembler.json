@@ -5,18 +5,21 @@
       "item": "ae2craftcore:quantum_processor_1"
     },
     "S": {
-      "item": "ae2:quantum_entangled_singularity"
+      "tag": "c:ingots/copper"
     },
     "O": {
-      "item": "ae2:quantum_entangled_singularity"
+      "tag": "c:ingots/iron"
     },
     "U": {
-      "item": "ae2:quantum_entangled_singularity"
+      "item": "ae2:singularity"
+    },
+    "F": {
+      "item": "ae2:fluix_pearl"
     }
   },
   "pattern": [
-    "OQO",
-    "S S",
+    "OFO",
+    "SQS",
     "OUO"
   ],
   "result": {

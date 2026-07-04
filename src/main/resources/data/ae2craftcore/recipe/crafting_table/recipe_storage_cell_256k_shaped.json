@@ -1,0 +1,26 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "key": {
+    "q": {
+      "item": "ae2:quartz_glass"
+    },
+    "r": {
+      "tag": "c:dusts/redstone"
+    },
+    "g": {
+      "tag": "c:ingots/gold"
+    },
+    "s": {
+      "item": "ae2craftcore:recipe_cell_component_256k"
+    }
+  },
+  "pattern": [
+    "qrq",
+    "rsr",
+    "ggg"
+  ],
+  "result": {
+    "count": 1,
+    "id": "ae2craftcore:recipe_storage_cell_256k"
+  }
+}

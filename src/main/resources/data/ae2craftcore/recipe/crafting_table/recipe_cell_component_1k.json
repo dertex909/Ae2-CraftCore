@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "key": {
+    "a": {
+      "tag": "c:dusts/sky_stone"
+    },
+    "b": {
+      "tag": "c:gems/fluix"
+    },
+    "c": {
+      "item": "ae2craftcore:quantum_processor_1"
+    }
+  },
+  "pattern": [
+    "aba",
+    "bcb",
+    "aba"
+  ],
+  "result": {
+    "count": 1,
+    "id": "ae2craftcore:recipe_cell_component_1k"
+  }
+}

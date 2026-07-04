@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    {
+      "item": "ae2:pattern_encoding_terminal"
+    },
+    {
+      "item": "ae2:pattern_access_terminal"
+    },
+    {
+      "item": "ae2craftcore:quantum_processor_6"
+    },
+    {
+      "item": "ae2craftcore:me_machine_interface"
+    }
+  ],
+  "result": {
+    "count": 1,
+    "id": "ae2craftcore:recipe_terminal"
+  }
+}

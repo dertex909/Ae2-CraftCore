@@ -39,11 +39,11 @@ public class RecipeStorageCellItem extends Item {
     public static DeferredHolder<Item, RecipeStorageCellItem> RECIPE_STORAGE_CELL_256K;
 
     public enum Tier {
-        CELL_1K("recipe_storage_cell_1k", 2, 16),
-        CELL_4K("recipe_storage_cell_4k", 4, 32),
-        CELL_16K("recipe_storage_cell_16k", 8, 64),
-        CELL_64K("recipe_storage_cell_64k", 16, 128),
-        CELL_256K("recipe_storage_cell_256k", 32, 256);
+        CELL_1K("recipe_storage_cell_1k", 2, 8),
+        CELL_4K("recipe_storage_cell_4k", 6, 32),
+        CELL_16K("recipe_storage_cell_16k", 16, 128),
+        CELL_64K("recipe_storage_cell_64k", 32, 256),
+        CELL_256K("recipe_storage_cell_256k", 64, 1024);
 
         private final String name;
         private final int maxMachines;
