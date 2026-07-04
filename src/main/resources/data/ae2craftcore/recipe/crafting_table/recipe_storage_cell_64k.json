@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    {
+      "item": "ae2craftcore:recipe_storage_cell_16k"
+    },
+    {
+      "item": "ae2:cell_component_64k"
+    },
+    {
+      "item": "ae2craftcore:quantum_processor_4"
+    }
+  ],
+  "result": {
+    "count": 1,
+    "id": "ae2craftcore:recipe_storage_cell_64k"
+  }
+}

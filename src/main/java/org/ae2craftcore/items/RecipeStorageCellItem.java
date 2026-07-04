@@ -102,9 +102,7 @@ public class RecipeStorageCellItem extends Item {
         var customData = p.get(CUSTOM_DATA);
         if (customData != null) {
             var tag = customData.copyTag();
-            if (tag.contains("RecipeMachineGroup")) {
-                return tag.getString("RecipeMachineGroup").toLowerCase(Locale.ROOT);
-            }
+            if (tag.contains("RecipeMachineGroup")) return tag.getString("RecipeMachineGroup").toLowerCase(Locale.ROOT);
         }
         return "";
     }

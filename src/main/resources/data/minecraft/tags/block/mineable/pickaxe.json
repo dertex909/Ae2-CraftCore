@@ -1,6 +1,7 @@
 {
   "replace": false,
   "values": [
-    "ae2craftcore:logic_assembler"
+    "ae2craftcore:logic_assembler",
+    "ae2craftcore:me_machine_interface"
   ]
 }
