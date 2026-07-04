@@ -86,6 +86,7 @@ public class RecipeTerminalMenu extends PatternEncodingTermMenu {
     @GuiSync(294)
     @Nullable
     public ResourceLocation stonecuttingRecipeId;
+    private static final String SETSTONECUTTINGRECIPEID = "setStonecuttingRecipeId";
 
     public RecipeTerminalMenu(int containerId, Inventory playerInventory, RecipeTerminalPart part) {
         super(RECIPE_TERMINAL.get(), containerId, playerInventory, part, false);
@@ -95,7 +96,7 @@ public class RecipeTerminalMenu extends PatternEncodingTermMenu {
 
         this.addEncodingModeSlots();
         try {
-            this.registerClientAction("setStonecuttingRecipeId", ResourceLocation.class, this.part.getLogic()::setStonecuttingRecipeId);
+            this.registerClientAction(SETSTONECUTTINGRECIPEID, ResourceLocation.class, this.part.getLogic()::setStonecuttingRecipeId);
         } catch (IllegalArgumentException ignored) {
         }
 
@@ -447,7 +448,7 @@ public class RecipeTerminalMenu extends PatternEncodingTermMenu {
     }
 
     public void selectStonecutterRecipeOnServer(ResourceLocation recipeId) {
-        this.sendClientAction("setStonecuttingRecipeId", recipeId);
+        this.sendClientAction(SETSTONECUTTINGRECIPEID, recipeId);
     }
 
     public class RecipeTerminalProcessingInputSlot extends FakeSlot {

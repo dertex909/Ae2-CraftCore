@@ -40,6 +40,7 @@ import java.util.List;
 
 import static appeng.client.gui.me.common.StackSizeRenderer.renderSizeLabel;
 import static java.util.Locale.ROOT;
+import static org.ae2craftcore.network.packet.RecipeTerminalSavePacket.RECIPEMACHINEGROUP;
 
 public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
 
@@ -1181,7 +1182,7 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
     private String getPatternGroup(ItemStack pattern) {
         var customData = pattern.get(net.minecraft.core.component.DataComponents.CUSTOM_DATA);
         if (customData == null) return "";
-        if (customData.contains("RecipeMachineGroup")) return customData.copyTag().getString("RecipeMachineGroup");
+        if (customData.contains(RECIPEMACHINEGROUP)) return customData.copyTag().getString(RECIPEMACHINEGROUP);
         return "";
     }
 

@@ -18,7 +18,6 @@ import appeng.me.helpers.MachineSource;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.MenuProvider;
@@ -36,14 +35,16 @@ import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler;
 import org.ae2craftcore.blocks.block.MeMachineInterfaceBlock;
 import org.ae2craftcore.blocks.menu.MeMachineInterfaceMenu;
-import org.ae2craftcore.items.RecipeStorageCellItem;
 import org.ae2craftcore.registry.annotations.RegisterBlockEntity;
+import org.ae2craftcore.services.IRecipeCacheService;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import static appeng.api.config.Actionable.MODULATE;
+import static net.minecraft.core.component.DataComponents.CUSTOM_DATA;
+import static org.ae2craftcore.network.packet.RecipeTerminalSavePacket.RECIPEMACHINEGROUP;
 
 @RegisterBlockEntity(name = "me_machine_interface", blocks = {MeMachineInterfaceBlock.class})
 public class MeMachineInterfaceBlockEntity extends AENetworkedPoweredBlockEntity implements ICraftingProvider, MenuProvider, InternalInventoryHost {
@@ -101,7 +102,10 @@ public class MeMachineInterfaceBlockEntity extends AENetworkedPoweredBlockEntity
         var grid = this.getMainNode().getGrid();
         if (grid == null) return List.of();
 
-        var allPatterns = RecipeStorageCellItem.getPatternsForGrid(grid, this.level);
+        var cacheService = grid.getService(IRecipeCacheService.class);
+        if (cacheService == null) return List.of();
+
+        var allPatterns = cacheService.getCachedPatterns(this.level);
         var filtered = new ArrayList<IPatternDetails>();
 
         for (var pattern : allPatterns) {
@@ -109,11 +113,11 @@ public class MeMachineInterfaceBlockEntity extends AENetworkedPoweredBlockEntity
             boolean matchesGroup = true;
             if (definition != null) {
                 var stack = definition.toStack();
-                var customData = stack.get(DataComponents.CUSTOM_DATA);
+                var customData = stack.get(CUSTOM_DATA);
                 if (customData != null) {
                     var tag = customData.copyTag();
-                    if (tag.contains("RecipeMachineGroup")) {
-                        String patternGroup = tag.getString("RecipeMachineGroup");
+                    if (tag.contains(RECIPEMACHINEGROUP)) {
+                        String patternGroup = tag.getString(RECIPEMACHINEGROUP);
                         matchesGroup = patternGroup.equalsIgnoreCase(this.getInterfaceName());
                     }
                 }
@@ -348,18 +352,21 @@ public class MeMachineInterfaceBlockEntity extends AENetworkedPoweredBlockEntity
         return this.inv;
     }
 
+    private static final String MACHINEDIRECTION = "MD";
+    private static final String CUSTOMNAME = "CN";
+
     @Override
     public void saveAdditional(@NotNull CompoundTag tag, HolderLookup.@NotNull Provider registries) {
         super.saveAdditional(tag, registries);
-        tag.putInt("MachineDirection", this.machineDirection.ordinal());
-        tag.putString("CustomName", this.customName);
+        tag.putInt(MACHINEDIRECTION, this.machineDirection.ordinal());
+        tag.putString(CUSTOMNAME, this.customName);
     }
 
     @Override
     public void loadTag(@NotNull CompoundTag tag, HolderLookup.@NotNull Provider registries) {
         super.loadTag(tag, registries);
-        this.machineDirection = Direction.values()[tag.getInt("MachineDirection")];
-        this.customName = tag.getString("CustomName");
+        this.machineDirection = Direction.values()[tag.getInt(MACHINEDIRECTION)];
+        this.customName = tag.getString(CUSTOMNAME);
         this.setPowerSides(getGridConnectableSides(getOrientation()));
     }
 }

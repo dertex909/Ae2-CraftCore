@@ -6,8 +6,6 @@ import appeng.api.storage.cells.CellState;
 import appeng.api.storage.cells.ICellHandler;
 import appeng.api.storage.cells.ISaveProvider;
 import appeng.api.storage.cells.StorageCell;
-import appeng.api.stacks.AEItemKey;
-import appeng.api.crafting.IPatternDetails;
 import appeng.api.inventories.InternalInventory;
 import appeng.blockentity.storage.DriveBlockEntity;
 import appeng.blockentity.storage.MEChestBlockEntity;
@@ -16,7 +14,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
-import net.minecraft.world.level.Level;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import org.ae2craftcore.registry.annotations.RegisterItem;
 import org.ae2craftcore.registry.AttachmentRegistry;
@@ -25,8 +22,8 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 
-import static appeng.crafting.pattern.AEPatternDecoder.INSTANCE;
 import static net.minecraft.core.component.DataComponents.CUSTOM_DATA;
+import static org.ae2craftcore.network.packet.RecipeTerminalSavePacket.RECIPEMACHINEGROUP;
 
 @RegisterItem(name = "recipe_storage_cell_1k", stacksTo = 1)
 @RegisterItem(name = "recipe_storage_cell_4k", stacksTo = 1)
@@ -102,7 +99,7 @@ public class RecipeStorageCellItem extends Item {
         var customData = p.get(CUSTOM_DATA);
         if (customData != null) {
             var tag = customData.copyTag();
-            if (tag.contains("RecipeMachineGroup")) return tag.getString("RecipeMachineGroup").toLowerCase(Locale.ROOT);
+            if (tag.contains(RECIPEMACHINEGROUP)) return tag.getString(RECIPEMACHINEGROUP).toLowerCase(Locale.ROOT);
         }
         return "";
     }
@@ -117,7 +114,7 @@ public class RecipeStorageCellItem extends Item {
             String group = "";
             if (customData != null) {
                 var tag = customData.copyTag();
-                if (tag.contains("RecipeMachineGroup")) group = tag.getString("RecipeMachineGroup");
+                if (tag.contains(RECIPEMACHINEGROUP)) group = tag.getString(RECIPEMACHINEGROUP);
             }
             uniqueGroups.add(group.toLowerCase(Locale.ROOT));
         }
@@ -163,18 +160,6 @@ public class RecipeStorageCellItem extends Item {
                 if (stored != null) list.addAll(stored);
             }
         }
-    }
-
-    public static List<IPatternDetails> getPatternsForGrid(IGrid grid, Level level) {
-        var patterns = getAllPatternsForGrid(grid);
-        if (patterns.isEmpty()) return Collections.emptyList();
-
-        var list = new ArrayList<IPatternDetails>(patterns.size());
-        for (var patternStack : patterns) {
-            var details = INSTANCE.decodePattern(AEItemKey.of(patternStack), level);
-            if (details != null) list.add(details);
-        }
-        return list;
     }
 
     public static class RecipeStorageCell implements StorageCell, MEStorage {

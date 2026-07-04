@@ -17,6 +17,7 @@ import org.ae2craftcore.items.RecipeStorageCellItem;
 import org.ae2craftcore.registry.annotations.NetworkPayload;
 import org.ae2craftcore.registry.annotations.PacketHandler;
 import org.ae2craftcore.registry.annotations.PayloadDirection;
+import org.ae2craftcore.services.IRecipeCacheService;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -53,6 +54,9 @@ public record RecipeTerminalDeleteRecipePacket(ItemStack patternToDelete) implem
                 if (node == null) return;
                 var grid = node.getGrid();
                 if (grid == null) return;
+
+                var cacheService = grid.getService(IRecipeCacheService.class);
+                if (cacheService != null) cacheService.invalidate();
 
                 boolean deleted = false;
 

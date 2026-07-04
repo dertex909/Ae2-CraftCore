@@ -437,28 +437,36 @@ public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity imp
         return this.getBlockState().getBlock().asItem();
     }
 
+    private static final String PROGRESSDOUBLE = "PD";
+    private static final String PROGRESS = "P";
+    private static final String MAXPROGRESS = "MP";
+    private static final String ACTIVERECIPECHANCE = "ARC";
+    private static final String ROLLEDRESULT = "RR";
+
     @Override
     public void saveAdditional(@NotNull CompoundTag tag, HolderLookup.@NotNull Provider registries) {
         super.saveAdditional(tag, registries);
-        tag.putDouble("ProgressDouble", this.progress);
-        tag.putInt("Progress", (int) Math.round(this.progress));
-        tag.putInt("MaxProgress", this.maxProgress);
-        tag.putInt("ActiveRecipeChance", this.activeRecipeChance);
-        if (!this.rolledResult.isEmpty()) tag.put("RolledResult", this.rolledResult.save(registries));
+        tag.putDouble(PROGRESSDOUBLE, this.progress);
+        tag.putInt(PROGRESS, (int) Math.round(this.progress));
+        tag.putInt(MAXPROGRESS, this.maxProgress);
+        tag.putInt(ACTIVERECIPECHANCE, this.activeRecipeChance);
+        if (!this.rolledResult.isEmpty()) tag.put(ROLLEDRESULT, this.rolledResult.save(registries));
     }
 
     @Override
     public void loadTag(@NotNull CompoundTag tag, HolderLookup.@NotNull Provider registries) {
         super.loadTag(tag, registries);
-        if (tag.contains("ProgressDouble")) {
-            this.progress = tag.getDouble("ProgressDouble");
+        if (tag.contains(PROGRESSDOUBLE)) {
+            this.progress = tag.getDouble(PROGRESSDOUBLE);
         } else {
-            this.progress = tag.getInt("Progress");
+            this.progress = tag.getInt(PROGRESS);
         }
-        this.maxProgress = tag.getInt("MaxProgress");
-        this.activeRecipeChance = tag.getInt("ActiveRecipeChance");
-        if (tag.contains("RolledResult")) {
-            this.rolledResult = ItemStack.parseOptional(registries, tag.getCompound("RolledResult"));
-        } else this.rolledResult = ItemStack.EMPTY;
+        this.maxProgress = tag.getInt(MAXPROGRESS);
+        this.activeRecipeChance = tag.getInt(ACTIVERECIPECHANCE);
+        if (tag.contains(ROLLEDRESULT)) {
+            this.rolledResult = ItemStack.parseOptional(registries, tag.getCompound(ROLLEDRESULT));
+        } else {
+            this.rolledResult = ItemStack.EMPTY;
+        }
     }
 }

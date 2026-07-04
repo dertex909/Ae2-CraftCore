@@ -7,8 +7,9 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
 import org.ae2craftcore.blocks.blockentity.MeMachineInterfaceBlockEntity;
-import org.ae2craftcore.registry.ModMenuTypes;
 import org.jetbrains.annotations.NotNull;
+
+import static org.ae2craftcore.registry.ModMenuTypes.ME_MACHINE_INTERFACE;
 
 public class MeMachineInterfaceMenu extends AbstractContainerMenu {
     private final MeMachineInterfaceBlockEntity blockEntity;
@@ -19,7 +20,7 @@ public class MeMachineInterfaceMenu extends AbstractContainerMenu {
     }
 
     public MeMachineInterfaceMenu(int containerId, MeMachineInterfaceBlockEntity blockEntity) {
-        super(ModMenuTypes.ME_MACHINE_INTERFACE.get(), containerId);
+        super(ME_MACHINE_INTERFACE.get(), containerId);
         this.blockEntity = blockEntity;
         this.blockPos = blockEntity != null ? blockEntity.getBlockPos() : BlockPos.ZERO;
     }

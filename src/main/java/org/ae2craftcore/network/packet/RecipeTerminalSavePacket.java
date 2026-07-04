@@ -28,6 +28,7 @@ import org.ae2craftcore.items.RecipeStorageCellItem;
 import org.ae2craftcore.registry.annotations.NetworkPayload;
 import org.ae2craftcore.registry.annotations.PacketHandler;
 import org.ae2craftcore.registry.annotations.PayloadDirection;
+import org.ae2craftcore.services.IRecipeCacheService;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -42,6 +43,7 @@ public record RecipeTerminalSavePacket(String groupName, String modeName, String
         implements CustomPacketPayload {
 
     public static final Type<RecipeTerminalSavePacket> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(Ae2craftcore.MODID, "recipe_terminal_save"));
+    public static final String RECIPEMACHINEGROUP = "RecMacG";
 
     public RecipeTerminalSavePacket(String groupName, EncodingMode mode, @Nullable ResourceLocation stonecuttingRecipeId, boolean substitutionsEnabled, boolean fluidSubstitutionsEnabled) {
         this(groupName, mode.name(), stonecuttingRecipeId != null ? stonecuttingRecipeId.toString() : "", substitutionsEnabled, fluidSubstitutionsEnabled);
@@ -71,7 +73,7 @@ public record RecipeTerminalSavePacket(String groupName, String modeName, String
 
                 var customData = encodedPattern.getOrDefault(CUSTOM_DATA, CustomData.EMPTY);
                 var tag = customData.copyTag();
-                tag.putString("RecipeMachineGroup", packet.groupName());
+                tag.putString(RECIPEMACHINEGROUP, packet.groupName());
                 encodedPattern.set(CUSTOM_DATA, CustomData.of(tag));
 
                 var part = menu.getPart();
@@ -80,6 +82,9 @@ public record RecipeTerminalSavePacket(String groupName, String modeName, String
                 if (node == null) return;
                 var grid = node.getGrid();
                 if (grid == null) return;
+
+                var cacheService = grid.getService(IRecipeCacheService.class);
+                if (cacheService != null) cacheService.invalidate();
 
                 boolean saved = false;
 
