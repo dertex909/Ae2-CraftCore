@@ -11,13 +11,13 @@ import appeng.api.crafting.IPatternDetails;
 import appeng.api.inventories.InternalInventory;
 import appeng.api.implementations.blockentities.IChestOrDrive;
 import appeng.blockentity.AEBaseInvBlockEntity;
-import appeng.crafting.pattern.AEPatternDecoder;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.Level;
+import net.neoforged.neoforge.registries.DeferredHolder;
 import org.ae2craftcore.registry.annotations.RegisterItem;
 import org.ae2craftcore.registry.AttachmentRegistry;
 import org.jetbrains.annotations.NotNull;
@@ -25,11 +25,105 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 
-@RegisterItem(name = "recipe_storage_cell", stacksTo = 1)
+import static appeng.crafting.pattern.AEPatternDecoder.INSTANCE;
+import static net.minecraft.core.component.DataComponents.CUSTOM_DATA;
+
+@RegisterItem(name = "recipe_storage_cell_1k", stacksTo = 1)
+@RegisterItem(name = "recipe_storage_cell_4k", stacksTo = 1)
+@RegisterItem(name = "recipe_storage_cell_16k", stacksTo = 1)
+@RegisterItem(name = "recipe_storage_cell_64k", stacksTo = 1)
+@RegisterItem(name = "recipe_storage_cell_256k", stacksTo = 1)
 public class RecipeStorageCellItem extends Item {
+
+    public static DeferredHolder<Item, RecipeStorageCellItem> RECIPE_STORAGE_CELL_1K;
+    public static DeferredHolder<Item, RecipeStorageCellItem> RECIPE_STORAGE_CELL_4K;
+    public static DeferredHolder<Item, RecipeStorageCellItem> RECIPE_STORAGE_CELL_16K;
+    public static DeferredHolder<Item, RecipeStorageCellItem> RECIPE_STORAGE_CELL_64K;
+    public static DeferredHolder<Item, RecipeStorageCellItem> RECIPE_STORAGE_CELL_256K;
+
+    public enum Tier {
+        CELL_1K("recipe_storage_cell_1k", 2, 16),
+        CELL_4K("recipe_storage_cell_4k", 4, 32),
+        CELL_16K("recipe_storage_cell_16k", 8, 64),
+        CELL_64K("recipe_storage_cell_64k", 16, 128),
+        CELL_256K("recipe_storage_cell_256k", 32, 256);
+
+        private final String name;
+        private final int maxMachines;
+        private final int maxRecipes;
+
+        Tier(String name, int maxMachines, int maxRecipes) {
+            this.name = name;
+            this.maxMachines = maxMachines;
+            this.maxRecipes = maxRecipes;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public int getMaxMachines() {
+            return maxMachines;
+        }
+
+        public int getMaxRecipes() {
+            return maxRecipes;
+        }
+    }
 
     public RecipeStorageCellItem(Properties properties) {
         super(properties);
+    }
+
+    public static Tier getTierForStack(ItemStack stack) {
+        if (stack.isEmpty()) return Tier.CELL_64K;
+        var item = stack.getItem();
+        if (RECIPE_STORAGE_CELL_1K != null && item == RECIPE_STORAGE_CELL_1K.get()) return Tier.CELL_1K;
+        if (RECIPE_STORAGE_CELL_4K != null && item == RECIPE_STORAGE_CELL_4K.get()) return Tier.CELL_4K;
+        if (RECIPE_STORAGE_CELL_16K != null && item == RECIPE_STORAGE_CELL_16K.get()) return Tier.CELL_16K;
+        if (RECIPE_STORAGE_CELL_64K != null && item == RECIPE_STORAGE_CELL_64K.get()) return Tier.CELL_64K;
+        if (RECIPE_STORAGE_CELL_256K != null && item == RECIPE_STORAGE_CELL_256K.get()) return Tier.CELL_256K;
+        return Tier.CELL_64K;
+    }
+
+    public static boolean canAddPattern(ItemStack cellStack, ItemStack patternToAdd) {
+        if (!(cellStack.getItem() instanceof RecipeStorageCellItem)) return false;
+        var tier = getTierForStack(cellStack);
+        var storedList = cellStack.get(AttachmentRegistry.STORED_PATTERNS.get());
+        var patterns = storedList != null ? new ArrayList<>(storedList) : new ArrayList<ItemStack>();
+        if (patterns.size() >= tier.getMaxRecipes()) return false;
+        var uniqueGroups = new HashSet<String>();
+        for (var p : patterns) uniqueGroups.add(getRecipeGroup(p));
+        uniqueGroups.add(getRecipeGroup(patternToAdd));
+        return uniqueGroups.size() <= tier.getMaxMachines();
+    }
+
+    private static String getRecipeGroup(ItemStack p) {
+        var customData = p.get(CUSTOM_DATA);
+        if (customData != null) {
+            var tag = customData.copyTag();
+            if (tag.contains("RecipeMachineGroup")) {
+                return tag.getString("RecipeMachineGroup").toLowerCase(Locale.ROOT);
+            }
+        }
+        return "";
+    }
+
+    public static void updateCellStats(ItemStack cellStack, List<ItemStack> patterns) {
+        cellStack.set(AttachmentRegistry.STORED_PATTERNS.get(), List.copyOf(patterns));
+        cellStack.set(AttachmentRegistry.RECIPE_COUNT.get(), patterns.size());
+
+        var uniqueGroups = new HashSet<String>();
+        for (var p : patterns) {
+            var customData = p.get(CUSTOM_DATA);
+            String group = "";
+            if (customData != null) {
+                var tag = customData.copyTag();
+                if (tag.contains("RecipeMachineGroup")) group = tag.getString("RecipeMachineGroup");
+            }
+            uniqueGroups.add(group.toLowerCase(Locale.ROOT));
+        }
+        cellStack.set(AttachmentRegistry.MACHINE_COUNT.get(), uniqueGroups.size());
     }
 
     @Override
@@ -37,13 +131,15 @@ public class RecipeStorageCellItem extends Item {
         int count = stack.getOrDefault(AttachmentRegistry.RECIPE_COUNT.get(), 0);
         int machineCount = stack.getOrDefault(AttachmentRegistry.MACHINE_COUNT.get(), 0);
 
+        var tier = getTierForStack(stack);
+
         tooltipComponents.add(Component.literal("Recipes (Patterns): ").withStyle(ChatFormatting.GRAY)
                 .append(Component.literal(String.valueOf(count)).withStyle(ChatFormatting.YELLOW))
-                .append(Component.literal(" / 128").withStyle(ChatFormatting.DARK_GRAY)));
+                .append(Component.literal(" / " + tier.getMaxRecipes()).withStyle(ChatFormatting.DARK_GRAY)));
 
         tooltipComponents.add(Component.literal("Machines: ").withStyle(ChatFormatting.GRAY)
                 .append(Component.literal(String.valueOf(machineCount)).withStyle(ChatFormatting.YELLOW))
-                .append(Component.literal(" / 16").withStyle(ChatFormatting.DARK_GRAY)));
+                .append(Component.literal(" / " + tier.getMaxMachines()).withStyle(ChatFormatting.DARK_GRAY)));
     }
 
     public static List<ItemStack> getAllPatternsForGrid(IGrid grid) {
@@ -75,7 +171,7 @@ public class RecipeStorageCellItem extends Item {
 
         var list = new ArrayList<IPatternDetails>(patterns.size());
         for (var patternStack : patterns) {
-            var details = AEPatternDecoder.INSTANCE.decodePattern(AEItemKey.of(patternStack), level);
+            var details = INSTANCE.decodePattern(AEItemKey.of(patternStack), level);
             if (details != null) list.add(details);
         }
         return list;
@@ -104,9 +200,10 @@ public class RecipeStorageCellItem extends Item {
         @Override
         public CellState getStatus() {
             int count = this.patterns.size();
+            var tier = getTierForStack(cellStack);
             if (count == 0) {
                 return CellState.EMPTY;
-            } else if (count >= 128) {
+            } else if (count >= tier.getMaxRecipes()) {
                 return CellState.TYPES_FULL;
             } else {
                 return CellState.NOT_EMPTY;

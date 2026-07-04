@@ -8,14 +8,12 @@ import appeng.blockentity.storage.DriveBlockEntity;
 import appeng.blockentity.storage.MEChestBlockEntity;
 import appeng.parts.encoding.EncodingMode;
 import net.minecraft.core.NonNullList;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.item.crafting.CraftingInput;
@@ -27,7 +25,6 @@ import org.ae2craftcore.Ae2craftcore;
 import org.ae2craftcore.blocks.blockentity.MeMachineInterfaceBlockEntity;
 import org.ae2craftcore.blocks.menu.RecipeTerminalMenu;
 import org.ae2craftcore.items.RecipeStorageCellItem;
-import org.ae2craftcore.registry.AttachmentRegistry;
 import org.ae2craftcore.registry.annotations.NetworkPayload;
 import org.ae2craftcore.registry.annotations.PacketHandler;
 import org.ae2craftcore.registry.annotations.PayloadDirection;
@@ -35,8 +32,9 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
+
+import static net.minecraft.core.component.DataComponents.CUSTOM_DATA;
+import static org.ae2craftcore.registry.AttachmentRegistry.STORED_PATTERNS;
 
 @NetworkPayload(direction = PayloadDirection.TO_SERVER)
 public record RecipeTerminalSavePacket(String groupName, String modeName, String stonecuttingRecipeId,
@@ -71,10 +69,10 @@ public record RecipeTerminalSavePacket(String groupName, String modeName, String
                 var encodedPattern = encodePattern(menu, player, parseMode(packet.modeName()), packet.stonecuttingRecipeId(), packet.substitutionsEnabled(), packet.fluidSubstitutionsEnabled());
                 if (encodedPattern == null || encodedPattern.isEmpty()) return;
 
-                var customData = encodedPattern.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY);
+                var customData = encodedPattern.getOrDefault(CUSTOM_DATA, CustomData.EMPTY);
                 var tag = customData.copyTag();
                 tag.putString("RecipeMachineGroup", packet.groupName());
-                encodedPattern.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
+                encodedPattern.set(CUSTOM_DATA, CustomData.of(tag));
 
                 var part = menu.getPart();
                 if (part == null) return;
@@ -90,16 +88,12 @@ public record RecipeTerminalSavePacket(String groupName, String modeName, String
                     if (inv != null) for (int i = 0; i < inv.size(); i++) {
                         var stack = inv.getStackInSlot(i);
                         if (stack.getItem() instanceof RecipeStorageCellItem) {
-                            var storedList = stack.get(AttachmentRegistry.STORED_PATTERNS.get());
-                            var patterns = storedList != null ? new ArrayList<>(storedList) : new ArrayList<ItemStack>();
-                            if (patterns.size() < 128) {
+                            if (RecipeStorageCellItem.canAddPattern(stack, encodedPattern)) {
+                                var storedList = stack.get(STORED_PATTERNS.get());
+                                var patterns = storedList != null ? new ArrayList<>(storedList) : new ArrayList<ItemStack>();
                                 patterns.add(encodedPattern.copyWithCount(1));
 
-                                stack.set(AttachmentRegistry.STORED_PATTERNS.get(), List.copyOf(patterns));
-                                stack.set(AttachmentRegistry.RECIPE_COUNT.get(), patterns.size());
-                                var uniqueTypes = new HashSet<Item>();
-                                for (var p : patterns) uniqueTypes.add(p.getItem());
-                                stack.set(AttachmentRegistry.MACHINE_COUNT.get(), uniqueTypes.size());
+                                RecipeStorageCellItem.updateCellStats(stack, patterns);
 
                                 inv.setItemDirect(i, stack);
                                 drive.saveChanges();
@@ -118,16 +112,12 @@ public record RecipeTerminalSavePacket(String groupName, String modeName, String
                         if (inv != null) for (int i = 0; i < inv.size(); i++) {
                             var stack = inv.getStackInSlot(i);
                             if (stack.getItem() instanceof RecipeStorageCellItem) {
-                                var storedList = stack.get(AttachmentRegistry.STORED_PATTERNS.get());
-                                var patterns = storedList != null ? new ArrayList<>(storedList) : new ArrayList<ItemStack>();
-                                if (patterns.size() < 128) {
+                                if (RecipeStorageCellItem.canAddPattern(stack, encodedPattern)) {
+                                    var storedList = stack.get(STORED_PATTERNS.get());
+                                    var patterns = storedList != null ? new ArrayList<>(storedList) : new ArrayList<ItemStack>();
                                     patterns.add(encodedPattern.copyWithCount(1));
 
-                                    stack.set(AttachmentRegistry.STORED_PATTERNS.get(), List.copyOf(patterns));
-                                    stack.set(AttachmentRegistry.RECIPE_COUNT.get(), patterns.size());
-                                    var uniqueTypes = new HashSet<Item>();
-                                    for (var p : patterns) uniqueTypes.add(p.getItem());
-                                    stack.set(AttachmentRegistry.MACHINE_COUNT.get(), uniqueTypes.size());
+                                    RecipeStorageCellItem.updateCellStats(stack, patterns);
 
                                     inv.setItemDirect(i, stack);
                                     chest.saveChanges();
