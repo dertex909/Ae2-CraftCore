@@ -9,8 +9,8 @@ import appeng.api.storage.cells.StorageCell;
 import appeng.api.stacks.AEItemKey;
 import appeng.api.crafting.IPatternDetails;
 import appeng.api.inventories.InternalInventory;
-import appeng.api.implementations.blockentities.IChestOrDrive;
-import appeng.blockentity.AEBaseInvBlockEntity;
+import appeng.blockentity.storage.DriveBlockEntity;
+import appeng.blockentity.storage.MEChestBlockEntity;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
@@ -144,10 +144,12 @@ public class RecipeStorageCellItem extends Item {
         var list = new ArrayList<ItemStack>();
         if (grid == null) return list;
 
-        for (var host : grid.getMachines(IChestOrDrive.class)) {
-            if (host instanceof AEBaseInvBlockEntity invHost) {
-                collectPatternsFromInventory(invHost.getInternalInventory(), list);
-            }
+        for (var drive : grid.getMachines(DriveBlockEntity.class)) {
+            collectPatternsFromInventory(drive.getInternalInventory(), list);
+        }
+
+        for (var chest : grid.getMachines(MEChestBlockEntity.class)) {
+            collectPatternsFromInventory(chest.getInternalInventory(), list);
         }
 
         return list;
