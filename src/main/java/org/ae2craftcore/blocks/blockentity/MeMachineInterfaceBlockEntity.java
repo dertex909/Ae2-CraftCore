@@ -1,5 +1,8 @@
 package org.ae2craftcore.blocks.blockentity;
 
+import appeng.api.config.LockCraftingMode;
+import appeng.api.config.Settings;
+import appeng.api.config.YesNo;
 import appeng.api.crafting.IPatternDetails;
 import appeng.api.networking.GridFlags;
 import appeng.api.networking.IGridNodeListener;
@@ -10,7 +13,12 @@ import appeng.api.stacks.KeyCounter;
 import appeng.api.orientation.BlockOrientation;
 import appeng.api.util.AECableType;
 import appeng.api.inventories.InternalInventory;
+import appeng.api.util.IConfigManager;
+import appeng.api.util.IConfigurableObject;
 import appeng.blockentity.grid.AENetworkedPoweredBlockEntity;
+import appeng.helpers.IPriorityHost;
+import appeng.menu.ISubMenu;
+import appeng.util.ConfigManager;
 import appeng.util.inv.AppEngInternalInventory;
 import appeng.util.inv.InternalInventoryHost;
 import appeng.api.implementations.blockentities.ICraftingMachine;
@@ -43,20 +51,27 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static appeng.api.config.Actionable.MODULATE;
+import static appeng.menu.MenuOpener.returnTo;
 import static net.minecraft.core.component.DataComponents.CUSTOM_DATA;
 import static org.ae2craftcore.network.packet.RecipeTerminalSavePacket.RECIPEMACHINEGROUP;
+import static org.ae2craftcore.registry.ModMenuTypes.ME_MACHINE_INTERFACE;
 
 @RegisterBlockEntity(name = "me_machine_interface", blocks = {MeMachineInterfaceBlock.class})
-public class MeMachineInterfaceBlockEntity extends AENetworkedPoweredBlockEntity implements ICraftingProvider, MenuProvider, InternalInventoryHost {
+public class MeMachineInterfaceBlockEntity extends AENetworkedPoweredBlockEntity implements ICraftingProvider, MenuProvider, InternalInventoryHost, IPriorityHost, IConfigurableObject {
     public static BlockEntityType<MeMachineInterfaceBlockEntity> TYPE;
 
     private final AppEngInternalInventory inv = new AppEngInternalInventory(this, 9);
 
     private Direction machineDirection = Direction.NORTH;
     private String customName = "Recipe";
+    private int priority = 0;
+    private final ConfigManager configManager = new ConfigManager(this::setChanged);
 
     public MeMachineInterfaceBlockEntity(BlockPos pos, BlockState state) {
         super(TYPE, pos, state);
+        this.configManager.registerSetting(Settings.BLOCKING_MODE, YesNo.NO);
+        this.configManager.registerSetting(Settings.LOCK_CRAFTING_MODE, LockCraftingMode.NONE);
+        this.configManager.registerSetting(Settings.PATTERN_ACCESS_TERMINAL, YesNo.YES);
         this.getMainNode().addService(ICraftingProvider.class, this).setFlags(GridFlags.REQUIRE_CHANNEL).setIdlePowerUsage(100);
         this.setInternalMaxPower(1000);
         this.setPowerSides(getGridConnectableSides(getOrientation()));
@@ -127,9 +142,25 @@ public class MeMachineInterfaceBlockEntity extends AENetworkedPoweredBlockEntity
         return filtered;
     }
 
+    public boolean isBlocking() {
+        return this.configManager.getSetting(Settings.BLOCKING_MODE) == YesNo.YES;
+    }
+
+    public LockCraftingMode getLockCraftingMode() {
+        return this.configManager.getSetting(Settings.LOCK_CRAFTING_MODE);
+    }
+
     @Override
     public boolean pushPattern(IPatternDetails patternDetails, KeyCounter[] inputHolder) {
         if (this.level == null || this.level.isClientSide) return false;
+
+        var lockMode = getLockCraftingMode();
+        if (lockMode != LockCraftingMode.NONE) {
+            boolean hasSignal = this.level.hasNeighborSignal(this.worldPosition);
+            if (lockMode == LockCraftingMode.LOCK_WHILE_HIGH && hasSignal) return false;
+            if (lockMode == LockCraftingMode.LOCK_WHILE_LOW && !hasSignal) return false;
+            if (lockMode == LockCraftingMode.LOCK_UNTIL_PULSE && !hasSignal) return false;
+        }
 
         for (var dir : Direction.values()) {
             var targetPos = this.worldPosition.relative(dir);
@@ -146,6 +177,17 @@ public class MeMachineInterfaceBlockEntity extends AENetworkedPoweredBlockEntity
             var fluidHandler = this.level.getCapability(Capabilities.FluidHandler.BLOCK, targetPos, side);
 
             if (itemHandler == null && fluidHandler == null) continue;
+
+            if (this.isBlocking() && itemHandler != null) {
+                boolean hasItems = false;
+                for (int i = 0; i < itemHandler.getSlots(); i++) {
+                    if (!itemHandler.getStackInSlot(i).isEmpty()) {
+                        hasItems = true;
+                        break;
+                    }
+                }
+                if (hasItems) continue;
+            }
 
             ItemStack[] simulatedSlots = null;
             if (itemHandler != null) {
@@ -320,7 +362,7 @@ public class MeMachineInterfaceBlockEntity extends AENetworkedPoweredBlockEntity
 
     @Override
     public AbstractContainerMenu createMenu(int containerId, @NotNull Inventory playerInventory, @NotNull Player player) {
-        return new MeMachineInterfaceMenu(containerId, this);
+        return new MeMachineInterfaceMenu(containerId, playerInventory, this);
     }
 
     @Override
@@ -354,12 +396,15 @@ public class MeMachineInterfaceBlockEntity extends AENetworkedPoweredBlockEntity
 
     private static final String MACHINEDIRECTION = "MD";
     private static final String CUSTOMNAME = "CN";
+    private static final String PRIORITY_KEY = "priority";
 
     @Override
     public void saveAdditional(@NotNull CompoundTag tag, HolderLookup.@NotNull Provider registries) {
         super.saveAdditional(tag, registries);
         tag.putInt(MACHINEDIRECTION, this.machineDirection.ordinal());
         tag.putString(CUSTOMNAME, this.customName);
+        tag.putInt(PRIORITY_KEY, this.priority);
+        this.configManager.writeToNBT(tag, registries);
     }
 
     @Override
@@ -367,6 +412,34 @@ public class MeMachineInterfaceBlockEntity extends AENetworkedPoweredBlockEntity
         super.loadTag(tag, registries);
         this.machineDirection = Direction.values()[tag.getInt(MACHINEDIRECTION)];
         this.customName = tag.getString(CUSTOMNAME);
+        if (tag.contains(PRIORITY_KEY)) this.priority = tag.getInt(PRIORITY_KEY);
+        this.configManager.readFromNBT(tag, registries);
         this.setPowerSides(getGridConnectableSides(getOrientation()));
+    }
+
+    @Override
+    public int getPriority() {
+        return this.priority;
+    }
+
+    @Override
+    public void setPriority(int newValue) {
+        this.priority = newValue;
+        this.setChanged();
+    }
+
+    @Override
+    public IConfigManager getConfigManager() {
+        return this.configManager;
+    }
+
+    @Override
+    public void returnToMainMenu(Player player, ISubMenu subMenu) {
+        returnTo(ME_MACHINE_INTERFACE.get(), player, subMenu.getLocator());
+    }
+
+    @Override
+    public ItemStack getMainMenuIcon() {
+        return new ItemStack(this.getItemFromBlockEntity());
     }
 }

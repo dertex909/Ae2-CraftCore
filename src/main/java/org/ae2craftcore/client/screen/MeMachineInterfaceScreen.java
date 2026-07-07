@@ -1,28 +1,39 @@
 package org.ae2craftcore.client.screen;
 
+import appeng.api.config.LockCraftingMode;
+import appeng.api.config.Settings;
+import appeng.api.config.YesNo;
+import appeng.client.gui.AEBaseScreen;
+import appeng.client.gui.style.StyleManager;
+import appeng.client.gui.widgets.ServerSettingToggleButton;
+import appeng.client.gui.widgets.SettingToggleButton;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
-import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.ae2craftcore.blocks.menu.MeMachineInterfaceMenu;
 import org.ae2craftcore.network.packet.MeMachineInterfaceSyncPacket;
-import org.jetbrains.annotations.NotNull;
 
-import static org.ae2craftcore.Ae2craftcore.MODID;
+public class MeMachineInterfaceScreen extends AEBaseScreen<MeMachineInterfaceMenu> {
 
-public class MeMachineInterfaceScreen extends AbstractContainerScreen<MeMachineInterfaceMenu> {
-
-    private static final ResourceLocation BACKGROUND_TEXTURE = ResourceLocation.fromNamespaceAndPath(MODID, "textures/gui/container/me_machine_interface.png");
+    private final SettingToggleButton<YesNo> blockingModeButton;
+    private final SettingToggleButton<LockCraftingMode> lockCraftingModeButton;
 
     private EditBox nameInput;
 
     public MeMachineInterfaceScreen(MeMachineInterfaceMenu menu, Inventory playerInventory, Component title) {
-        super(menu, playerInventory, title);
+        super(menu, playerInventory, title, StyleManager.loadStyleDoc("/screens/me_machine_interface.json"));
         this.imageWidth = 176;
         this.imageHeight = 60;
+
+        this.blockingModeButton = new ServerSettingToggleButton<>(Settings.BLOCKING_MODE, YesNo.NO);
+        this.addToLeftToolbar(this.blockingModeButton);
+
+        this.lockCraftingModeButton = new ServerSettingToggleButton<>(Settings.LOCK_CRAFTING_MODE, LockCraftingMode.NONE);
+        this.addToLeftToolbar(this.lockCraftingModeButton);
+
+        widgets.addOpenPriorityButton();
     }
 
     @Override
@@ -55,18 +66,14 @@ public class MeMachineInterfaceScreen extends AbstractContainerScreen<MeMachineI
     }
 
     @Override
-    public void render(@NotNull GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-        super.render(guiGraphics, mouseX, mouseY, partialTick);
-        this.renderTooltip(guiGraphics, mouseX, mouseY);
+    protected void updateBeforeRender() {
+        super.updateBeforeRender();
+        this.blockingModeButton.set(this.menu.getBlockingMode());
+        this.lockCraftingModeButton.set(this.menu.getLockCraftingMode());
     }
 
     @Override
-    protected void renderLabels(@NotNull GuiGraphics guiGraphics, int mouseX, int mouseY) {
+    public void drawFG(GuiGraphics guiGraphics, int offsetX, int offsetY, int mouseX, int mouseY) {
         guiGraphics.drawString(this.font, this.title, this.titleLabelX, 10, 0xFF3F3D52, false);
-    }
-
-    @Override
-    protected void renderBg(@NotNull GuiGraphics guiGraphics, float partialTick, int mouseX, int mouseY) {
-        guiGraphics.blit(BACKGROUND_TEXTURE, this.leftPos, this.topPos, 0, 0, this.imageWidth, this.imageHeight, this.imageWidth, this.imageHeight);
     }
 }

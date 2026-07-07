@@ -1,0 +1,19 @@
+{
+  "includes": [
+    "common/common.json"
+  ],
+  "background": {
+    "texture": "ae2craftcore:textures/gui/container/me_machine_interface.png",
+    "textureWidth": 176,
+    "textureHeight": 60,
+    "srcRect": [0, 0, 176, 60]
+  },
+  "widgets": {
+    "openPriority": {
+      "left": 152,
+      "top": -5,
+      "width": 20,
+      "height": 20
+    }
+  }
+}
