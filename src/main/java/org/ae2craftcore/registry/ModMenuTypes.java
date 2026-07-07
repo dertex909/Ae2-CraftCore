@@ -1,8 +1,6 @@
 package org.ae2craftcore.registry;
 
-import appeng.menu.implementations.MenuTypeBuilder;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.inventory.MenuType;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.common.extensions.IMenuTypeExtension;
@@ -13,6 +11,9 @@ import org.ae2craftcore.blocks.blockentity.MeMachineInterfaceBlockEntity;
 import org.ae2craftcore.blocks.menu.*;
 import org.ae2craftcore.parts.RecipeTerminalPart;
 
+import static appeng.menu.implementations.MenuTypeBuilder.create;
+import static net.minecraft.resources.ResourceLocation.fromNamespaceAndPath;
+
 public class ModMenuTypes {
 
     public static final DeferredRegister<MenuType<?>> MENU_TYPES = DeferredRegister.create(BuiltInRegistries.MENU, Ae2craftcore.MODID);
@@ -21,11 +22,12 @@ public class ModMenuTypes {
             "logic_assembler", () -> IMenuTypeExtension.create((containerId, inv, buf) -> new LogicAssemblerMenu(containerId, inv)));
 
     public static final DeferredHolder<MenuType<?>, MenuType<MeMachineInterfaceMenu>> ME_MACHINE_INTERFACE = MENU_TYPES.register(
-            "me_machine_interface", () -> MenuTypeBuilder.create(MeMachineInterfaceMenu::new, MeMachineInterfaceBlockEntity.class)
-                    .buildUnregistered(ResourceLocation.fromNamespaceAndPath(Ae2craftcore.MODID, "me_machine_interface")));
+            "me_machine_interface", () -> create(MeMachineInterfaceMenu::new, MeMachineInterfaceBlockEntity.class)
+                    .withMenuTitle(MeMachineInterfaceBlockEntity::getDisplayName)
+                    .buildUnregistered(fromNamespaceAndPath(Ae2craftcore.MODID, "me_machine_interface")));
 
     public static final DeferredHolder<MenuType<?>, MenuType<RecipeTerminalMenu>> RECIPE_TERMINAL = MENU_TYPES.register(
-            "recipe_terminal", () -> MenuTypeBuilder.create(RecipeTerminalMenu::new, RecipeTerminalPart.class).buildUnregistered(ResourceLocation.fromNamespaceAndPath(Ae2craftcore.MODID, "recipe_terminal")));
+            "recipe_terminal", () -> create(RecipeTerminalMenu::new, RecipeTerminalPart.class).buildUnregistered(fromNamespaceAndPath(Ae2craftcore.MODID, "recipe_terminal")));
 
     public static void register(IEventBus bus) {
         MENU_TYPES.register(bus);
