@@ -24,6 +24,8 @@ public class MeMachineInterfaceMenu extends AEBaseMenu {
     public LockCraftingMode lockCraftingMode = LockCraftingMode.NONE;
     @GuiSync(3)
     public YesNo showInAccessTerminal = YesNo.YES;
+    @GuiSync(4)
+    public LockCraftingMode craftingLockedReason = LockCraftingMode.NONE;
 
     public MeMachineInterfaceMenu(int containerId, Inventory playerInventory, MeMachineInterfaceBlockEntity blockEntity) {
         super(ME_MACHINE_INTERFACE.get(), containerId, playerInventory, blockEntity);
@@ -47,6 +49,10 @@ public class MeMachineInterfaceMenu extends AEBaseMenu {
         return this.lockCraftingMode;
     }
 
+    public LockCraftingMode getCraftingLockedReason() {
+        return this.craftingLockedReason;
+    }
+
     @Override
     public @NotNull ItemStack quickMoveStack(@NotNull Player player, int index) {
         return ItemStack.EMPTY;
@@ -66,6 +72,7 @@ public class MeMachineInterfaceMenu extends AEBaseMenu {
                 blockingMode = host.getConfigManager().getSetting(Settings.BLOCKING_MODE);
                 lockCraftingMode = host.getConfigManager().getSetting(Settings.LOCK_CRAFTING_MODE);
                 showInAccessTerminal = host.getConfigManager().getSetting(Settings.PATTERN_ACCESS_TERMINAL);
+                craftingLockedReason = host.getCraftingLockedReason();
             }
         }
         super.broadcastChanges();

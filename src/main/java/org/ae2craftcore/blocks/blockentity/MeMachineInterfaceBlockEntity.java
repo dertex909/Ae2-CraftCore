@@ -150,17 +150,23 @@ public class MeMachineInterfaceBlockEntity extends AENetworkedPoweredBlockEntity
         return this.configManager.getSetting(Settings.LOCK_CRAFTING_MODE);
     }
 
+    public LockCraftingMode getCraftingLockedReason() {
+        if (this.level == null) return LockCraftingMode.NONE;
+        var lockMode = getLockCraftingMode();
+        if (lockMode != LockCraftingMode.NONE) {
+            boolean hasSignal = this.level.hasNeighborSignal(this.worldPosition);
+            if (lockMode == LockCraftingMode.LOCK_WHILE_HIGH && hasSignal) return LockCraftingMode.LOCK_WHILE_HIGH;
+            if (lockMode == LockCraftingMode.LOCK_WHILE_LOW && !hasSignal) return LockCraftingMode.LOCK_WHILE_LOW;
+            if (lockMode == LockCraftingMode.LOCK_UNTIL_PULSE && !hasSignal) return LockCraftingMode.LOCK_UNTIL_PULSE;
+        }
+        return LockCraftingMode.NONE;
+    }
+
     @Override
     public boolean pushPattern(IPatternDetails patternDetails, KeyCounter[] inputHolder) {
         if (this.level == null || this.level.isClientSide) return false;
 
-        var lockMode = getLockCraftingMode();
-        if (lockMode != LockCraftingMode.NONE) {
-            boolean hasSignal = this.level.hasNeighborSignal(this.worldPosition);
-            if (lockMode == LockCraftingMode.LOCK_WHILE_HIGH && hasSignal) return false;
-            if (lockMode == LockCraftingMode.LOCK_WHILE_LOW && !hasSignal) return false;
-            if (lockMode == LockCraftingMode.LOCK_UNTIL_PULSE && !hasSignal) return false;
-        }
+        if (getCraftingLockedReason() != LockCraftingMode.NONE) return false;
 
         for (var dir : Direction.values()) {
             var targetPos = this.worldPosition.relative(dir);
