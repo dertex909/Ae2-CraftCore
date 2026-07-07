@@ -4,13 +4,19 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.ae2craftcore.blocks.menu.MeMachineInterfaceMenu;
 import org.ae2craftcore.network.packet.MeMachineInterfaceSyncPacket;
 import org.jetbrains.annotations.NotNull;
 
+import static org.ae2craftcore.Ae2craftcore.MODID;
+
 public class MeMachineInterfaceScreen extends AbstractContainerScreen<MeMachineInterfaceMenu> {
+
+    private static final ResourceLocation BACKGROUND_TEXTURE = ResourceLocation.fromNamespaceAndPath(MODID, "textures/gui/container/me_machine_interface.png");
+
     private EditBox nameInput;
 
     public MeMachineInterfaceScreen(MeMachineInterfaceMenu menu, Inventory playerInventory, Component title) {
@@ -28,7 +34,9 @@ public class MeMachineInterfaceScreen extends AbstractContainerScreen<MeMachineI
         int y = this.topPos;
 
         String currentName = this.menu.getBlockEntity() != null ? this.menu.getBlockEntity().getInterfaceName() : "Recipe";
-        this.nameInput = new EditBox(this.font, x + 15, y + 22, 146, 20, Component.literal("Name"));
+        this.nameInput = new EditBox(this.font, x + 12, y + 38, 153, 12, Component.literal("Name"));
+        this.nameInput.setBordered(false);
+        this.nameInput.setTextColor(0xE0E0E0);
         this.nameInput.setValue(currentName);
         this.nameInput.setMaxLength(32);
         this.nameInput.setResponder(this::sendSyncPacket);
@@ -54,18 +62,11 @@ public class MeMachineInterfaceScreen extends AbstractContainerScreen<MeMachineI
 
     @Override
     protected void renderLabels(@NotNull GuiGraphics guiGraphics, int mouseX, int mouseY) {
-        guiGraphics.drawString(this.font, this.title, this.titleLabelX, 6, 0xDDDDDD, false);
+        guiGraphics.drawString(this.font, this.title, this.titleLabelX, 10, 0xFF3F3D52, false);
     }
 
     @Override
     protected void renderBg(@NotNull GuiGraphics guiGraphics, float partialTick, int mouseX, int mouseY) {
-        int x = this.leftPos;
-        int y = this.topPos;
-
-        guiGraphics.fill(x, y, x + this.imageWidth, y + this.imageHeight, 0xFF14171A);
-        guiGraphics.fill(x, y, x + this.imageWidth, y + 1, 0xFF444D56);
-        guiGraphics.fill(x, y, x + 1, y + this.imageHeight, 0xFF444D56);
-        guiGraphics.fill(x + this.imageWidth - 1, y, x + this.imageWidth, y + this.imageHeight, 0xFF444D56);
-        guiGraphics.fill(x, y + this.imageHeight - 1, x + this.imageWidth, y + this.imageHeight, 0xFF444D56);
+        guiGraphics.blit(BACKGROUND_TEXTURE, this.leftPos, this.topPos, 0, 0, this.imageWidth, this.imageHeight, this.imageWidth, this.imageHeight);
     }
 }

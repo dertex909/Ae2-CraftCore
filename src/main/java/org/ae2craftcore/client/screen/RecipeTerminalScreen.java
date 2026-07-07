@@ -26,7 +26,6 @@ import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.item.crafting.SingleRecipeInput;
 import net.minecraft.world.item.crafting.StonecutterRecipe;
 import net.neoforged.neoforge.network.PacketDistributor;
-import org.ae2craftcore.Ae2craftcore;
 import org.ae2craftcore.blocks.menu.RecipeTerminalMenu;
 import org.ae2craftcore.mixin.AbstractContainerScreenAccessor;
 import org.ae2craftcore.network.packet.*;
@@ -40,6 +39,7 @@ import java.util.List;
 
 import static appeng.client.gui.me.common.StackSizeRenderer.renderSizeLabel;
 import static java.util.Locale.ROOT;
+import static org.ae2craftcore.Ae2craftcore.MODID;
 import static org.ae2craftcore.network.packet.RecipeTerminalSavePacket.RECIPEMACHINEGROUP;
 
 public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
@@ -111,8 +111,8 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
             EncodingMode.STONECUTTING
     };
 
-    private static final ResourceLocation BACKGROUND_TEXTURE = ResourceLocation.fromNamespaceAndPath(Ae2craftcore.MODID, "textures/gui/container/recipe_terminal.png");
-    private static final ResourceLocation MACHINE_ROW_TEXTURE = ResourceLocation.fromNamespaceAndPath(Ae2craftcore.MODID, "textures/gui/container/machine_row.png");
+    private static final ResourceLocation BACKGROUND_TEXTURE = ResourceLocation.fromNamespaceAndPath(MODID, "textures/gui/container/recipe_terminal.png");
+    private static final ResourceLocation MACHINE_ROW_TEXTURE = ResourceLocation.fromNamespaceAndPath(MODID, "textures/gui/container/machine_row.png");
 
     private static final Blitter CRAFTING_BG = Blitter.texture("guis/pattern_modes.png").src(0, 0, 124, 66);
     private static final Blitter PROCESSING_BG = Blitter.texture("guis/pattern_modes.png").src(0, 70, 124, 66);
