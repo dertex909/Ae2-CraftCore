@@ -1,5 +1,6 @@
 package org.ae2craftcore.blocks.blockentity;
 
+import appeng.api.config.Actionable;
 import appeng.api.config.LockCraftingMode;
 import appeng.api.config.Settings;
 import appeng.api.config.YesNo;
@@ -8,7 +9,7 @@ import appeng.api.networking.GridFlags;
 import appeng.api.networking.IGridNodeListener;
 import appeng.api.networking.crafting.ICraftingProvider;
 import appeng.api.stacks.AEItemKey;
-import appeng.api.stacks.AEFluidKey;
+import appeng.api.stacks.AEKey;
 import appeng.api.stacks.KeyCounter;
 import appeng.api.orientation.BlockOrientation;
 import appeng.api.util.AECableType;
@@ -37,10 +38,6 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.capabilities.Capabilities;
-import net.neoforged.neoforge.items.ItemHandlerHelper;
-import net.neoforged.neoforge.items.IItemHandler;
-import net.neoforged.neoforge.fluids.FluidStack;
-import net.neoforged.neoforge.fluids.capability.IFluidHandler;
 import org.ae2craftcore.blocks.block.MeMachineInterfaceBlock;
 import org.ae2craftcore.blocks.menu.MeMachineInterfaceMenu;
 import org.ae2craftcore.registry.annotations.RegisterBlockEntity;
@@ -48,9 +45,10 @@ import org.ae2craftcore.services.IRecipeCacheService;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 
-import static appeng.api.config.Actionable.MODULATE;
+import static appeng.helpers.patternprovider.PatternProviderTarget.get;
 import static appeng.menu.MenuOpener.returnTo;
 import static net.minecraft.core.component.DataComponents.CUSTOM_DATA;
 import static org.ae2craftcore.network.packet.RecipeTerminalSavePacket.RECIPEMACHINEGROUP;
@@ -168,6 +166,8 @@ public class MeMachineInterfaceBlockEntity extends AENetworkedPoweredBlockEntity
 
         if (getCraftingLockedReason() != LockCraftingMode.NONE) return false;
 
+        var source = new MachineSource(this);
+
         for (var dir : Direction.values()) {
             var targetPos = this.worldPosition.relative(dir);
             if (!this.level.isLoaded(targetPos)) continue;
@@ -179,122 +179,38 @@ public class MeMachineInterfaceBlockEntity extends AENetworkedPoweredBlockEntity
                 continue;
             }
 
-            var itemHandler = this.level.getCapability(Capabilities.ItemHandler.BLOCK, targetPos, side);
-            var fluidHandler = this.level.getCapability(Capabilities.FluidHandler.BLOCK, targetPos, side);
+            var target = get(this.level, targetPos, this.level.getBlockEntity(targetPos), side, source);
+            if (target == null) continue;
 
-            if (itemHandler == null && fluidHandler == null) continue;
+            if (this.isBlocking()) {
+                var patternInputs = new HashSet<AEKey>();
+                for (var i : patternDetails.getInputs()) {
+                    for (var possible : i.getPossibleInputs()) patternInputs.add(possible.what().dropSecondary());
+                }
+                if (target.containsPatternInput(patternInputs)) continue;
+            }
 
-            if (this.isBlocking() && itemHandler != null) {
-                boolean hasItems = false;
-                for (int i = 0; i < itemHandler.getSlots(); i++) {
-                    if (!itemHandler.getStackInSlot(i).isEmpty()) {
-                        hasItems = true;
+            boolean canInsertAll = true;
+            for (var inputList : inputHolder) {
+                for (var i : inputList) {
+                    long inserted = target.insert(i.getKey(), i.getLongValue(), Actionable.SIMULATE);
+                    if (inserted < i.getLongValue()) {
+                        canInsertAll = false;
                         break;
                     }
                 }
-                if (hasItems) continue;
+                if (!canInsertAll) break;
             }
 
-            ItemStack[] simulatedSlots = null;
-            if (itemHandler != null) {
-                simulatedSlots = new ItemStack[itemHandler.getSlots()];
-                for (int i = 0; i < itemHandler.getSlots(); i++) {
-                    simulatedSlots[i] = itemHandler.getStackInSlot(i).copy();
-                }
-            }
-
-            var simulatedFluids = new ArrayList<FluidStack>();
-            boolean canPush = true;
-
-            for (var counter : inputHolder) {
-                for (var key : counter.keySet()) {
-                    long amount = counter.get(key);
-                    if (key instanceof AEItemKey itemKey) {
-                        if (itemHandler == null) {
-                            canPush = false;
-                            break;
-                        }
-                        var stackToInsert = itemKey.toStack((int) amount);
-                        if (!simulateInsertionInArray(simulatedSlots, stackToInsert, itemHandler)) {
-                            canPush = false;
-                            break;
-                        }
-                    } else if (key instanceof AEFluidKey fluidKey) {
-                        if (fluidHandler == null) {
-                            canPush = false;
-                            break;
-                        }
-                        var fluidStack = fluidKey.toStack((int) amount);
-
-                        int alreadySimulated = 0;
-                        for (var f : simulatedFluids) {
-                            if (f.getFluid() == fluidStack.getFluid()) alreadySimulated += f.getAmount();
-                        }
-
-                        var testStack = new FluidStack(fluidStack.getFluid(), fluidStack.getAmount() + alreadySimulated);
-                        int inserted = fluidHandler.fill(testStack, IFluidHandler.FluidAction.SIMULATE);
-                        if (inserted < testStack.getAmount()) {
-                            canPush = false;
-                            break;
-                        }
-                        simulatedFluids.add(fluidStack);
-                    }
-                }
-                if (!canPush) break;
-            }
-
-            if (canPush) {
-                for (var counter : inputHolder) {
-                    for (var key : counter.keySet()) {
-                        long amount = counter.get(key);
-                        if (key instanceof AEItemKey itemKey && itemHandler != null) {
-                            var stack = itemKey.toStack((int) amount);
-                            ItemHandlerHelper.insertItemStacked(itemHandler, stack, false);
-                        } else if (key instanceof AEFluidKey fluidKey && fluidHandler != null) {
-                            var fluidStack = fluidKey.toStack((int) amount);
-                            fluidHandler.fill(fluidStack, IFluidHandler.FluidAction.EXECUTE);
-                        }
-                    }
+            if (canInsertAll) {
+                for (var inputList : inputHolder) {
+                    for (var i : inputList) target.insert(i.getKey(), i.getLongValue(), Actionable.MODULATE);
                 }
                 return true;
             }
         }
 
         return false;
-    }
-
-    private boolean simulateInsertionInArray(ItemStack[] slots, ItemStack stack, IItemHandler handler) {
-        var remaining = stack.copy();
-
-        for (int i = 0; i < slots.length; i++) {
-            var existing = slots[i];
-            if (!existing.isEmpty() && ItemStack.isSameItemSameComponents(existing, remaining) && handler.isItemValid(i, remaining)) {
-                int maxStackSize = Math.min(existing.getMaxStackSize(), handler.getSlotLimit(i));
-                int space = maxStackSize - existing.getCount();
-                if (space > 0) {
-                    int toAdd = Math.min(space, remaining.getCount());
-                    existing.grow(toAdd);
-                    remaining.shrink(toAdd);
-                    if (remaining.isEmpty()) return true;
-                }
-            }
-        }
-
-        for (int i = 0; i < slots.length; i++) {
-            var existing = slots[i];
-            if (existing.isEmpty() && handler.isItemValid(i, remaining)) {
-                int maxStackSize = Math.min(remaining.getMaxStackSize(), handler.getSlotLimit(i));
-                if (remaining.getCount() <= maxStackSize) {
-                    slots[i] = remaining.copy();
-                    return true;
-                } else {
-                    slots[i] = remaining.copyWithCount(maxStackSize);
-                    remaining.shrink(maxStackSize);
-                }
-            }
-        }
-
-        return remaining.isEmpty();
     }
 
     @Override
@@ -320,7 +236,7 @@ public class MeMachineInterfaceBlockEntity extends AENetworkedPoweredBlockEntity
                 var key = AEItemKey.of(stack);
 
                 if (key != null) {
-                    long inserted = storage.insert(key, stack.getCount(), MODULATE, actionSource);
+                    long inserted = storage.insert(key, stack.getCount(), Actionable.MODULATE, actionSource);
 
                     if (inserted >= stack.getCount()) {
                         inv.setItemDirect(slot, ItemStack.EMPTY);
