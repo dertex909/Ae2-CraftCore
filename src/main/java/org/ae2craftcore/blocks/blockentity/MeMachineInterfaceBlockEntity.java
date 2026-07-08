@@ -85,10 +85,12 @@ public class MeMachineInterfaceBlockEntity extends AENetworkedPoweredBlockEntity
         for (var dir : Direction.values()) {
             var targetPos = this.worldPosition.relative(dir);
             if (!this.level.isLoaded(targetPos)) continue;
+            var state = this.level.getBlockState(targetPos);
+            if (state.getBlock() instanceof MeMachineInterfaceBlock) continue;
+
             var handler = this.level.getCapability(Capabilities.ItemHandler.BLOCK, targetPos, dir.getOpposite());
             if (handler != null) {
                 foundDir = dir;
-                var state = this.level.getBlockState(targetPos);
                 foundName = state.getBlock().getName().getString();
                 break;
             }
@@ -172,6 +174,9 @@ public class MeMachineInterfaceBlockEntity extends AENetworkedPoweredBlockEntity
             var targetPos = this.worldPosition.relative(dir);
             if (!this.level.isLoaded(targetPos)) continue;
             var side = dir.getOpposite();
+
+            var adjacentBe = this.level.getBlockEntity(targetPos);
+            if (adjacentBe instanceof MeMachineInterfaceBlockEntity) continue;
 
             var craftingMachine = ICraftingMachine.of(this.level, targetPos, side);
             if (craftingMachine != null && craftingMachine.acceptsPlans()) {

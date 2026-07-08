@@ -1,11 +1,14 @@
 package org.ae2craftcore.blocks.menu;
 
+import appeng.api.implementations.blockentities.ICraftingMachine;
 import appeng.menu.me.common.IClientRepo;
 import appeng.menu.me.items.PatternEncodingTermMenu;
 import appeng.menu.slot.FakeSlot;
 import appeng.parts.encoding.EncodingMode;
 import appeng.api.inventories.InternalInventory;
 import appeng.menu.guisync.GuiSync;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.NonNullList;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
@@ -18,8 +21,11 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.CraftingInput;
 import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.item.crafting.SmithingRecipeInput;
+import net.minecraft.world.level.Level;
+import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.ae2craftcore.Ae2craftcore;
+import org.ae2craftcore.blocks.block.MeMachineInterfaceBlock;
 import org.ae2craftcore.blocks.blockentity.MeMachineInterfaceBlockEntity;
 import org.ae2craftcore.mixin.SlotAccessor;
 import org.ae2craftcore.network.packet.RecipeTerminalSyncPacket;
@@ -31,6 +37,7 @@ import org.jetbrains.annotations.Nullable;
 import java.lang.reflect.Proxy;
 import java.util.*;
 
+import static net.minecraft.world.item.Items.AIR;
 import static org.ae2craftcore.registry.ModMenuTypes.RECIPE_TERMINAL;
 
 public class RecipeTerminalMenu extends PatternEncodingTermMenu {
@@ -185,9 +192,22 @@ public class RecipeTerminalMenu extends PatternEncodingTermMenu {
                     var icon = ItemStack.EMPTY;
                     if (level != null) {
                         var targetPos = machine.getBlockPos().relative(machine.getMachineDirection());
-                        if (level.isLoaded(targetPos)) {
+                        if (isValidMachine(level, targetPos, machine.getMachineDirection().getOpposite())) {
                             var state = level.getBlockState(targetPos);
-                            if (!state.isAir()) icon = new ItemStack(state.getBlock().asItem());
+                            var item = state.getBlock().asItem();
+                            if (item != AIR) icon = new ItemStack(item);
+                        }
+                        if (icon.isEmpty()) for (var dir : Direction.values()) {
+                            if (dir == machine.getMachineDirection()) continue;
+                            var p = machine.getBlockPos().relative(dir);
+                            if (isValidMachine(level, p, dir.getOpposite())) {
+                                var state = level.getBlockState(p);
+                                var item = state.getBlock().asItem();
+                                if (item != AIR) {
+                                    icon = new ItemStack(item);
+                                    break;
+                                }
+                            }
                         }
                     }
                     groups.add(new RecipeTerminalSyncPacket.MachineGroupInfo(name, icon));
@@ -607,5 +627,18 @@ public class RecipeTerminalMenu extends PatternEncodingTermMenu {
         var field = PatternEncodingTermMenu.class.getDeclaredField(fieldName);
         field.setAccessible(true);
         field.set(this, value);
+    }
+
+    private boolean isValidMachine(Level l, BlockPos pos, Direction side) {
+        if (l == null || !l.isLoaded(pos)) return false;
+        var state = l.getBlockState(pos);
+        if (state.isAir() || state.getBlock() instanceof MeMachineInterfaceBlock) return false;
+        if (ICraftingMachine.of(l, pos, side) != null) return true;
+        var be = l.getBlockEntity(pos);
+        if (be != null) {
+            if (l.getCapability(Capabilities.ItemHandler.BLOCK, pos, state, be, side) != null) return true;
+            return l.getCapability(Capabilities.FluidHandler.BLOCK, pos, state, be, side) != null;
+        }
+        return false;
     }
 }
