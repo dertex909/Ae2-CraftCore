@@ -43,6 +43,9 @@ import org.ae2craftcore.blocks.menu.MeMachineInterfaceMenu;
 import org.ae2craftcore.registry.annotations.RegisterBlockEntity;
 import org.ae2craftcore.services.IRecipeCacheService;
 import org.jetbrains.annotations.NotNull;
+import appeng.helpers.patternprovider.PatternProviderLogicHost;
+import appeng.helpers.InterfaceLogicHost;
+import appeng.api.parts.IPartHost;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -76,7 +79,7 @@ public class MeMachineInterfaceBlockEntity extends AENetworkedPoweredBlockEntity
     }
 
     public void updateAdjacentMachine() {
-        if (this.level == null || this.level.isClientSide) return;
+        if (this.level == null || this.isClientSide()) return;
 
         if (!this.customName.equals("Recipe")) return;
         Direction foundDir = null;
@@ -84,26 +87,18 @@ public class MeMachineInterfaceBlockEntity extends AENetworkedPoweredBlockEntity
 
         for (var dir : Direction.values()) {
             var targetPos = this.worldPosition.relative(dir);
-            if (!this.level.isLoaded(targetPos)) continue;
-            var state = this.level.getBlockState(targetPos);
-            if (state.getBlock() instanceof MeMachineInterfaceBlock) continue;
-
-            var handler = this.level.getCapability(Capabilities.ItemHandler.BLOCK, targetPos, dir.getOpposite());
-            if (handler != null) {
+            if (isValidMachine(targetPos, dir.getOpposite())) {
                 foundDir = dir;
-                foundName = state.getBlock().getName().getString();
+                foundName = this.level.getBlockState(targetPos).getBlock().getName().getString();
                 break;
             }
         }
 
-        var nextDir = foundDir != null ? foundDir : Direction.NORTH;
         if (foundDir != null) {
-            this.machineDirection = nextDir;
+            this.machineDirection = foundDir;
             this.customName = foundName;
 
-            this.setChanged();
-            var state = this.getBlockState();
-            this.level.sendBlockUpdated(this.worldPosition, state, state, 3);
+            this.syncBlock();
 
             this.onGridConnectableSidesChanged();
             this.setPowerSides(getGridConnectableSides(getOrientation()));
@@ -112,7 +107,7 @@ public class MeMachineInterfaceBlockEntity extends AENetworkedPoweredBlockEntity
 
     @Override
     public List<IPatternDetails> getAvailablePatterns() {
-        if (this.level == null || this.level.isClientSide) return List.of();
+        if (this.level == null || this.isClientSide()) return List.of();
         this.updateAdjacentMachine();
         var grid = this.getMainNode().getGrid();
         if (grid == null) return List.of();
@@ -164,7 +159,7 @@ public class MeMachineInterfaceBlockEntity extends AENetworkedPoweredBlockEntity
 
     @Override
     public boolean pushPattern(IPatternDetails patternDetails, KeyCounter[] inputHolder) {
-        if (this.level == null || this.level.isClientSide) return false;
+        if (this.level == null || this.isClientSide()) return false;
 
         if (getCraftingLockedReason() != LockCraftingMode.NONE) return false;
 
@@ -172,11 +167,9 @@ public class MeMachineInterfaceBlockEntity extends AENetworkedPoweredBlockEntity
 
         for (var dir : Direction.values()) {
             var targetPos = this.worldPosition.relative(dir);
-            if (!this.level.isLoaded(targetPos)) continue;
             var side = dir.getOpposite();
 
-            var adjacentBe = this.level.getBlockEntity(targetPos);
-            if (adjacentBe instanceof MeMachineInterfaceBlockEntity) continue;
+            if (!isValidMachine(targetPos, side)) continue;
 
             var craftingMachine = ICraftingMachine.of(this.level, targetPos, side);
             if (craftingMachine != null && craftingMachine.acceptsPlans()) {
@@ -218,6 +211,30 @@ public class MeMachineInterfaceBlockEntity extends AENetworkedPoweredBlockEntity
         return false;
     }
 
+    private boolean isValidMachine(BlockPos pos, Direction side) {
+        if (this.level == null || this.isClientSide() || !this.level.isLoaded(pos)) return false;
+        var state = this.level.getBlockState(pos);
+        if (state.isAir() || state.getBlock() instanceof MeMachineInterfaceBlock) return false;
+
+        var be = this.level.getBlockEntity(pos);
+        if (be != null) {
+            if (be instanceof MeMachineInterfaceBlockEntity || be instanceof PatternProviderLogicHost
+                    || be instanceof InterfaceLogicHost) return false;
+            if (be instanceof IPartHost partHost) {
+                var part = partHost.getPart(side);
+                if (part instanceof PatternProviderLogicHost || part instanceof InterfaceLogicHost) return false;
+            }
+        }
+
+        if (ICraftingMachine.of(this.level, pos, side) != null) return true;
+
+        if (be != null) {
+            if (this.level.getCapability(Capabilities.ItemHandler.BLOCK, pos, state, be, side) != null) return true;
+            return this.level.getCapability(Capabilities.FluidHandler.BLOCK, pos, state, be, side) != null;
+        }
+        return false;
+    }
+
     @Override
     public boolean isClientSide() {
         return this.level == null || this.level.isClientSide();
@@ -230,7 +247,7 @@ public class MeMachineInterfaceBlockEntity extends AENetworkedPoweredBlockEntity
 
     @Override
     public void onChangeInventory(AppEngInternalInventory inv, int slot) {
-        if (this.level == null || this.level.isClientSide) return;
+        if (this.level == null || this.isClientSide()) return;
 
         var stack = inv.getStackInSlot(slot);
         if (!stack.isEmpty()) {
@@ -277,14 +294,18 @@ public class MeMachineInterfaceBlockEntity extends AENetworkedPoweredBlockEntity
         return this.machineDirection;
     }
 
+    private void syncBlock() {
+        this.setChanged();
+        if (this.level != null) {
+            var state = this.level.getBlockState(this.worldPosition);
+            this.level.sendBlockUpdated(this.worldPosition, state, state, 3);
+        }
+    }
+
     public void setCustomName(String name) {
         this.customName = name;
-        this.setChanged();
-        if (this.level != null && !this.level.isClientSide) {
-            var state = this.getBlockState();
-            this.level.sendBlockUpdated(this.worldPosition, state, state, 3);
-            ICraftingProvider.requestUpdate(this.getMainNode());
-        }
+        this.syncBlock();
+        if (!this.isClientSide()) ICraftingProvider.requestUpdate(this.getMainNode());
     }
 
     @Override
@@ -302,7 +323,7 @@ public class MeMachineInterfaceBlockEntity extends AENetworkedPoweredBlockEntity
     @Override
     public void onMainNodeStateChanged(IGridNodeListener.State reason) {
         super.onMainNodeStateChanged(reason);
-        if (this.level != null && !this.level.isClientSide) ICraftingProvider.requestUpdate(this.getMainNode());
+        if (!this.isClientSide()) ICraftingProvider.requestUpdate(this.getMainNode());
     }
 
     @Override

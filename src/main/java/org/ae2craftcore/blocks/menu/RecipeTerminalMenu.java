@@ -33,6 +33,9 @@ import org.ae2craftcore.parts.RecipeTerminalPart;
 import org.ae2craftcore.items.RecipeStorageCellItem;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import appeng.helpers.patternprovider.PatternProviderLogicHost;
+import appeng.helpers.InterfaceLogicHost;
+import appeng.api.parts.IPartHost;
 
 import java.lang.reflect.Proxy;
 import java.util.*;
@@ -172,6 +175,15 @@ public class RecipeTerminalMenu extends PatternEncodingTermMenu {
         }
     }
 
+    private @NotNull ItemStack getMachineIcon(Level level, BlockPos pos, Direction side) {
+        if (isValidMachine(level, pos, side)) {
+            var state = level.getBlockState(pos);
+            var item = state.getBlock().asItem();
+            if (item != AIR) return new ItemStack(item);
+        }
+        return ItemStack.EMPTY;
+    }
+
     public void syncRecipesToClient() {
         if (this.part == null) return;
         var node = this.part.getGridNode();
@@ -192,22 +204,12 @@ public class RecipeTerminalMenu extends PatternEncodingTermMenu {
                     var icon = ItemStack.EMPTY;
                     if (level != null) {
                         var targetPos = machine.getBlockPos().relative(machine.getMachineDirection());
-                        if (isValidMachine(level, targetPos, machine.getMachineDirection().getOpposite())) {
-                            var state = level.getBlockState(targetPos);
-                            var item = state.getBlock().asItem();
-                            if (item != AIR) icon = new ItemStack(item);
-                        }
+                        icon = getMachineIcon(level, targetPos, machine.getMachineDirection().getOpposite());
+
                         if (icon.isEmpty()) for (var dir : Direction.values()) {
                             if (dir == machine.getMachineDirection()) continue;
-                            var p = machine.getBlockPos().relative(dir);
-                            if (isValidMachine(level, p, dir.getOpposite())) {
-                                var state = level.getBlockState(p);
-                                var item = state.getBlock().asItem();
-                                if (item != AIR) {
-                                    icon = new ItemStack(item);
-                                    break;
-                                }
-                            }
+                            icon = getMachineIcon(level, machine.getBlockPos().relative(dir), dir.getOpposite());
+                            if (!icon.isEmpty()) break;
                         }
                     }
                     groups.add(new RecipeTerminalSyncPacket.MachineGroupInfo(name, icon));
@@ -271,23 +273,23 @@ public class RecipeTerminalMenu extends PatternEncodingTermMenu {
         this.updateProcessingSlots();
     }
 
+    private void repositSlot(Slot slot, int row) {
+        int effectiveRow = row - this.processingScrollOffset;
+        ((SlotAccessor) slot).ae2craftcore$setY(ENCODING_SLOT_Y + 7 + effectiveRow * 18);
+    }
+
     public void updateProcessingSlots() {
         int row = 0;
         int col = 0;
         for (var slot : this.processingInputSlots) {
-            int effectiveRow = row - this.processingScrollOffset;
-            ((SlotAccessor) slot).ae2craftcore$setY(ENCODING_SLOT_Y + 7 + effectiveRow * 18);
+            repositSlot(slot, row);
             col++;
             if (col == 3) {
                 col = 0;
                 row++;
             }
         }
-        for (int i = 0; i < this.processingOutputSlots.size(); i++) {
-            var slot = this.processingOutputSlots.get(i);
-            int effectiveRow = i - this.processingScrollOffset;
-            ((SlotAccessor) slot).ae2craftcore$setY(ENCODING_SLOT_Y + 7 + effectiveRow * 18);
-        }
+        for (int i = 0; i < this.processingOutputSlots.size(); i++) repositSlot(this.processingOutputSlots.get(i), i);
     }
 
     public String getSelectedGroup() {
@@ -453,12 +455,12 @@ public class RecipeTerminalMenu extends PatternEncodingTermMenu {
 
         @Override
         public int getMaxStackSize() {
-            return this.mode == EncodingMode.PROCESSING ? 999999 : 1;
+            return 1;
         }
 
         @Override
         public int getMaxStackSize(@NotNull ItemStack stack) {
-            return this.mode == EncodingMode.PROCESSING ? 999999 : 1;
+            return 1;
         }
 
         @Override
@@ -471,8 +473,8 @@ public class RecipeTerminalMenu extends PatternEncodingTermMenu {
         this.sendClientAction(SETSTONECUTTINGRECIPEID, recipeId);
     }
 
-    public class RecipeTerminalProcessingInputSlot extends FakeSlot {
-        public RecipeTerminalProcessingInputSlot(InternalInventory inv, int index, int x, int y) {
+    public static class RecipeTerminalLargeFakeSlot extends FakeSlot {
+        public RecipeTerminalLargeFakeSlot(InternalInventory inv, int index, int x, int y) {
             super(inv, index);
             ((SlotAccessor) this).ae2craftcore$setX(x);
             ((SlotAccessor) this).ae2craftcore$setY(y);
@@ -486,6 +488,12 @@ public class RecipeTerminalMenu extends PatternEncodingTermMenu {
         @Override
         public int getMaxStackSize(@NotNull ItemStack stack) {
             return 999999;
+        }
+    }
+
+    public class RecipeTerminalProcessingInputSlot extends RecipeTerminalLargeFakeSlot {
+        public RecipeTerminalProcessingInputSlot(InternalInventory inv, int index, int x, int y) {
+            super(inv, index, x, y);
         }
 
         @Override
@@ -498,21 +506,9 @@ public class RecipeTerminalMenu extends PatternEncodingTermMenu {
         }
     }
 
-    public class RecipeTerminalProcessingOutputSlot extends FakeSlot {
+    public class RecipeTerminalProcessingOutputSlot extends RecipeTerminalLargeFakeSlot {
         public RecipeTerminalProcessingOutputSlot(InternalInventory inv, int index, int x, int y) {
-            super(inv, index);
-            ((SlotAccessor) this).ae2craftcore$setX(x);
-            ((SlotAccessor) this).ae2craftcore$setY(y);
-        }
-
-        @Override
-        public int getMaxStackSize() {
-            return 999999;
-        }
-
-        @Override
-        public int getMaxStackSize(@NotNull ItemStack stack) {
-            return 999999;
+            super(inv, index, x, y);
         }
 
         @Override
@@ -633,8 +629,17 @@ public class RecipeTerminalMenu extends PatternEncodingTermMenu {
         if (l == null || !l.isLoaded(pos)) return false;
         var state = l.getBlockState(pos);
         if (state.isAir() || state.getBlock() instanceof MeMachineInterfaceBlock) return false;
-        if (ICraftingMachine.of(l, pos, side) != null) return true;
         var be = l.getBlockEntity(pos);
+        if (be != null) {
+            if (be instanceof MeMachineInterfaceBlockEntity || be instanceof PatternProviderLogicHost ||
+                    be instanceof InterfaceLogicHost) return false;
+            if (be instanceof IPartHost partHost) {
+                var part = partHost.getPart(side);
+                if (part instanceof PatternProviderLogicHost || part instanceof InterfaceLogicHost) return false;
+            }
+        }
+
+        if (ICraftingMachine.of(l, pos, side) != null) return true;
         if (be != null) {
             if (l.getCapability(Capabilities.ItemHandler.BLOCK, pos, state, be, side) != null) return true;
             return l.getCapability(Capabilities.FluidHandler.BLOCK, pos, state, be, side) != null;
