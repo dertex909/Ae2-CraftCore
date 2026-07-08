@@ -434,7 +434,7 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
                 guiGraphics.renderFakeItem(group.icon(), bgLeft + 88, rowTop + 3);
             }
 
-            guiGraphics.drawString(this.font, String.valueOf(group.count()), bgLeft + 114, textY, 0x656A7C, false);
+            guiGraphics.drawString(this.font, String.valueOf(group.count()), bgLeft + 114, textY, selected ? 0x27304A : 0x42475A, false);
         }
     }
 
@@ -1102,14 +1102,9 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
 
         for (var group : this.menu.getClientGroups()) {
             if (!group.name().isEmpty()) {
-                map.put(group.name(), 0);
+                map.put(group.name(), group.count());
                 iconMap.put(group.name(), group.icon());
             }
-        }
-
-        for (var pattern : this.menu.getClientRecipes()) {
-            var groupName = this.getPatternGroup(pattern);
-            if (!groupName.isEmpty()) map.put(groupName, map.getOrDefault(groupName, 0) + 1);
         }
 
         boolean hasSearch = this.machineSearchQuery != null && !this.machineSearchQuery.isEmpty();

@@ -64,7 +64,7 @@ public class MeMachineInterfaceBlockEntity extends AENetworkedPoweredBlockEntity
     private final AppEngInternalInventory inv = new AppEngInternalInventory(this, 9);
 
     private Direction machineDirection = Direction.NORTH;
-    private String customName = "Recipe";
+    private String customName = "Unknown recipe";
     private int priority = 0;
     private final ConfigManager configManager = new ConfigManager(this::setChanged);
 
@@ -81,9 +81,9 @@ public class MeMachineInterfaceBlockEntity extends AENetworkedPoweredBlockEntity
     public void updateAdjacentMachine() {
         if (this.level == null || this.isClientSide()) return;
 
-        if (!this.customName.equals("Recipe")) return;
+        if (!this.customName.equals("Unknown recipe")) return;
         Direction foundDir = null;
-        String foundName = "Recipe";
+        String foundName = "Unknown recipe";
 
         for (var dir : Direction.values()) {
             var targetPos = this.worldPosition.relative(dir);
@@ -344,7 +344,7 @@ public class MeMachineInterfaceBlockEntity extends AENetworkedPoweredBlockEntity
 
     private static final String MACHINEDIRECTION = "MD";
     private static final String CUSTOMNAME = "CN";
-    private static final String PRIORITY_KEY = "priority";
+    private static final String PRIORITY_KEY = "PRT";
 
     @Override
     public void saveAdditional(@NotNull CompoundTag tag, HolderLookup.@NotNull Provider registries) {

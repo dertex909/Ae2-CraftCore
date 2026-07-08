@@ -197,22 +197,36 @@ public class RecipeTerminalMenu extends PatternEncodingTermMenu {
 
         try {
             var machines = grid.getMachines(MeMachineInterfaceBlockEntity.class);
-            if (machines != null) for (var machine : machines) {
-                String name = machine.getInterfaceName();
-                if (name != null && !name.isEmpty() && addedNames.add(name.toLowerCase(Locale.ROOT))) {
-                    var level = machine.getLevel();
-                    var icon = ItemStack.EMPTY;
-                    if (level != null) {
-                        var targetPos = machine.getBlockPos().relative(machine.getMachineDirection());
-                        icon = getMachineIcon(level, targetPos, machine.getMachineDirection().getOpposite());
+            if (machines != null) {
+                var groupCounts = new HashMap<String, Integer>();
+                for (var machine : machines) {
+                    String name = machine.getInterfaceName();
+                    if (name != null && !name.isEmpty()) {
+                        String lower = name.toLowerCase(Locale.ROOT);
+                        groupCounts.put(lower, groupCounts.getOrDefault(lower, 0) + 1);
+                    }
+                }
+                for (var machine : machines) {
+                    String name = machine.getInterfaceName();
+                    if (name != null && !name.isEmpty()) {
+                        String lower = name.toLowerCase(Locale.ROOT);
+                        if (addedNames.add(lower)) {
+                            var level = machine.getLevel();
+                            var icon = ItemStack.EMPTY;
+                            if (level != null) {
+                                var targetPos = machine.getBlockPos().relative(machine.getMachineDirection());
+                                icon = getMachineIcon(level, targetPos, machine.getMachineDirection().getOpposite());
 
-                        if (icon.isEmpty()) for (var dir : Direction.values()) {
-                            if (dir == machine.getMachineDirection()) continue;
-                            icon = getMachineIcon(level, machine.getBlockPos().relative(dir), dir.getOpposite());
-                            if (!icon.isEmpty()) break;
+                                if (icon.isEmpty()) for (var dir : Direction.values()) {
+                                    if (dir == machine.getMachineDirection()) continue;
+                                    icon = getMachineIcon(level, machine.getBlockPos().relative(dir), dir.getOpposite());
+                                    if (!icon.isEmpty()) break;
+                                }
+                            }
+                            int count = groupCounts.getOrDefault(lower, 0);
+                            groups.add(new RecipeTerminalSyncPacket.MachineGroupInfo(name, icon, count));
                         }
                     }
-                    groups.add(new RecipeTerminalSyncPacket.MachineGroupInfo(name, icon));
                 }
             }
         } catch (Exception e) {

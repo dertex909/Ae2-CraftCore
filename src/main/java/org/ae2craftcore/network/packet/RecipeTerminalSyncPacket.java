@@ -22,7 +22,7 @@ import java.util.List;
 public record RecipeTerminalSyncPacket(List<ItemStack> patterns, List<MachineGroupInfo> groups)
         implements CustomPacketPayload {
 
-    public record MachineGroupInfo(String name, ItemStack icon) {
+    public record MachineGroupInfo(String name, ItemStack icon, int count) {
     }
 
     public static final Type<RecipeTerminalSyncPacket> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(Ae2craftcore.MODID, "recipe_terminal_sync"));
@@ -35,6 +35,7 @@ public record RecipeTerminalSyncPacket(List<ItemStack> patterns, List<MachineGro
         for (var g : value.groups()) {
             registryBuf.writeUtf(g.name());
             ItemStack.OPTIONAL_STREAM_CODEC.encode(registryBuf, g.icon());
+            registryBuf.writeInt(g.count());
         }
     }, buf -> {
         var registryBuf = (RegistryFriendlyByteBuf) buf;
@@ -46,7 +47,8 @@ public record RecipeTerminalSyncPacket(List<ItemStack> patterns, List<MachineGro
         for (int i = 0; i < groupSize; i++) {
             String name = registryBuf.readUtf();
             var icon = ItemStack.OPTIONAL_STREAM_CODEC.decode(registryBuf);
-            groupsList.add(new MachineGroupInfo(name, icon));
+            int count = registryBuf.readInt();
+            groupsList.add(new MachineGroupInfo(name, icon, count));
         }
         return new RecipeTerminalSyncPacket(list, groupsList);
     });

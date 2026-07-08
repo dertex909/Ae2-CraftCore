@@ -59,7 +59,7 @@ public class MeMachineInterfaceScreen extends AEBaseScreen<MeMachineInterfaceMen
         int x = this.leftPos;
         int y = this.topPos;
 
-        String currentName = this.menu.getBlockEntity() != null ? this.menu.getBlockEntity().getInterfaceName() : "Recipe";
+        String currentName = this.menu.getBlockEntity() != null ? this.menu.getBlockEntity().getInterfaceName() : "Unknown recipe";
         this.nameInput = new EditBox(this.font, x + 12, y + 38, 153, 12, Component.literal("Name"));
         this.nameInput.setBordered(false);
         this.nameInput.setTextColor(0xE0E0E0);
