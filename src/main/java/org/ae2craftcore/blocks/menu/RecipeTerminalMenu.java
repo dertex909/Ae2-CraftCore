@@ -50,12 +50,12 @@ public class RecipeTerminalMenu extends PatternEncodingTermMenu {
     public static final int MACHINE_LIST_X = 6;
     public static final int MACHINE_LIST_Y = 16;
     public static final int MACHINE_LIST_WIDTH = 132;
-    public static final int MACHINE_LIST_HEIGHT = 108;
+    public static final int MACHINE_LIST_HEIGHT = 118;
 
     public static final int RECIPE_LIST_X = 171;
     public static final int RECIPE_LIST_Y = 16;
     public static final int RECIPE_LIST_WIDTH = 132;
-    public static final int RECIPE_LIST_HEIGHT = 108;
+    public static final int RECIPE_LIST_HEIGHT = 118;
 
     public static final int ENCODING_X = 173;
     public static final int ENCODING_Y = 156;

@@ -73,8 +73,8 @@ public class MeMachineInterfaceBlockEntity extends AENetworkedPoweredBlockEntity
         this.configManager.registerSetting(Settings.BLOCKING_MODE, YesNo.NO);
         this.configManager.registerSetting(Settings.LOCK_CRAFTING_MODE, LockCraftingMode.NONE);
         this.configManager.registerSetting(Settings.PATTERN_ACCESS_TERMINAL, YesNo.YES);
-        this.getMainNode().addService(ICraftingProvider.class, this).setFlags(GridFlags.REQUIRE_CHANNEL).setIdlePowerUsage(100);
-        this.setInternalMaxPower(1000);
+        this.getMainNode().addService(ICraftingProvider.class, this).setFlags(GridFlags.REQUIRE_CHANNEL).setIdlePowerUsage(1000);
+        this.setInternalMaxPower(10000);
         this.setPowerSides(getGridConnectableSides(getOrientation()));
     }
 

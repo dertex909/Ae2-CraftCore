@@ -454,6 +454,18 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
     }
 
     @Override
+    protected boolean hasClickedOutside(double mouseX, double mouseY, int guiLeft, int guiTop, int mouseButton) {
+        int x = (int) Math.round(mouseX) - guiLeft;
+        int y = (int) Math.round(mouseY) - guiTop;
+        for (int i = 0; i < MODE_ORDER.length; i++) {
+            if (this.isInside(x, y, TABS_X, TABS_Y + i * TAB_STEP_Y, TAB_W, TAB_H)) return false;
+        }
+
+        if (this.isInside(x, y, SAVE_X, SAVE_Y, SAVE_W, SAVE_H)) return false;
+        return super.hasClickedOutside(mouseX, mouseY, guiLeft, guiTop, mouseButton);
+    }
+
+    @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (this.machineSearchBox != null && this.recipeSearchBox != null) {
             boolean overMachine = this.machineSearchBox.isMouseOver(mouseX, mouseY);
@@ -892,6 +904,44 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
 
         int x = mouseX - this.leftPos;
         int y = mouseY - this.topPos;
+
+        if (this.isInside(x, y, RecipeTerminalMenu.MACHINE_LIST_X, RecipeTerminalMenu.MACHINE_LIST_Y,
+                RecipeTerminalMenu.MACHINE_LIST_WIDTH, RecipeTerminalMenu.MACHINE_LIST_HEIGHT)) {
+            int relativeY = y - RecipeTerminalMenu.MACHINE_LIST_Y - LIST_PADDING_TOP;
+            if (relativeY >= 0) {
+                int index = relativeY / ROW_HEIGHT;
+                int rowOffset = relativeY % ROW_HEIGHT;
+                if (rowOffset < ROW_BG_HEIGHT) {
+                    var groups = this.cachedGroups;
+                    int actualIndex = index + this.groupScrollOffset;
+                    if (actualIndex >= 0 && actualIndex < groups.size()) {
+                        String fullName = groups.get(actualIndex).name();
+                        guiGraphics.renderTooltip(this.font, Component.literal(fullName), mouseX, mouseY);
+                        return;
+                    }
+                }
+            }
+        }
+
+        if (this.isInside(x, y, RecipeTerminalMenu.RECIPE_LIST_X, RecipeTerminalMenu.RECIPE_LIST_Y,
+                RecipeTerminalMenu.RECIPE_LIST_WIDTH, RecipeTerminalMenu.RECIPE_LIST_HEIGHT)) {
+            int relativeY = y - RecipeTerminalMenu.RECIPE_LIST_Y - LIST_PADDING_TOP;
+            if (relativeY >= 0) {
+                int index = relativeY / ROW_HEIGHT;
+                int rowOffset = relativeY % ROW_HEIGHT;
+                if (rowOffset < ROW_BG_HEIGHT) {
+                    var filtered = this.cachedFilteredRecipes;
+                    int actualIndex = index + this.recipeScrollOffset;
+                    if (actualIndex >= 0 && actualIndex < filtered.size()) {
+                        var recipe = filtered.get(actualIndex);
+                        var stack = recipe.outputStack().isEmpty() ? recipe.patternStack() : recipe.outputStack();
+                        String fullName = stack.getHoverName().getString();
+                        guiGraphics.renderTooltip(this.font, Component.literal(fullName), mouseX, mouseY);
+                        return;
+                    }
+                }
+            }
+        }
 
         var currentMode = this.menu.getEncodingMode();
 
