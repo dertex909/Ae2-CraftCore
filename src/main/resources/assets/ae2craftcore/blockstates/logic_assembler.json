@@ -1,18 +1,33 @@
 {
   "variants": {
-    "facing=north": {
+    "active=false,facing=north": {
       "model": "ae2craftcore:block/logic_assembler"
     },
-    "facing=south": {
+    "active=false,facing=south": {
       "model": "ae2craftcore:block/logic_assembler",
       "y": 180
     },
-    "facing=west": {
+    "active=false,facing=west": {
       "model": "ae2craftcore:block/logic_assembler",
       "y": 270
     },
-    "facing=east": {
+    "active=false,facing=east": {
       "model": "ae2craftcore:block/logic_assembler",
+      "y": 90
+    },
+    "active=true,facing=north": {
+      "model": "ae2craftcore:block/logic_assembler_active"
+    },
+    "active=true,facing=south": {
+      "model": "ae2craftcore:block/logic_assembler_active",
+      "y": 180
+    },
+    "active=true,facing=west": {
+      "model": "ae2craftcore:block/logic_assembler_active",
+      "y": 270
+    },
+    "active=true,facing=east": {
+      "model": "ae2craftcore:block/logic_assembler_active",
       "y": 90
     }
   }

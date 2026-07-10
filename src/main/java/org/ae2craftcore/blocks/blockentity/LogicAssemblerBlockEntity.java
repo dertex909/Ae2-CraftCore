@@ -313,6 +313,11 @@ public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity imp
                 blockEntity.setChanged();
             }
         }
+
+        boolean active = !blockEntity.rolledResult.isEmpty();
+        if (state.hasProperty(LogicAssemblerBlock.ACTIVE) && state.getValue(LogicAssemblerBlock.ACTIVE) != active) {
+            level.setBlock(pos, state.setValue(LogicAssemblerBlock.ACTIVE, active), 3);
+        }
     }
 
     public boolean isValidInput(int slot, @NotNull ItemStack stack) {
