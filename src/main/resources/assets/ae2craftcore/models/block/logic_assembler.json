@@ -1,6 +1,12 @@
 {
-  "parent": "minecraft:block/cube_all",
+  "parent": "minecraft:block/cube",
   "textures": {
-    "all": "ae2craftcore:block/logic_assembler"
+    "particle": "ae2:block/generics/side",
+    "up": "ae2craftcore:block/logic_assembler_top_inactive",
+    "down": "ae2craftcore:block/logic_assembler_bottom",
+    "north": "ae2craftcore:block/logic_assembler_front",
+    "south": "ae2:block/generics/back",
+    "west": "ae2craftcore:block/side",
+    "east": "ae2craftcore:block/side"
   }
 }
