@@ -81,7 +81,7 @@ public class MeMachineInterfaceScreen extends AEBaseScreen<MeMachineInterfaceMen
         String currentName = this.menu.getBlockEntity() != null ? this.menu.getBlockEntity().getInterfaceName() : "Unknown recipe";
         this.nameInput = new EditBox(this.font, x + 12, y + 38, 153, 12, Component.literal("Name"));
         this.nameInput.setBordered(false);
-        this.nameInput.setTextColor(0xE0E0E0);
+        this.nameInput.setTextColor(0xFFDDDDDD);
         this.nameInput.setValue(currentName);
         this.nameInput.setMaxLength(32);
         this.nameInput.setResponder(this::sendSyncPacket);
