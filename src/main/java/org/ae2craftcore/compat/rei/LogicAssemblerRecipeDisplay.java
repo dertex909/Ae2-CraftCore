@@ -6,6 +6,7 @@ import me.shedaniel.rei.api.common.display.Display;
 import me.shedaniel.rei.api.common.entry.EntryIngredient;
 import me.shedaniel.rei.api.common.util.EntryIngredients;
 import net.minecraft.client.Minecraft;
+import net.minecraft.core.RegistryAccess;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import org.ae2craftcore.recipe.LogicAssemblerRecipe;
@@ -20,12 +21,19 @@ public class LogicAssemblerRecipeDisplay implements Display {
 
     public LogicAssemblerRecipeDisplay(RecipeHolder<LogicAssemblerRecipe> holder) {
         this.holder = holder;
-        LogicAssemblerRecipe recipe = holder.value();
+        var recipe = holder.value();
         this.inputs = ImmutableList.of(
                 EntryIngredients.ofIngredient(recipe.getTop()),
                 EntryIngredients.ofIngredient(recipe.getBottom())
         );
-        this.outputs = ImmutableList.of(EntryIngredients.of(recipe.getResultItem(Minecraft.getInstance().level.registryAccess())));
+        this.outputs = ImmutableList.of(EntryIngredients.of(recipe.getResultItem(getRegistryAccess())));
+    }
+
+    private static RegistryAccess getRegistryAccess() {
+        var mc = Minecraft.getInstance();
+        if (mc.level != null) return mc.level.registryAccess();
+        if (mc.getConnection() != null) return mc.getConnection().registryAccess();
+        return RegistryAccess.EMPTY;
     }
 
     public RecipeHolder<LogicAssemblerRecipe> getHolder() {

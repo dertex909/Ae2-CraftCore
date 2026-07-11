@@ -6,6 +6,7 @@ import dev.emi.emi.api.stack.EmiIngredient;
 import dev.emi.emi.api.stack.EmiStack;
 import dev.emi.emi.api.widget.WidgetHolder;
 import net.minecraft.client.Minecraft;
+import net.minecraft.core.RegistryAccess;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.crafting.RecipeHolder;
@@ -25,38 +26,45 @@ public class EmiLogicAssemblerRecipe extends BasicEmiRecipe {
     };
 
     private final RecipeHolder<LogicAssemblerRecipe> holder;
+    private final EmiIngredient topInput;
+    private final EmiIngredient bottomInput;
+    private final EmiStack outputStack;
 
     public EmiLogicAssemblerRecipe(RecipeHolder<LogicAssemblerRecipe> holder) {
         super(CATEGORY, holder.id(), 120, 62);
         this.holder = holder;
 
-        LogicAssemblerRecipe recipe = holder.value();
-        this.inputs.add(EmiIngredient.of(recipe.getTop()));
-        this.inputs.add(EmiIngredient.of(recipe.getBottom()));
-        this.outputs.add(EmiStack.of(recipe.getResultItem(Minecraft.getInstance().level.registryAccess())));
+        var recipe = holder.value();
+
+        this.topInput = EmiIngredient.of(recipe.getTop());
+        this.bottomInput = EmiIngredient.of(recipe.getBottom());
+        this.outputStack = EmiStack.of(recipe.getResultItem(getRegistryAccess()));
+
+        this.inputs.add(this.topInput);
+        this.inputs.add(this.bottomInput);
+        this.outputs.add(this.outputStack);
+    }
+
+    private static RegistryAccess getRegistryAccess() {
+        var mc = Minecraft.getInstance();
+        if (mc.level != null) return mc.level.registryAccess();
+        if (mc.getConnection() != null) return mc.getConnection().registryAccess();
+        return RegistryAccess.EMPTY;
     }
 
     @Override
     public void addWidgets(WidgetHolder widgets) {
-        ResourceLocation background = ResourceLocation.fromNamespaceAndPath(Ae2craftcore.MODID, "textures/gui/container/logic_assembler.png");
+        var background = ResourceLocation.fromNamespaceAndPath(Ae2craftcore.MODID, "textures/gui/container/logic_assembler.png");
 
-        // Обрезка: x=30, y=15, width=120, height=62.
         widgets.addTexture(background, 0, 0, 120, 62, 30, 15);
-
-        // Стрелка прогресса: x=105, y=24, u=197, v=0, width=6, height=18
         widgets.addAnimatedTexture(background, 105, 24, 6, 18, 197, 0, 2000, false, true, false);
 
-        LogicAssemblerRecipe recipe = holder.value();
+        var recipe = holder.value();
 
-        // Слоты:
-        // Верхний входной слот: x = 9, y = 8
-        widgets.addSlot(EmiIngredient.of(recipe.getTop()), 9, 8).drawBack(false);
-        // Нижний входной слот: x = 9, y = 40
-        widgets.addSlot(EmiIngredient.of(recipe.getBottom()), 9, 40).drawBack(false);
-        // Выходной слот: x = 83, y = 25
-        widgets.addSlot(EmiStack.of(recipe.getResultItem(Minecraft.getInstance().level.registryAccess())), 83, 25).drawBack(false);
+        widgets.addSlot(this.topInput, 9, 8).drawBack(false);
+        widgets.addSlot(this.bottomInput, 9, 40).drawBack(false);
+        widgets.addSlot(this.outputStack, 83, 25).drawBack(false);
 
-        // Шанс крафта
         int chance = (int) (recipe.getChance() * 100);
         String text = chance + "%";
         var font = Minecraft.getInstance().font;

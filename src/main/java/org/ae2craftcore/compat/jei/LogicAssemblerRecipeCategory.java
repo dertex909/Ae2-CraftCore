@@ -3,7 +3,6 @@ package org.ae2craftcore.compat.jei;
 import mezz.jei.api.gui.builder.IRecipeLayoutBuilder;
 import mezz.jei.api.gui.drawable.IDrawable;
 import mezz.jei.api.gui.drawable.IDrawableAnimated;
-import mezz.jei.api.gui.drawable.IDrawableStatic;
 import mezz.jei.api.gui.ingredient.IRecipeSlotsView;
 import mezz.jei.api.helpers.IGuiHelper;
 import mezz.jei.api.recipe.IFocusGroup;
@@ -11,6 +10,7 @@ import mezz.jei.api.recipe.RecipeType;
 import mezz.jei.api.recipe.category.IRecipeCategory;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.core.RegistryAccess;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
@@ -29,14 +29,11 @@ public class LogicAssemblerRecipeCategory implements IRecipeCategory<RecipeHolde
     private final Component title;
 
     public LogicAssemblerRecipeCategory(IGuiHelper guiHelper) {
-        ResourceLocation texture = ResourceLocation.fromNamespaceAndPath(Ae2craftcore.MODID, "textures/gui/container/logic_assembler.png");
-        // Обрезка: x=30, y=15, width=120, height=62
+        var texture = ResourceLocation.fromNamespaceAndPath(Ae2craftcore.MODID, "textures/gui/container/logic_assembler.png");
         this.background = guiHelper.createDrawable(texture, 30, 15, 120, 62);
         this.icon = guiHelper.createDrawableItemStack(new ItemStack(LogicAssemblerBlock.HOLDER.get()));
         this.title = Component.translatable("block.ae2craftcore.logic_assembler");
-
-        // Стрелка прогресса blit на текстуре x = 197, y = 0, width = 6, height = 18
-        IDrawableStatic progressStatic = guiHelper.createDrawable(texture, 197, 0, 6, 18);
+        var progressStatic = guiHelper.createDrawable(texture, 197, 0, 6, 18);
         this.progress = guiHelper.createAnimatedDrawable(progressStatic, 40, IDrawableAnimated.StartDirection.TOP, false);
     }
 
@@ -51,8 +48,13 @@ public class LogicAssemblerRecipeCategory implements IRecipeCategory<RecipeHolde
     }
 
     @Override
-    public @NotNull IDrawable getBackground() {
-        return background;
+    public int getWidth() {
+        return background.getWidth();
+    }
+
+    @Override
+    public int getHeight() {
+        return background.getHeight();
     }
 
     @Override
@@ -60,27 +62,27 @@ public class LogicAssemblerRecipeCategory implements IRecipeCategory<RecipeHolde
         return icon;
     }
 
+    private static RegistryAccess getRegistryAccess() {
+        var mc = Minecraft.getInstance();
+        if (mc.level != null) return mc.level.registryAccess();
+        if (mc.getConnection() != null) return mc.getConnection().registryAccess();
+        return RegistryAccess.EMPTY;
+    }
+
     @Override
     public void setRecipe(IRecipeLayoutBuilder builder, RecipeHolder<LogicAssemblerRecipe> holder, @NotNull IFocusGroup focuses) {
-        LogicAssemblerRecipe recipe = holder.value();
+        var recipe = holder.value();
 
-        // Относительные координаты слотов:
-        // Верхний слот: x = 9, y = 8
         builder.addInputSlot(9, 8).addIngredients(recipe.getTop());
-
-        // Нижний слот: x = 9, y = 40
         builder.addInputSlot(9, 40).addIngredients(recipe.getBottom());
-
-        // Выходной слот: x = 83, y = 25
-        builder.addOutputSlot(83, 25).addItemStack(recipe.getResultItem(Minecraft.getInstance().level.registryAccess()));
+        builder.addOutputSlot(83, 25).addItemStack(recipe.getResultItem(getRegistryAccess()));
     }
 
     @Override
     public void draw(RecipeHolder<LogicAssemblerRecipe> holder, @NotNull IRecipeSlotsView recipeSlotsView, @NotNull GuiGraphics guiGraphics, double mouseX, double mouseY) {
-        // Отрисовка стрелки на относительных координатах x = 105, y = 24
+        background.draw(guiGraphics, 0, 0);
         progress.draw(guiGraphics, 105, 24);
 
-        // Отрисовка шанса крафта
         int chance = (int) (holder.value().getChance() * 100);
         String text = chance + "%";
         var font = Minecraft.getInstance().font;

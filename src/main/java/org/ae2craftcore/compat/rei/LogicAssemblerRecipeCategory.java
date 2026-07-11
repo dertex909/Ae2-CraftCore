@@ -7,9 +7,7 @@ import me.shedaniel.rei.api.client.gui.widgets.Widget;
 import me.shedaniel.rei.api.client.gui.widgets.Widgets;
 import me.shedaniel.rei.api.client.registry.display.DisplayCategory;
 import me.shedaniel.rei.api.common.category.CategoryIdentifier;
-import me.shedaniel.rei.api.common.entry.EntryIngredient;
 import me.shedaniel.rei.api.common.util.EntryStacks;
-import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import org.ae2craftcore.Ae2craftcore;
@@ -44,7 +42,7 @@ public class LogicAssemblerRecipeCategory implements DisplayCategory<LogicAssemb
 
     @Override
     public List<Widget> setupDisplay(LogicAssemblerRecipeDisplay recipeDisplay, Rectangle bounds) {
-        ResourceLocation texture = ResourceLocation.fromNamespaceAndPath(Ae2craftcore.MODID, "textures/gui/container/logic_assembler.png");
+        var texture = ResourceLocation.fromNamespaceAndPath(Ae2craftcore.MODID, "textures/gui/container/logic_assembler.png");
 
         List<Widget> widgets = new ArrayList<>();
         widgets.add(Widgets.wrapRenderer(bounds, new BackgroundRenderer(getDisplayWidth(recipeDisplay), getDisplayHeight())));
@@ -52,25 +50,18 @@ public class LogicAssemblerRecipeCategory implements DisplayCategory<LogicAssemb
         var innerX = bounds.x + PADDING;
         var innerY = bounds.y + PADDING;
 
-        // Фон рецепта (x=30, y=15, width=120, height=62)
         widgets.add(Widgets.createTexturedWidget(texture, innerX, innerY, 30, 15, WIDTH, HEIGHT));
-
-        // Стрелка прогресса (x=105, y=24, width=6, height=18)
         widgets.add(Widgets.wrapRenderer(bounds, new LogicAssemblerProgressBar(texture, innerX + 105, innerY + 24, 6, 18, 197, 0)));
 
-        List<EntryIngredient> ingredients = recipeDisplay.getInputEntries();
-        EntryIngredient output = recipeDisplay.getOutputEntries().getFirst();
+        var ingredients = recipeDisplay.getInputEntries();
+        var output = recipeDisplay.getOutputEntries().getFirst();
 
-        // Слоты
         widgets.add(Widgets.createSlot(new Point(innerX + 9, innerY + 8)).disableBackground().markInput().entries(ingredients.get(0)));
         widgets.add(Widgets.createSlot(new Point(innerX + 9, innerY + 40)).disableBackground().markInput().entries(ingredients.get(1)));
         widgets.add(Widgets.createSlot(new Point(innerX + 83, innerY + 25)).disableBackground().markOutput().entries(output));
 
-        // Шанс крафта
         int chance = (int) (recipeDisplay.getHolder().value().getChance() * 100);
         String text = chance + "%";
-        var font = Minecraft.getInstance().font;
-        int textWidth = font.width(text);
         widgets.add(Widgets.createLabel(new Point(innerX + 92, innerY + 11), Component.literal(text)).noShadow().color(0x000000));
 
         return widgets;
