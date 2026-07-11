@@ -185,8 +185,8 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
         this.machineSearchBox = new EditBox(this.font, this.leftPos + 69, this.topPos + 6, 77, 12,
                 Component.translatable("gui.ae2.SearchPlaceholder"));
         this.machineSearchBox.setBordered(false);
-        this.machineSearchBox.setTextColor(0xE0E0E0);
-        this.machineSearchBox.setHint(Component.translatable("gui.ae2.SearchPlaceholder"));
+        this.machineSearchBox.setTextColor(0xFFDDDDDD);
+        this.machineSearchBox.setHint(Component.translatable("gui.ae2.SearchPlaceholder").withColor(0xFFDDDDDD));
         this.machineSearchBox.setValue(this.machineSearchQuery);
         this.machineSearchBox.setResponder(val -> {
             this.machineSearchQuery = val;
@@ -198,8 +198,8 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
         this.recipeSearchBox = new EditBox(this.font, this.leftPos + 234, this.topPos + 6, 77, 12,
                 Component.translatable("gui.ae2.SearchPlaceholder"));
         this.recipeSearchBox.setBordered(false);
-        this.recipeSearchBox.setTextColor(0xE0E0E0);
-        this.recipeSearchBox.setHint(Component.translatable("gui.ae2.SearchPlaceholder"));
+        this.recipeSearchBox.setTextColor(0xFFDDDDDD);
+        this.recipeSearchBox.setHint(Component.translatable("gui.ae2.SearchPlaceholder").withColor(0xFFDDDDDD));
         this.recipeSearchBox.setValue(this.recipeSearchQuery);
         this.recipeSearchBox.setResponder(val -> {
             this.recipeSearchQuery = val;
@@ -408,7 +408,7 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
             int bgLeft = RecipeTerminalMenu.RECIPE_LIST_X + 2;
             int bgRight = RecipeTerminalMenu.RECIPE_LIST_X + RecipeTerminalMenu.RECIPE_LIST_WIDTH - 2;
             boolean hovered = this.isInside(mouseX, mouseY, bgLeft, rowTop, bgRight - bgLeft, ROW_BG_HEIGHT);
-            graphics.blit(RenderPipelines.GUI_TEXTURED, BACKGROUND_TEXTURE, x + bgLeft, y + rowTop, 0.0f, hovered ? 22.0f : 0.0f, 128, 22, 128, 44);
+            graphics.blit(RenderPipelines.GUI_TEXTURED, MACHINE_ROW_TEXTURE, x + bgLeft, y + rowTop, 0.0f, hovered ? 22.0f : 0.0f, 128, 22, 128, 44);
 
             var recipe = filtered.get(actualIndex);
             var displayStack = recipe.outputStack().isEmpty() ? recipe.patternStack() : recipe.outputStack();
@@ -445,13 +445,13 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
                 displayName = this.font.plainSubstrByWidth(displayName, 80) + "...";
             }
 
-            graphics.text(this.font, displayName, RecipeTerminalMenu.MACHINE_LIST_X + 5, textY, selected ? 0x27304A : 0x42475A, false);
+            graphics.text(this.font, displayName, RecipeTerminalMenu.MACHINE_LIST_X + 5, textY, selected ? 0xFF272F49 : 0xFF43485B, false);
 
             if (!group.icon().isEmpty()) {
                 graphics.fakeItem(group.icon(), bgLeft + 88, rowTop + 3);
             }
 
-            graphics.text(this.font, String.valueOf(group.count()), bgLeft + 114, textY, selected ? 0x27304A : 0x42475A, false);
+            graphics.text(this.font, String.valueOf(group.count()), bgLeft + 114, textY, selected ? 0xFF272F49 : 0xFF43485B, false);
         }
     }
 
@@ -466,7 +466,7 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
 
             String name = recipe.outputStack().isEmpty() ? recipe.patternStack().getHoverName().getString() : recipe.outputStack().getHoverName().getString();
             if (this.font.width(name) > 70) name = this.font.plainSubstrByWidth(name, 70) + "...";
-            graphics.text(this.font, name, RecipeTerminalMenu.RECIPE_LIST_X + 42, textY, 0x42475A, false);
+            graphics.text(this.font, name, RecipeTerminalMenu.RECIPE_LIST_X + 42, textY, 0xFF414659, false);
         }
     }
 

@@ -1,4 +1,8 @@
 {
+  "background": {
+    "texture": "ae2craftcore:textures/gui/container/recipe_terminal.png",
+    "srcRect": [0, 0, 322, 236]
+  },
   "palette": {
     "DEFAULT_TEXT_COLOR": "#FF413F54",
     "MUTED_TEXT_COLOR": "#FF878FA5",
