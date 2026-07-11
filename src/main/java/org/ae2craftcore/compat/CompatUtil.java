@@ -1,0 +1,48 @@
+package org.ae2craftcore.compat;
+
+import net.minecraft.client.Minecraft;
+import net.minecraft.core.RegistryAccess;
+import net.minecraft.resources.ResourceLocation;
+import org.ae2craftcore.Ae2craftcore;
+
+public final class CompatUtil {
+    private CompatUtil() {
+    }
+
+    public static final ResourceLocation TEXTURE = ResourceLocation.fromNamespaceAndPath(
+            Ae2craftcore.MODID, "textures/gui/container/logic_assembler.png");
+
+    public static final int BG_U = 30;
+    public static final int BG_V = 15;
+    public static final int BG_WIDTH = 120;
+    public static final int BG_HEIGHT = 62;
+
+    public static final int PROGRESS_X = 105;
+    public static final int PROGRESS_Y = 24;
+    public static final int PROGRESS_WIDTH = 6;
+    public static final int PROGRESS_HEIGHT = 18;
+    public static final int PROGRESS_U = 197;
+    public static final int PROGRESS_V = 0;
+    public static final int PROGRESS_DURATION_MS = 2000;
+
+    public static final int SLOT_TOP_X = 9;
+    public static final int SLOT_TOP_Y = 8;
+    public static final int SLOT_BOTTOM_X = 9;
+    public static final int SLOT_BOTTOM_Y = 40;
+    public static final int SLOT_OUT_X = 83;
+    public static final int SLOT_OUT_Y = 25;
+
+    public static final int CHANCE_X = 92;
+    public static final int CHANCE_Y = 11;
+
+    public static RegistryAccess getRegistryAccess() {
+        var mc = Minecraft.getInstance();
+        if (mc.level != null) return mc.level.registryAccess();
+        if (mc.getConnection() != null) return mc.getConnection().registryAccess();
+        return RegistryAccess.EMPTY;
+    }
+
+    public static String formatChance(double chance) {
+        return (int) (chance * 100) + "%";
+    }
+}

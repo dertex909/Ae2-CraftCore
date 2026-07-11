@@ -10,13 +10,11 @@ import mezz.jei.api.recipe.RecipeType;
 import mezz.jei.api.recipe.category.IRecipeCategory;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.core.RegistryAccess;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.RecipeHolder;
-import org.ae2craftcore.Ae2craftcore;
 import org.ae2craftcore.blocks.block.LogicAssemblerBlock;
+import org.ae2craftcore.compat.CompatUtil;
 import org.ae2craftcore.recipe.LogicAssemblerRecipe;
 import org.jetbrains.annotations.NotNull;
 
@@ -29,12 +27,12 @@ public class LogicAssemblerRecipeCategory implements IRecipeCategory<RecipeHolde
     private final Component title;
 
     public LogicAssemblerRecipeCategory(IGuiHelper guiHelper) {
-        var texture = ResourceLocation.fromNamespaceAndPath(Ae2craftcore.MODID, "textures/gui/container/logic_assembler.png");
-        this.background = guiHelper.createDrawable(texture, 30, 15, 120, 62);
+        var texture = CompatUtil.TEXTURE;
+        this.background = guiHelper.createDrawable(texture, CompatUtil.BG_U, CompatUtil.BG_V, CompatUtil.BG_WIDTH, CompatUtil.BG_HEIGHT);
         this.icon = guiHelper.createDrawableItemStack(new ItemStack(LogicAssemblerBlock.HOLDER.get()));
         this.title = Component.translatable("block.ae2craftcore.logic_assembler");
-        var progressStatic = guiHelper.createDrawable(texture, 197, 0, 6, 18);
-        this.progress = guiHelper.createAnimatedDrawable(progressStatic, 40, IDrawableAnimated.StartDirection.TOP, false);
+        var progressStatic = guiHelper.createDrawable(texture, CompatUtil.PROGRESS_U, CompatUtil.PROGRESS_V, CompatUtil.PROGRESS_WIDTH, CompatUtil.PROGRESS_HEIGHT);
+        this.progress = guiHelper.createAnimatedDrawable(progressStatic, CompatUtil.PROGRESS_DURATION_MS / 50, IDrawableAnimated.StartDirection.TOP, false);
     }
 
     @Override
@@ -62,31 +60,23 @@ public class LogicAssemblerRecipeCategory implements IRecipeCategory<RecipeHolde
         return icon;
     }
 
-    private static RegistryAccess getRegistryAccess() {
-        var mc = Minecraft.getInstance();
-        if (mc.level != null) return mc.level.registryAccess();
-        if (mc.getConnection() != null) return mc.getConnection().registryAccess();
-        return RegistryAccess.EMPTY;
-    }
-
     @Override
     public void setRecipe(IRecipeLayoutBuilder builder, RecipeHolder<LogicAssemblerRecipe> holder, @NotNull IFocusGroup focuses) {
         var recipe = holder.value();
 
-        builder.addInputSlot(9, 8).addIngredients(recipe.getTop());
-        builder.addInputSlot(9, 40).addIngredients(recipe.getBottom());
-        builder.addOutputSlot(83, 25).addItemStack(recipe.getResultItem(getRegistryAccess()));
+        builder.addInputSlot(CompatUtil.SLOT_TOP_X, CompatUtil.SLOT_TOP_Y).addIngredients(recipe.getTop());
+        builder.addInputSlot(CompatUtil.SLOT_BOTTOM_X, CompatUtil.SLOT_BOTTOM_Y).addIngredients(recipe.getBottom());
+        builder.addOutputSlot(CompatUtil.SLOT_OUT_X, CompatUtil.SLOT_OUT_Y).addItemStack(recipe.getResultItem(CompatUtil.getRegistryAccess()));
     }
 
     @Override
     public void draw(RecipeHolder<LogicAssemblerRecipe> holder, @NotNull IRecipeSlotsView recipeSlotsView, @NotNull GuiGraphics guiGraphics, double mouseX, double mouseY) {
         background.draw(guiGraphics, 0, 0);
-        progress.draw(guiGraphics, 105, 24);
+        progress.draw(guiGraphics, CompatUtil.PROGRESS_X, CompatUtil.PROGRESS_Y);
 
-        int chance = (int) (holder.value().getChance() * 100);
-        String text = chance + "%";
+        String text = CompatUtil.formatChance(holder.value().getChance());
         var font = Minecraft.getInstance().font;
         int textWidth = font.width(text);
-        guiGraphics.drawString(font, text, 92 - (textWidth >> 1), 11, 0x000000, false);
+        guiGraphics.drawString(font, text, CompatUtil.CHANCE_X - (textWidth >> 1), CompatUtil.CHANCE_Y, 0x000000, false);
     }
 }
