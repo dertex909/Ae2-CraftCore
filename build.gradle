@@ -27,6 +27,14 @@ repositories {
         name = "Modrinth"
         url = "https://api.modrinth.com/maven"
     }
+    maven {
+        name = "Architectury"
+        url = "https://maven.architectury.dev/"
+    }
+    maven {
+        name = "shedaniel"
+        url = "https://maven.shedaniel.me/"
+    }
 }
 
 base {
@@ -79,7 +87,19 @@ sourceSets.main.resources { srcDir 'src/generated/resources' }
 dependencies {
     compileOnly "org.appliedenergistics:appliedenergistics2:${ae2_version}"
 
+    // JEI
+    compileOnly "mezz.jei:jei-${minecraft_version}-neoforge-api:19.25.0.325"
     runtimeOnly "mezz.jei:jei-${minecraft_version}-neoforge:19.25.0.325"
+
+    // EMI
+    compileOnly "dev.emi:emi-neoforge:1.1.22+${minecraft_version}:api"
+    runtimeOnly "dev.emi:emi-neoforge:1.1.22+${minecraft_version}"
+
+    // REI
+    compileOnly "me.shedaniel:RoughlyEnoughItems-api-neoforge:16.0.729"
+    compileOnly "me.shedaniel:RoughlyEnoughItems-neoforge:16.0.729"
+    compileOnly "dev.architectury:architectury-neoforge:13.0.6"
+    compileOnly "me.shedaniel.cloth:cloth-config-neoforge:15.0.127"
 }
 
 var generateModMetadata = tasks.register("generateModMetadata", ProcessResources) {
