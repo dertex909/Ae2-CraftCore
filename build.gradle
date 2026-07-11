@@ -94,7 +94,11 @@ dependencies {
     // REI
     compileOnly "me.shedaniel:RoughlyEnoughItems-neoforge:16.0.729"
 
-    runtimeOnly "mezz.jei:jei-${minecraft_version}-neoforge:19.25.0.325"
+    runtimeOnly "dev.emi:emi-neoforge:1.1.22+${minecraft_version}"
+
+
+//    runtimeOnly "me.shedaniel:RoughlyEnoughItems-neoforge:16.0.729"
+//    runtimeOnly "dev.architectury:architectury-neoforge:13.0.6"
 }
 
 var generateModMetadata = tasks.register("generateModMetadata", ProcessResources) {
