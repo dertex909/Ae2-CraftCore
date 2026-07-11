@@ -14,7 +14,9 @@ import org.ae2craftcore.registry.annotations.PacketHandler;
 import org.ae2craftcore.registry.annotations.PayloadDirection;
 import org.ae2craftcore.registry.utils.RegistryScanHelper;
 
-import java.lang.invoke.*;
+import java.lang.invoke.LambdaMetafactory;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.lang.reflect.Method;
 
 public class AutoNetworkRegistry {

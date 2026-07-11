@@ -1,5 +1,14 @@
 package org.ae2craftcore.blocks.blockentity;
 
+import appeng.api.config.Actionable;
+import appeng.api.config.PowerMultiplier;
+import appeng.api.config.PowerUnit;
+import appeng.api.inventories.InternalInventory;
+import appeng.api.orientation.BlockOrientation;
+import appeng.api.util.AECableType;
+import appeng.blockentity.grid.AENetworkedPoweredBlockEntity;
+import appeng.util.inv.AppEngInternalInventory;
+import appeng.util.inv.filter.IAEItemFilter;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
@@ -26,16 +35,6 @@ import org.ae2craftcore.registry.ModRecipeTypes;
 import org.ae2craftcore.registry.annotations.RegisterBlockEntity;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import appeng.api.config.Actionable;
-import appeng.api.config.PowerMultiplier;
-import appeng.api.config.PowerUnit;
-import appeng.api.inventories.InternalInventory;
-import appeng.api.orientation.BlockOrientation;
-import appeng.api.util.AECableType;
-import appeng.blockentity.grid.AENetworkedPoweredBlockEntity;
-import appeng.util.inv.AppEngInternalInventory;
-import appeng.util.inv.filter.IAEItemFilter;
 
 import java.util.EnumSet;
 import java.util.Set;

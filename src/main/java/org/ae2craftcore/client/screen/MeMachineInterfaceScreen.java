@@ -3,28 +3,28 @@ package org.ae2craftcore.client.screen;
 import appeng.api.config.LockCraftingMode;
 import appeng.api.config.Settings;
 import appeng.api.config.YesNo;
+import appeng.client.Point;
 import appeng.client.gui.AEBaseScreen;
-import appeng.client.gui.style.StyleManager;
 import appeng.client.gui.ICompositeWidget;
 import appeng.client.gui.Icon;
 import appeng.client.gui.Tooltip;
-import appeng.client.Point;
+import appeng.client.gui.style.StyleManager;
+import appeng.client.gui.widgets.ServerSettingToggleButton;
+import appeng.client.gui.widgets.SettingToggleButton;
 import appeng.core.localization.GuiText;
 import appeng.core.localization.InGameTooltip;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.Rect2i;
-import net.minecraft.network.chat.Style;
-import net.minecraft.util.Mth;
-import org.jetbrains.annotations.Nullable;
-import appeng.client.gui.widgets.ServerSettingToggleButton;
-import appeng.client.gui.widgets.SettingToggleButton;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.renderer.Rect2i;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.Style;
+import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Inventory;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.ae2craftcore.blocks.menu.MeMachineInterfaceMenu;
 import org.ae2craftcore.network.packet.MeMachineInterfaceSyncPacket;
+import org.jetbrains.annotations.Nullable;
 
 public class MeMachineInterfaceScreen extends AEBaseScreen<MeMachineInterfaceMenu> {
 

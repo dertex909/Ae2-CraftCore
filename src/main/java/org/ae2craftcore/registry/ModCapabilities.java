@@ -7,7 +7,8 @@ import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 import net.neoforged.neoforge.items.wrapper.SidedInvWrapper;
 import org.ae2craftcore.Ae2craftcore;
-import org.ae2craftcore.blocks.blockentity.*;
+import org.ae2craftcore.blocks.blockentity.LogicAssemblerBlockEntity;
+import org.ae2craftcore.blocks.blockentity.MeMachineInterfaceBlockEntity;
 
 @EventBusSubscriber(modid = Ae2craftcore.MODID)
 public class ModCapabilities {

@@ -1,12 +1,12 @@
 package org.ae2craftcore.items;
 
+import appeng.api.inventories.InternalInventory;
 import appeng.api.networking.IGrid;
 import appeng.api.storage.MEStorage;
 import appeng.api.storage.cells.CellState;
 import appeng.api.storage.cells.ICellHandler;
 import appeng.api.storage.cells.ISaveProvider;
 import appeng.api.storage.cells.StorageCell;
-import appeng.api.inventories.InternalInventory;
 import appeng.blockentity.storage.DriveBlockEntity;
 import appeng.blockentity.storage.MEChestBlockEntity;
 import net.minecraft.ChatFormatting;
@@ -15,8 +15,8 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.neoforged.neoforge.registries.DeferredHolder;
-import org.ae2craftcore.registry.annotations.RegisterItem;
 import org.ae2craftcore.registry.AttachmentRegistry;
+import org.ae2craftcore.registry.annotations.RegisterItem;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

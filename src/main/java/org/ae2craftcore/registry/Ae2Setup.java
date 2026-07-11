@@ -1,8 +1,8 @@
 package org.ae2craftcore.registry;
 
 import appeng.api.networking.GridServices;
-import appeng.api.upgrades.Upgrades;
 import appeng.api.storage.StorageCells;
+import appeng.api.upgrades.Upgrades;
 import appeng.core.definitions.AEItems;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import org.ae2craftcore.blocks.block.LogicAssemblerBlock;

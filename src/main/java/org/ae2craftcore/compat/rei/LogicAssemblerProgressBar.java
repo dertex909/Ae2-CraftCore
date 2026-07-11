@@ -1,9 +1,9 @@
 package org.ae2craftcore.compat.rei;
 
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.resources.ResourceLocation;
 import me.shedaniel.math.Rectangle;
 import me.shedaniel.rei.api.client.gui.Renderer;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.resources.ResourceLocation;
 import org.ae2craftcore.compat.CompatUtil;
 
 public record LogicAssemblerProgressBar(ResourceLocation location, int x, int y, int width, int height, int u, int v)

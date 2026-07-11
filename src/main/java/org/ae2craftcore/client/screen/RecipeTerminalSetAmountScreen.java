@@ -1,8 +1,5 @@
 package org.ae2craftcore.client.screen;
 
-import java.util.function.Consumer;
-
-import com.google.common.primitives.Longs;
 import appeng.api.stacks.GenericStack;
 import appeng.client.gui.AESubScreen;
 import appeng.client.gui.NumberEntryType;
@@ -10,11 +7,14 @@ import appeng.client.gui.me.common.ClientDisplaySlot;
 import appeng.client.gui.widgets.NumberEntryWidget;
 import appeng.client.gui.widgets.TabButton;
 import appeng.menu.SlotSemantics;
+import com.google.common.primitives.Longs;
 import net.minecraft.network.chat.Component;
 import org.ae2craftcore.blocks.menu.RecipeTerminalMenu;
 
-import static appeng.core.localization.GuiText.Set;
+import java.util.function.Consumer;
+
 import static appeng.client.gui.Icon.BACK;
+import static appeng.core.localization.GuiText.Set;
 
 public class RecipeTerminalSetAmountScreen extends AESubScreen<RecipeTerminalMenu, RecipeTerminalScreen> {
     private final NumberEntryWidget amount;

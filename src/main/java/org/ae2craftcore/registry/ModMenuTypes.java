@@ -8,7 +8,9 @@ import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import org.ae2craftcore.Ae2craftcore;
 import org.ae2craftcore.blocks.blockentity.MeMachineInterfaceBlockEntity;
-import org.ae2craftcore.blocks.menu.*;
+import org.ae2craftcore.blocks.menu.LogicAssemblerMenu;
+import org.ae2craftcore.blocks.menu.MeMachineInterfaceMenu;
+import org.ae2craftcore.blocks.menu.RecipeTerminalMenu;
 import org.ae2craftcore.parts.RecipeTerminalPart;
 
 import static appeng.menu.implementations.MenuTypeBuilder.create;

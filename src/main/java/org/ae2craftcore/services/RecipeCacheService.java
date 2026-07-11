@@ -1,17 +1,17 @@
 package org.ae2craftcore.services;
 
+import appeng.api.crafting.IPatternDetails;
 import appeng.api.inventories.InternalInventory;
 import appeng.api.networking.IGrid;
 import appeng.api.networking.IGridNode;
 import appeng.api.networking.IGridServiceProvider;
-import appeng.api.crafting.IPatternDetails;
 import appeng.api.stacks.AEItemKey;
 import appeng.blockentity.storage.DriveBlockEntity;
 import appeng.blockentity.storage.MEChestBlockEntity;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.level.Level;
 import org.ae2craftcore.items.RecipeStorageCellItem;
 import org.ae2craftcore.registry.AttachmentRegistry;
-import net.minecraft.world.level.Level;
-import net.minecraft.nbt.CompoundTag;
 
 import java.util.ArrayList;
 import java.util.Collections;

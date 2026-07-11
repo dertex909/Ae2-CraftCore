@@ -12,7 +12,9 @@ import net.neoforged.neoforge.client.event.ModelEvent;
 import net.neoforged.neoforge.client.event.RegisterColorHandlersEvent;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import net.neoforged.neoforge.client.event.RegisterRecipeBookCategoriesEvent;
-import org.ae2craftcore.client.screen.*;
+import org.ae2craftcore.client.screen.LogicAssemblerScreen;
+import org.ae2craftcore.client.screen.MeMachineInterfaceScreen;
+import org.ae2craftcore.client.screen.RecipeTerminalScreen;
 import org.ae2craftcore.items.RecipeStorageCellItem;
 import org.ae2craftcore.registry.ModMenuTypes;
 

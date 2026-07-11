@@ -1,10 +1,13 @@
 package org.ae2craftcore.blocks.block;
 
+import appeng.api.orientation.IOrientableBlock;
+import appeng.api.orientation.IOrientationStrategy;
+import appeng.api.orientation.OrientationStrategies;
 import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.world.InteractionResult;
 import net.minecraft.world.Containers;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.Level;
@@ -25,9 +28,6 @@ import org.ae2craftcore.blocks.blockentity.LogicAssemblerBlockEntity;
 import org.ae2craftcore.registry.annotations.RegisterBlock;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import appeng.api.orientation.IOrientableBlock;
-import appeng.api.orientation.IOrientationStrategy;
-import appeng.api.orientation.OrientationStrategies;
 
 @RegisterBlock(name = "logic_assembler", strength = 2.2f, resistance = 11.0f, requiresCorrectTool = true)
 public class LogicAssemblerBlock extends BaseEntityBlock implements IOrientableBlock {

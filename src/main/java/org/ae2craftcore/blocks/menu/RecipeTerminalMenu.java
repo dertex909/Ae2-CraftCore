@@ -1,12 +1,15 @@
 package org.ae2craftcore.blocks.menu;
 
 import appeng.api.implementations.blockentities.ICraftingMachine;
+import appeng.api.inventories.InternalInventory;
+import appeng.api.parts.IPartHost;
+import appeng.helpers.InterfaceLogicHost;
+import appeng.helpers.patternprovider.PatternProviderLogicHost;
+import appeng.menu.guisync.GuiSync;
 import appeng.menu.me.common.IClientRepo;
 import appeng.menu.me.items.PatternEncodingTermMenu;
 import appeng.menu.slot.FakeSlot;
 import appeng.parts.encoding.EncodingMode;
-import appeng.api.inventories.InternalInventory;
-import appeng.menu.guisync.GuiSync;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.NonNullList;
@@ -27,15 +30,12 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import org.ae2craftcore.Ae2craftcore;
 import org.ae2craftcore.blocks.block.MeMachineInterfaceBlock;
 import org.ae2craftcore.blocks.blockentity.MeMachineInterfaceBlockEntity;
+import org.ae2craftcore.items.RecipeStorageCellItem;
 import org.ae2craftcore.mixin.SlotAccessor;
 import org.ae2craftcore.network.packet.RecipeTerminalSyncPacket;
 import org.ae2craftcore.parts.RecipeTerminalPart;
-import org.ae2craftcore.items.RecipeStorageCellItem;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import appeng.helpers.patternprovider.PatternProviderLogicHost;
-import appeng.helpers.InterfaceLogicHost;
-import appeng.api.parts.IPartHost;
 
 import java.lang.reflect.Proxy;
 import java.util.*;

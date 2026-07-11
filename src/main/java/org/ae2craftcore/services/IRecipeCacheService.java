@@ -1,7 +1,7 @@
 package org.ae2craftcore.services;
 
-import appeng.api.networking.IGridService;
 import appeng.api.crafting.IPatternDetails;
+import appeng.api.networking.IGridService;
 import net.minecraft.world.level.Level;
 
 import java.util.List;
