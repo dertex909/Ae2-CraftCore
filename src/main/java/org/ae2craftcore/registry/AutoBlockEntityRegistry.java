@@ -91,8 +91,7 @@ public class AutoBlockEntityRegistry {
 
             BLOCK_ENTITIES.register(name, () -> {
                 Block[] blocks = blockSuppliers.stream().map(Supplier::get).toArray(Block[]::new);
-                @SuppressWarnings("DataFlowIssue")
-                var type = BlockEntityType.Builder.of(supplier, blocks).build(null);
+                var type = new BlockEntityType<>(supplier, blocks);
                 injectType(clazz, type);
 
                 return type;

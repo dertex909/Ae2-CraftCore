@@ -32,6 +32,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.item.component.TooltipDisplay;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import org.ae2craftcore.registry.AttachmentRegistry;
 import org.ae2craftcore.registry.annotations.RegisterItem;
@@ -39,6 +40,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
+import java.util.function.Consumer;
 
 import static net.minecraft.core.component.DataComponents.CUSTOM_DATA;
 import static org.ae2craftcore.network.packet.RecipeTerminalSavePacket.RECIPEMACHINEGROUP;
@@ -117,7 +119,8 @@ public class RecipeStorageCellItem extends Item {
         var customData = p.get(CUSTOM_DATA);
         if (customData != null) {
             var tag = customData.copyTag();
-            if (tag.contains(RECIPEMACHINEGROUP)) return tag.getString(RECIPEMACHINEGROUP).toLowerCase(Locale.ROOT);
+            if (tag.contains(RECIPEMACHINEGROUP))
+                return tag.getStringOr(RECIPEMACHINEGROUP, "").toLowerCase(Locale.ROOT);
         }
         return "";
     }
@@ -132,7 +135,7 @@ public class RecipeStorageCellItem extends Item {
             String group = "";
             if (customData != null) {
                 var tag = customData.copyTag();
-                if (tag.contains(RECIPEMACHINEGROUP)) group = tag.getString(RECIPEMACHINEGROUP);
+                if (tag.contains(RECIPEMACHINEGROUP)) group = tag.getStringOr(RECIPEMACHINEGROUP, "");
             }
             uniqueGroups.add(group.toLowerCase(Locale.ROOT));
         }
@@ -140,17 +143,18 @@ public class RecipeStorageCellItem extends Item {
     }
 
     @Override
-    public void appendHoverText(@NotNull ItemStack stack, @NotNull TooltipContext context, @NotNull List<Component> tooltipComponents, @NotNull TooltipFlag tooltipFlag) {
+    @SuppressWarnings("deprecation")
+    public void appendHoverText(@NotNull ItemStack stack, @NotNull Item.TooltipContext context, @NotNull TooltipDisplay display, @NotNull Consumer<Component> tooltipComponents, @NotNull TooltipFlag tooltipFlag) {
         int count = stack.getOrDefault(AttachmentRegistry.RECIPE_COUNT.get(), 0);
         int machineCount = stack.getOrDefault(AttachmentRegistry.MACHINE_COUNT.get(), 0);
 
         var tier = getTierForStack(stack);
 
-        tooltipComponents.add(Component.literal("Recipes (Patterns): ").withStyle(ChatFormatting.GRAY)
+        tooltipComponents.accept(Component.literal("Recipes (Patterns): ").withStyle(ChatFormatting.GRAY)
                 .append(Component.literal(String.valueOf(count)).withStyle(ChatFormatting.YELLOW))
                 .append(Component.literal(" / " + tier.getMaxRecipes()).withStyle(ChatFormatting.DARK_GRAY)));
 
-        tooltipComponents.add(Component.literal("Machines: ").withStyle(ChatFormatting.GRAY)
+        tooltipComponents.accept(Component.literal("Machines: ").withStyle(ChatFormatting.GRAY)
                 .append(Component.literal(String.valueOf(machineCount)).withStyle(ChatFormatting.YELLOW))
                 .append(Component.literal(" / " + tier.getMaxMachines()).withStyle(ChatFormatting.DARK_GRAY)));
     }

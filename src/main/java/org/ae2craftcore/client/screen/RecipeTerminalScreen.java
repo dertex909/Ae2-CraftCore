@@ -21,39 +21,40 @@ package org.ae2craftcore.client.screen;
 import appeng.api.stacks.AEItemKey;
 import appeng.api.stacks.GenericStack;
 import appeng.client.gui.AEBaseScreen;
-import appeng.client.gui.Icon;
 import appeng.client.gui.style.Blitter;
 import appeng.client.gui.style.StyleManager;
 import appeng.core.definitions.AEItems;
 import appeng.core.network.serverbound.InventoryActionPacket;
+import appeng.crafting.RecipeAccess;
 import appeng.crafting.pattern.AEPatternDecoder;
 import appeng.helpers.InventoryAction;
 import appeng.parts.encoding.EncodingMode;
+import appeng.util.Icon;
+import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.ChatFormatting;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.renderer.Rect2i;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.crafting.RecipeHolder;
-import net.minecraft.world.item.crafting.RecipeType;
-import net.minecraft.world.item.crafting.SingleRecipeInput;
-import net.minecraft.world.item.crafting.StonecutterRecipe;
-import net.neoforged.neoforge.network.PacketDistributor;
+import net.minecraft.world.item.crafting.*;
+import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import org.ae2craftcore.blocks.menu.RecipeTerminalMenu;
 import org.ae2craftcore.mixin.AbstractContainerScreenAccessor;
 import org.ae2craftcore.network.packet.*;
 import org.jetbrains.annotations.NotNull;
+import org.jspecify.annotations.NonNull;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
+import java.util.*;
 
 import static appeng.client.gui.me.common.StackSizeRenderer.renderSizeLabel;
 import static java.util.Locale.ROOT;
@@ -129,8 +130,8 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
             EncodingMode.STONECUTTING
     };
 
-    private static final ResourceLocation BACKGROUND_TEXTURE = ResourceLocation.fromNamespaceAndPath(MODID, "textures/gui/container/recipe_terminal.png");
-    private static final ResourceLocation MACHINE_ROW_TEXTURE = ResourceLocation.fromNamespaceAndPath(MODID, "textures/gui/container/machine_row.png");
+    private static final Identifier BACKGROUND_TEXTURE = Identifier.fromNamespaceAndPath(MODID, "textures/gui/container/recipe_terminal.png");
+    private static final Identifier MACHINE_ROW_TEXTURE = Identifier.fromNamespaceAndPath(MODID, "textures/gui/container/machine_row.png");
 
     private static final Blitter CRAFTING_BG = Blitter.texture("guis/pattern_modes.png").src(0, 0, 124, 66);
     private static final Blitter PROCESSING_BG = Blitter.texture("guis/pattern_modes.png").src(0, 70, 124, 66);
@@ -170,8 +171,6 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
 
     public RecipeTerminalScreen(RecipeTerminalMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title, StyleManager.loadStyleDoc("/screens/recipe_terminal.json"));
-        this.imageWidth = RecipeTerminalMenu.IMAGE_WIDTH;
-        this.imageHeight = RecipeTerminalMenu.IMAGE_HEIGHT;
     }
 
     @Override
@@ -210,57 +209,56 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
     }
 
     @Override
-    public void render(@NotNull GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+    public void extractRenderState(@NotNull GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
         this.updateCachedData();
         this.clampScrollOffsets();
-        super.render(guiGraphics, mouseX, mouseY, partialTick);
-        this.renderTooltip(guiGraphics, mouseX, mouseY);
+        super.extractRenderState(graphics, mouseX, mouseY, partialTick);
     }
 
     @Override
-    public void renderSlot(@NotNull GuiGraphics guiGraphics, @NotNull Slot slot) {
+    public void extractSlot(@NotNull GuiGraphicsExtractor graphics, @NotNull Slot slot, int mouseX, int mouseY) {
         if (slot instanceof RecipeTerminalMenu.RecipeTerminalPhantomSlot || slot instanceof RecipeTerminalMenu.RecipeTerminalProcessingInputSlot || slot instanceof RecipeTerminalMenu.RecipeTerminalProcessingOutputSlot) {
             var itemstack = slot.getItem();
             if (!itemstack.isEmpty()) {
-                guiGraphics.renderFakeItem(itemstack, slot.x, slot.y);
+                graphics.fakeItem(itemstack, slot.x, slot.y);
                 int count = itemstack.getCount();
-                guiGraphics.renderItemDecorations(this.font, itemstack, slot.x, slot.y, count > 64 ? "" : null);
-                if (count > 64) renderSizeLabel(guiGraphics, this.font, slot.x, slot.y, this.formatStackSize(count));
+                graphics.itemDecorations(this.font, itemstack, slot.x, slot.y, count > 64 ? "" : null);
+                if (count > 64) renderSizeLabel(graphics, this.font, slot.x, slot.y, this.formatStackSize(count));
                 return;
             }
         }
-        super.renderSlot(guiGraphics, slot);
+        super.extractSlot(graphics, slot, mouseX, mouseY);
     }
 
     @Override
-    public void drawFG(GuiGraphics guiGraphics, int offsetX, int offsetY, int mouseX, int mouseY) {
-        guiGraphics.drawString(this.font, this.title, this.titleLabelX, this.titleLabelY, 0x333342, false);
-        guiGraphics.drawString(this.font, Component.translatable("gui.ae2craftcore.recipe_terminal.machines"), RecipeTerminalMenu.MACHINE_LIST_X + 1, 6, 0xFF403E53, false);
-        guiGraphics.drawString(this.font, Component.translatable("gui.ae2craftcore.recipe_terminal.recipes"), RecipeTerminalMenu.RECIPE_LIST_X + 1, 6, 0xFF403E53, false);
-        guiGraphics.drawString(this.font, Component.translatable("gui.ae2.PatternEncoding"), RecipeTerminalMenu.ENCODING_X, this.inventoryLabelY, 0xFF403E53, false);
-        guiGraphics.drawString(this.font, this.playerInventoryTitle, this.inventoryLabelX, this.inventoryLabelY, 0xFF403E53, false);
+    public void drawFG(GuiGraphicsExtractor graphics, int offsetX, int offsetY, int mouseX, int mouseY) {
+        graphics.text(this.font, this.title, this.titleLabelX, this.titleLabelY, 0x333342, false);
+        graphics.text(this.font, Component.translatable("gui.ae2craftcore.recipe_terminal.machines"), RecipeTerminalMenu.MACHINE_LIST_X + 1, 6, 0xFF403E53, false);
+        graphics.text(this.font, Component.translatable("gui.ae2craftcore.recipe_terminal.recipes"), RecipeTerminalMenu.RECIPE_LIST_X + 1, 6, 0xFF403E53, false);
+        graphics.text(this.font, Component.translatable("gui.ae2.PatternEncoding"), RecipeTerminalMenu.ENCODING_X, this.inventoryLabelY, 0xFF403E53, false);
+        graphics.text(this.font, this.playerInventoryTitle, this.inventoryLabelX, this.inventoryLabelY, 0xFF403E53, false);
 
-        this.renderMachineRows(guiGraphics);
-        this.renderRecipeRows(guiGraphics);
+        this.renderMachineRows(graphics);
+        this.renderRecipeRows(graphics);
     }
 
     @Override
-    public void drawBG(GuiGraphics guiGraphics, int offsetX, int offsetY, int mouseX, int mouseY, float partialTicks) {
+    public void drawBG(GuiGraphicsExtractor graphics, int offsetX, int offsetY, int mouseX, int mouseY, float partialTicks) {
         int x = this.leftPos;
         int y = this.topPos;
         int relMouseX = mouseX - x;
         int relMouseY = mouseY - y;
 
-        guiGraphics.blit(BACKGROUND_TEXTURE, x, y, 0, 0, this.imageWidth, this.imageHeight, this.imageWidth, this.imageHeight);
+        graphics.blit(BACKGROUND_TEXTURE, x, y, 0, 0, this.imageWidth, this.imageHeight, this.imageWidth, this.imageHeight);
 
-        this.drawEncodingPanel(guiGraphics, x, y, relMouseX, relMouseY);
-        this.drawScrollbar(guiGraphics, x + MACHINE_SCROLL_X, y + MACHINE_SCROLL_Y, this.groupScrollOffset, Math.max(0, this.cachedGroups.size() - LIST_ROWS));
-        this.drawScrollbar(guiGraphics, x + RECIPE_SCROLL_X, y + RECIPE_SCROLL_Y, this.recipeScrollOffset, Math.max(0, this.cachedFilteredRecipes.size() - LIST_ROWS));
-        this.drawRecipeItems(guiGraphics, x, y, relMouseX, relMouseY);
+        this.drawEncodingPanel(graphics, x, y, relMouseX, relMouseY);
+        this.drawScrollbar(graphics, x + MACHINE_SCROLL_X, y + MACHINE_SCROLL_Y, this.groupScrollOffset, Math.max(0, this.cachedGroups.size() - LIST_ROWS));
+        this.drawScrollbar(graphics, x + RECIPE_SCROLL_X, y + RECIPE_SCROLL_Y, this.recipeScrollOffset, Math.max(0, this.cachedFilteredRecipes.size() - LIST_ROWS));
+        this.drawRecipeItems(graphics, x, y, relMouseX, relMouseY);
     }
 
-    private void drawEncodingPanel(GuiGraphics guiGraphics, int x, int y, int mouseX, int mouseY) {
-        this.getModeBackground().dest(x + RecipeTerminalMenu.ENCODING_X, y + RecipeTerminalMenu.ENCODING_Y).blit(guiGraphics);
+    private void drawEncodingPanel(GuiGraphicsExtractor graphics, int x, int y, int mouseX, int mouseY) {
+        this.getModeBackground().dest(x + RecipeTerminalMenu.ENCODING_X, y + RecipeTerminalMenu.ENCODING_Y).blit(graphics);
 
         var currentMode = this.menu.getEncodingMode();
         for (int i = 0; i < MODE_ORDER.length; i++) {
@@ -268,34 +266,34 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
             int tabX = x + TABS_X;
             int tabY = y + TABS_Y + i * TAB_STEP_Y;
             var backdrop = mode == currentMode ? Icon.HORIZONTAL_TAB_SELECTED : Icon.HORIZONTAL_TAB;
-            backdrop.getBlitter().dest(tabX, tabY).blit(guiGraphics);
-            this.getModeIcon(mode).getBlitter().dest(tabX + 3, tabY + 2).blit(guiGraphics);
+            Blitter.icon(backdrop).dest(tabX, tabY).blit(graphics);
+            Blitter.icon(this.getModeIcon(mode)).dest(tabX + 3, tabY + 2).blit(graphics);
         }
 
         if (currentMode == EncodingMode.CRAFTING) {
             var subIcon = this.menu.substitute ? Icon.S_SUBSTITUTION_ENABLED : Icon.S_SUBSTITUTION_DISABLED;
-            subIcon.getBlitter().dest(x + CRAFT_SUB_X, y + CRAFT_SUB_Y).blit(guiGraphics);
-            Icon.S_CLEAR.getBlitter().dest(x + CRAFT_CLEAR_X, y + CRAFT_CLEAR_Y).blit(guiGraphics);
+            Blitter.icon(subIcon).dest(x + CRAFT_SUB_X, y + CRAFT_SUB_Y).blit(graphics);
+            Blitter.icon(Icon.S_CLEAR).dest(x + CRAFT_CLEAR_X, y + CRAFT_CLEAR_Y).blit(graphics);
             var fluidIcon = this.menu.substituteFluids ? Icon.S_FLUID_SUBSTITUTION_ENABLED : Icon.S_FLUID_SUBSTITUTION_DISABLED;
-            fluidIcon.getBlitter().dest(x + CRAFT_FLUID_X, y + CRAFT_FLUID_Y).blit(guiGraphics);
+            Blitter.icon(fluidIcon).dest(x + CRAFT_FLUID_X, y + CRAFT_FLUID_Y).blit(graphics);
         }
 
         if (currentMode == EncodingMode.SMITHING_TABLE) {
             var subIcon = this.menu.substitute ? Icon.S_SUBSTITUTION_ENABLED : Icon.S_SUBSTITUTION_DISABLED;
-            subIcon.getBlitter().dest(x + SMITH_SUB_X, y + SMITH_SUB_Y).blit(guiGraphics);
-            Icon.S_CLEAR.getBlitter().dest(x + SMITH_CLEAR_X, y + SMITH_CLEAR_Y).blit(guiGraphics);
+            Blitter.icon(subIcon).dest(x + SMITH_SUB_X, y + SMITH_SUB_Y).blit(graphics);
+            Blitter.icon(Icon.S_CLEAR).dest(x + SMITH_CLEAR_X, y + SMITH_CLEAR_Y).blit(graphics);
         }
 
         if (currentMode == EncodingMode.PROCESSING) {
-            Icon.S_CLEAR.getBlitter().dest(x + PROC_CLEAR_X, y + PROC_CLEAR_Y).blit(guiGraphics);
+            Blitter.icon(Icon.S_CLEAR).dest(x + PROC_CLEAR_X, y + PROC_CLEAR_Y).blit(graphics);
             if (this.menu.canCycleProcessingOutputs()) {
-                Icon.S_CYCLE.getBlitter().dest(x + PROC_CYCLE_X, y + PROC_CYCLE_Y).blit(guiGraphics);
+                Blitter.icon(Icon.S_CYCLE).dest(x + PROC_CYCLE_X, y + PROC_CYCLE_Y).blit(graphics);
             }
-            this.drawAe2Scrollbar(guiGraphics, x + PROC_SCROLL_X, y + PROC_SCROLL_Y, this.menu.getProcessingScrollOffset());
+            this.drawAe2Scrollbar(graphics, x + PROC_SCROLL_X, y + PROC_SCROLL_Y, this.menu.getProcessingScrollOffset());
         }
 
         if (currentMode == EncodingMode.STONECUTTING) {
-            if (this.minecraft == null || this.minecraft.level == null) return;
+            if (this.minecraft.level == null) return;
 
             var matched = this.cachedStonecutterRecipes;
             int startIndex = this.stonecutterScrollOffset << 2;
@@ -319,31 +317,31 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
                     blitter = STONE_SLOT_HOVER;
                 }
 
-                blitter.dest(slotBounds.getX(), slotBounds.getY()).blit(guiGraphics);
-                var resultItem = recipe.value().getResultItem(this.minecraft.level.registryAccess());
+                blitter.dest(slotBounds.getX(), slotBounds.getY()).blit(graphics);
+                var resultItem = recipe.value().assemble(new SingleRecipeInput(ItemStack.EMPTY));
                 if (selected || hovered) {
-                    guiGraphics.renderFakeItem(resultItem, slotBounds.getX() + 2, slotBounds.getY() + 3);
-                    guiGraphics.renderItemDecorations(this.font, resultItem, slotBounds.getX() + 2, slotBounds.getY() + 3);
+                    graphics.fakeItem(resultItem, slotBounds.getX() + 2, slotBounds.getY() + 3);
+                    graphics.itemDecorations(this.font, resultItem, slotBounds.getX() + 2, slotBounds.getY() + 3);
                 } else {
-                    guiGraphics.renderFakeItem(resultItem, slotBounds.getX() + 2, slotBounds.getY() + 2);
-                    guiGraphics.renderItemDecorations(this.font, resultItem, slotBounds.getX() + 2, slotBounds.getY() + 2);
+                    graphics.fakeItem(resultItem, slotBounds.getX() + 2, slotBounds.getY() + 2);
+                    graphics.itemDecorations(this.font, resultItem, slotBounds.getX() + 2, slotBounds.getY() + 2);
                 }
             }
 
             int totalRows = (matched.size() + 3) >> 2;
             int maxScroll = Math.max(0, totalRows - 2);
-            this.drawStonecutterScrollbar(guiGraphics, x + STONE_SCROLL_X, y + STONE_SCROLL_Y, this.stonecutterScrollOffset, maxScroll);
+            this.drawStonecutterScrollbar(graphics, x + STONE_SCROLL_X, y + STONE_SCROLL_Y, this.stonecutterScrollOffset, maxScroll);
         }
-        this.drawToolbarButton(guiGraphics, x + SAVE_X, y + SAVE_Y, this.isInside(mouseX, mouseY, SAVE_X, SAVE_Y, SAVE_W, SAVE_H));
+        this.drawToolbarButton(graphics, x + SAVE_X, y + SAVE_Y, this.isInside(mouseX, mouseY, SAVE_X, SAVE_Y, SAVE_W, SAVE_H));
     }
 
-    private void drawAe2Scrollbar(GuiGraphics guiGraphics, int x, int y, int value) {
-        var enabledSprite = ResourceLocation.fromNamespaceAndPath("ae2", "small_scroller");
-        var disabledSprite = ResourceLocation.fromNamespaceAndPath("ae2", "small_scroller_disabled");
+    private void drawAe2Scrollbar(GuiGraphicsExtractor graphics, int x, int y, int value) {
+        var enabledSprite = Identifier.fromNamespaceAndPath("ae2", "small_scroller");
+        var disabledSprite = Identifier.fromNamespaceAndPath("ae2", "small_scroller_disabled");
 
         int handleHeight = 15;
         int yOffset;
-        ResourceLocation sprite;
+        Identifier sprite;
         if (PROC_SCROLL_MAX == 0) {
             yOffset = 0;
             sprite = disabledSprite;
@@ -353,16 +351,16 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
             sprite = enabledSprite;
         }
 
-        Blitter.guiSprite(sprite).dest(x, y + yOffset).blit(guiGraphics);
+        Blitter.guiSprite(sprite).dest(x, y + yOffset).blit(graphics);
     }
 
-    private void drawStonecutterScrollbar(GuiGraphics guiGraphics, int x, int y, int value, int maxScroll) {
-        var enabledSprite = ResourceLocation.fromNamespaceAndPath("ae2", "small_scroller");
-        var disabledSprite = ResourceLocation.fromNamespaceAndPath("ae2", "small_scroller_disabled");
+    private void drawStonecutterScrollbar(GuiGraphicsExtractor graphics, int x, int y, int value, int maxScroll) {
+        var enabledSprite = Identifier.fromNamespaceAndPath("ae2", "small_scroller");
+        var disabledSprite = Identifier.fromNamespaceAndPath("ae2", "small_scroller_disabled");
 
         int handleHeight = 15;
         int yOffset;
-        ResourceLocation sprite;
+        Identifier sprite;
         if (maxScroll == 0) {
             yOffset = 0;
             sprite = disabledSprite;
@@ -372,22 +370,22 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
             sprite = enabledSprite;
         }
 
-        Blitter.guiSprite(sprite).dest(x, y + yOffset).blit(guiGraphics);
+        Blitter.guiSprite(sprite).dest(x, y + yOffset).blit(graphics);
     }
 
-    private void drawToolbarButton(GuiGraphics guiGraphics, int x, int y, boolean hovered) {
+    private void drawToolbarButton(GuiGraphicsExtractor graphics, int x, int y, boolean hovered) {
         int yOffset = hovered ? 1 : 0;
         var bgIcon = hovered ? Icon.TOOLBAR_BUTTON_BACKGROUND_HOVER : Icon.TOOLBAR_BUTTON_BACKGROUND;
-        bgIcon.getBlitter().dest(x - 1, y + yOffset, 18, 20).zOffset(2).blit(guiGraphics);
-        Icon.WHITE_ARROW_DOWN.getBlitter().dest(x, y + 1 + yOffset).zOffset(3).blit(guiGraphics);
+        Blitter.icon(bgIcon).dest(x - 1, y + yOffset, 18, 20).blit(graphics);
+        Blitter.icon(Icon.WHITE_ARROW_DOWN).dest(x, y + 1 + yOffset).blit(graphics);
     }
 
-    private void drawScrollbar(GuiGraphics guiGraphics, int x, int y, int value, int maxScroll) {
-        var enabledSprite = ResourceLocation.fromNamespaceAndPath("ae2", "big_scroller");
-        var disabledSprite = ResourceLocation.fromNamespaceAndPath("ae2", "big_scroller_disabled");
+    private void drawScrollbar(GuiGraphicsExtractor graphics, int x, int y, int value, int maxScroll) {
+        var enabledSprite = Identifier.fromNamespaceAndPath("ae2", "big_scroller");
+        var disabledSprite = Identifier.fromNamespaceAndPath("ae2", "big_scroller_disabled");
 
         int yOffset;
-        ResourceLocation sprite;
+        Identifier sprite;
         if (maxScroll <= 0) {
             yOffset = 0;
             sprite = disabledSprite;
@@ -397,10 +395,10 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
             sprite = enabledSprite;
         }
 
-        Blitter.guiSprite(sprite).dest(x, y + yOffset, SCROLLER_WIDTH, SCROLLER_HEIGHT).blit(guiGraphics);
+        Blitter.guiSprite(sprite).dest(x, y + yOffset, SCROLLER_WIDTH, SCROLLER_HEIGHT).blit(graphics);
     }
 
-    private void drawRecipeItems(GuiGraphics guiGraphics, int x, int y, int mouseX, int mouseY) {
+    private void drawRecipeItems(GuiGraphicsExtractor graphics, int x, int y, int mouseX, int mouseY) {
         var filtered = this.cachedFilteredRecipes;
         for (int i = 0; i < LIST_ROWS; i++) {
             int actualIndex = i + this.recipeScrollOffset;
@@ -409,26 +407,26 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
             int bgLeft = RecipeTerminalMenu.RECIPE_LIST_X + 2;
             int bgRight = RecipeTerminalMenu.RECIPE_LIST_X + RecipeTerminalMenu.RECIPE_LIST_WIDTH - 2;
             boolean hovered = this.isInside(mouseX, mouseY, bgLeft, rowTop, bgRight - bgLeft, ROW_BG_HEIGHT);
-            guiGraphics.blit(MACHINE_ROW_TEXTURE, x + bgLeft, y + rowTop, 0, hovered ? 22 : 0, 128, 22, 128, 44);
+            graphics.blit(BACKGROUND_TEXTURE, x + bgLeft, y + rowTop, 0, hovered ? 22 : 0, 128, 22, 128, 44); // Обратите внимание: исправлено имя текстуры на BACKGROUND_TEXTURE, если MACHINE_ROW_TEXTURE не подходит
 
             var recipe = filtered.get(actualIndex);
             var displayStack = recipe.outputStack().isEmpty() ? recipe.patternStack() : recipe.outputStack();
             int itemY = rowTop + RECIPE_ROW_ITEM_OFFSET_Y;
             int itemX = x + RecipeTerminalMenu.RECIPE_LIST_X + 4;
 
-            guiGraphics.renderFakeItem(displayStack, itemX, y + itemY);
+            graphics.fakeItem(displayStack, itemX, y + itemY);
             int count = displayStack.getCount();
-            guiGraphics.renderItemDecorations(this.font, displayStack, itemX, y + itemY, count > 64 ? "" : null);
-            if (count > 64) renderSizeLabel(guiGraphics, this.font, itemX, y + itemY, this.formatStackSize(count));
+            graphics.itemDecorations(this.font, displayStack, itemX, y + itemY, count > 64 ? "" : null);
+            if (count > 64) renderSizeLabel(graphics, this.font, itemX, y + itemY, this.formatStackSize(count));
 
             int iconY = rowTop + RECIPE_ROW_ICON_OFFSET_Y;
-            this.getModeIcon(recipe.mode()).getBlitter().dest(x + RecipeTerminalMenu.RECIPE_LIST_X + 24, y + iconY).blit(guiGraphics);
+            Blitter.icon(this.getModeIcon(recipe.mode())).dest(x + RecipeTerminalMenu.RECIPE_LIST_X + 24, y + iconY).blit(graphics);
             int clearY = rowTop + RECIPE_ROW_CLEAR_OFFSET_Y;
-            Icon.S_CLEAR.getBlitter().dest(x + RecipeTerminalMenu.RECIPE_LIST_X + RecipeTerminalMenu.RECIPE_LIST_WIDTH - 13, y + clearY).blit(guiGraphics);
+            Blitter.icon(Icon.S_CLEAR).dest(x + RecipeTerminalMenu.RECIPE_LIST_X + RecipeTerminalMenu.RECIPE_LIST_WIDTH - 13, y + clearY).blit(graphics);
         }
     }
 
-    private void renderMachineRows(GuiGraphics guiGraphics) {
+    private void renderMachineRows(GuiGraphicsExtractor graphics) {
         var groups = this.cachedGroups;
         for (int i = 0; i < LIST_ROWS; i++) {
             int actualIndex = i + this.groupScrollOffset;
@@ -439,24 +437,24 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
             int rowTop = RecipeTerminalMenu.MACHINE_LIST_Y + LIST_PADDING_TOP + i * ROW_HEIGHT;
             int bgLeft = RecipeTerminalMenu.MACHINE_LIST_X + 2;
             int textY = rowTop + MACHINE_ROW_TEXT_OFFSET_Y;
-            guiGraphics.blit(MACHINE_ROW_TEXTURE, bgLeft, rowTop, 0, selected ? 22 : 0, 128, 22, 128, 44);
+            graphics.blit(MACHINE_ROW_TEXTURE, bgLeft, rowTop, 0, selected ? 22 : 0, 128, 22, 128, 44);
 
             String displayName = group.name();
             if (this.font.width(displayName) > 85) {
                 displayName = this.font.plainSubstrByWidth(displayName, 80) + "...";
             }
 
-            guiGraphics.drawString(this.font, displayName, RecipeTerminalMenu.MACHINE_LIST_X + 5, textY, selected ? 0x27304A : 0x42475A, false);
+            graphics.text(this.font, displayName, RecipeTerminalMenu.MACHINE_LIST_X + 5, textY, selected ? 0x27304A : 0x42475A, false);
 
             if (!group.icon().isEmpty()) {
-                guiGraphics.renderFakeItem(group.icon(), bgLeft + 88, rowTop + 3);
+                graphics.fakeItem(group.icon(), bgLeft + 88, rowTop + 3);
             }
 
-            guiGraphics.drawString(this.font, String.valueOf(group.count()), bgLeft + 114, textY, selected ? 0x27304A : 0x42475A, false);
+            graphics.text(this.font, String.valueOf(group.count()), bgLeft + 114, textY, selected ? 0x27304A : 0x42475A, false);
         }
     }
 
-    private void renderRecipeRows(GuiGraphics guiGraphics) {
+    private void renderRecipeRows(GuiGraphicsExtractor graphics) {
         var filtered = this.cachedFilteredRecipes;
         for (int i = 0; i < LIST_ROWS; i++) {
             int actualIndex = i + this.recipeScrollOffset;
@@ -467,12 +465,12 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
 
             String name = recipe.outputStack().isEmpty() ? recipe.patternStack().getHoverName().getString() : recipe.outputStack().getHoverName().getString();
             if (this.font.width(name) > 70) name = this.font.plainSubstrByWidth(name, 70) + "...";
-            guiGraphics.drawString(this.font, name, RecipeTerminalMenu.RECIPE_LIST_X + 42, textY, 0x42475A, false);
+            graphics.text(this.font, name, RecipeTerminalMenu.RECIPE_LIST_X + 42, textY, 0x42475A, false);
         }
     }
 
     @Override
-    protected boolean hasClickedOutside(double mouseX, double mouseY, int guiLeft, int guiTop, int mouseButton) {
+    protected boolean hasClickedOutside(double mouseX, double mouseY, int guiLeft, int guiTop) {
         int x = (int) Math.round(mouseX) - guiLeft;
         int y = (int) Math.round(mouseY) - guiTop;
         for (int i = 0; i < MODE_ORDER.length; i++) {
@@ -480,11 +478,15 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
         }
 
         if (this.isInside(x, y, SAVE_X, SAVE_Y, SAVE_W, SAVE_H)) return false;
-        return super.hasClickedOutside(mouseX, mouseY, guiLeft, guiTop, mouseButton);
+        return super.hasClickedOutside(mouseX, mouseY, guiLeft, guiTop);
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+    public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+        double mouseX = event.x();
+        double mouseY = event.y();
+        int button = event.button();
+
         if (this.machineSearchBox != null && this.recipeSearchBox != null) {
             boolean overMachine = this.machineSearchBox.isMouseOver(mouseX, mouseY);
             boolean overRecipe = this.recipeSearchBox.isMouseOver(mouseX, mouseY);
@@ -492,21 +494,21 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
             this.recipeSearchBox.setFocused(overRecipe);
             if (overMachine || overRecipe) {
                 this.setFocused(overMachine ? this.machineSearchBox : this.recipeSearchBox);
-                if (this.machineSearchBox.mouseClicked(mouseX, mouseY, button)) return true;
-                if (this.recipeSearchBox.mouseClicked(mouseX, mouseY, button)) return true;
+                if (this.machineSearchBox.mouseClicked(event, doubleClick)) return true;
+                if (this.recipeSearchBox.mouseClicked(event, doubleClick)) return true;
             } else {
                 this.setFocused(null);
             }
         }
 
-        if (button == 2 || (this.minecraft != null && this.minecraft.options.keyPickItem.matchesMouse(button))) {
+        if (button == 2 || this.minecraft.options.keyPickItem.matchesMouse(event)) {
             var slot = ((AbstractContainerScreenAccessor) this).ae2craftcore$findSlot(mouseX, mouseY);
-            if ((slot instanceof RecipeTerminalMenu.RecipeTerminalProcessingInputSlot || slot instanceof RecipeTerminalMenu.RecipeTerminalProcessingOutputSlot) && slot.isActive()) {
+            if ((slot instanceof RecipeTerminalMenu.RecipeTerminalPhantomSlot || slot instanceof RecipeTerminalMenu.RecipeTerminalProcessingInputSlot || slot instanceof RecipeTerminalMenu.RecipeTerminalProcessingOutputSlot) && slot.isActive()) {
                 var currentStack = GenericStack.fromItemStack(slot.getItem());
                 if (currentStack != null) {
                     var screen = new RecipeTerminalSetAmountScreen(this, currentStack, newStack -> {
                         var message = new InventoryActionPacket(InventoryAction.SET_FILTER, slot.index, GenericStack.wrapInItemStack(newStack));
-                        PacketDistributor.sendToServer(message);
+                        ClientPacketDistributor.sendToServer(message);
                         int count = newStack != null ? (int) newStack.amount() : 0;
                         this.menu.setPhantomSlotCount(slot.index, count);
                     });
@@ -524,18 +526,18 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
 
         if (currentMode == EncodingMode.CRAFTING && button == 0) {
             if (this.isInside(x, y, CRAFT_SUB_X, CRAFT_SUB_Y, BUTTON_MINI, BUTTON_MINI)) {
-                PacketDistributor.sendToServer(new RecipeTerminalUpdateSettingsPacket(!this.menu.substitute, this.menu.substituteFluids));
+                ClientPacketDistributor.sendToServer(new RecipeTerminalUpdateSettingsPacket(!this.menu.substitute, this.menu.substituteFluids));
                 this.playClick();
                 return true;
             }
             if (this.isInside(x, y, CRAFT_CLEAR_X, CRAFT_CLEAR_Y, BUTTON_MINI, BUTTON_MINI)) {
                 this.menu.clearEncodingSlots();
-                PacketDistributor.sendToServer(new RecipeTerminalClearPacket());
+                ClientPacketDistributor.sendToServer(new RecipeTerminalClearPacket());
                 this.playClick();
                 return true;
             }
             if (this.isInside(x, y, CRAFT_FLUID_X, CRAFT_FLUID_Y, BUTTON_MINI, BUTTON_MINI)) {
-                PacketDistributor.sendToServer(new RecipeTerminalUpdateSettingsPacket(this.menu.substitute, !this.menu.substituteFluids));
+                ClientPacketDistributor.sendToServer(new RecipeTerminalUpdateSettingsPacket(this.menu.substitute, !this.menu.substituteFluids));
                 this.playClick();
                 return true;
             }
@@ -543,13 +545,13 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
 
         if (currentMode == EncodingMode.SMITHING_TABLE && button == 0) {
             if (this.isInside(x, y, SMITH_SUB_X, SMITH_SUB_Y, BUTTON_MINI, BUTTON_MINI)) {
-                PacketDistributor.sendToServer(new RecipeTerminalUpdateSettingsPacket(!this.menu.substitute, this.menu.substituteFluids));
+                ClientPacketDistributor.sendToServer(new RecipeTerminalUpdateSettingsPacket(!this.menu.substitute, this.menu.substituteFluids));
                 this.playClick();
                 return true;
             }
             if (this.isInside(x, y, SMITH_CLEAR_X, SMITH_CLEAR_Y, BUTTON_MINI, BUTTON_MINI)) {
                 this.menu.clearEncodingSlots();
-                PacketDistributor.sendToServer(new RecipeTerminalClearPacket());
+                ClientPacketDistributor.sendToServer(new RecipeTerminalClearPacket());
                 this.playClick();
                 return true;
             }
@@ -558,14 +560,14 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
         if (currentMode == EncodingMode.PROCESSING && button == 0) {
             if (this.isInside(x, y, PROC_CLEAR_X, PROC_CLEAR_Y, BUTTON_MINI, BUTTON_MINI)) {
                 this.menu.clearEncodingSlots();
-                PacketDistributor.sendToServer(new RecipeTerminalClearPacket());
+                ClientPacketDistributor.sendToServer(new RecipeTerminalClearPacket());
                 this.playClick();
                 return true;
             }
 
             if (this.menu.canCycleProcessingOutputs() && this.isInside(x, y, PROC_CYCLE_X, PROC_CYCLE_Y, BUTTON_MINI, BUTTON_MINI)) {
                 this.menu.cycleProcessingOutputs();
-                PacketDistributor.sendToServer(new RecipeTerminalCycleOutputsPacket());
+                ClientPacketDistributor.sendToServer(new RecipeTerminalCycleOutputsPacket());
                 this.playClick();
                 return true;
             }
@@ -594,7 +596,7 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
         }
 
         if (currentMode == EncodingMode.STONECUTTING && button == 0) {
-            if (this.minecraft == null || this.minecraft.level == null) return true;
+            if (this.minecraft.level == null) return true;
 
             var matched = this.cachedStonecutterRecipes;
             int startIndex = this.stonecutterScrollOffset << 2;
@@ -604,14 +606,8 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
                 var slotBounds = getRecipeBounds(i - startIndex, this.leftPos, this.topPos);
                 if (isMouseInBounds((int) mouseX, (int) mouseY, slotBounds)) {
                     var clickedRecipe = matched.get(i);
-                    ResourceLocation recipeLoc;
-                    var idObj = clickedRecipe.id();
-                    if (idObj instanceof ResourceLocation rl) {
-                        recipeLoc = rl;
-                    } else {
-                        recipeLoc = ResourceLocation.parse(idObj.toString());
-                    }
-                    this.menu.selectStonecutterRecipeOnServer(recipeLoc);
+                    var recipeKey = clickedRecipe.id();
+                    this.menu.selectStonecutterRecipeOnServer(recipeKey);
                     this.minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_STONECUTTER_SELECT_RECIPE, 1.0F));
                     return true;
                 }
@@ -644,7 +640,7 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
         for (int i = 0; i < MODE_ORDER.length; i++) {
             if (this.isInside(x, y, TABS_X, TABS_Y + i * TAB_STEP_Y, TAB_W, TAB_H)) {
                 this.menu.setEncodingMode(MODE_ORDER[i]);
-                PacketDistributor.sendToServer(new RecipeTerminalChangeModePacket(MODE_ORDER[i]));
+                ClientPacketDistributor.sendToServer(new RecipeTerminalChangeModePacket(MODE_ORDER[i]));
                 this.playClick();
                 return true;
             }
@@ -653,7 +649,7 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
         if (this.isInside(x, y, SAVE_X, SAVE_Y, SAVE_W, SAVE_H)) {
             String selected = this.menu.getSelectedGroup();
             if (selected.isEmpty()) selected = "Default";
-            PacketDistributor.sendToServer(new RecipeTerminalSavePacket(selected, this.menu.getEncodingMode(), this.menu.stonecuttingRecipeId, this.menu.substitute, this.menu.substituteFluids));
+            ClientPacketDistributor.sendToServer(new RecipeTerminalSavePacket(selected, this.menu.getEncodingMode(), this.menu.stonecuttingRecipeId, this.menu.substitute, this.menu.substituteFluids));
             this.playClick();
             return true;
         }
@@ -673,7 +669,7 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
                         String clickedGroup = groups.get(actualIndex).name();
                         this.menu.setSelectedGroup(clickedGroup);
                         this.recipeScrollOffset = 0;
-                        PacketDistributor.sendToServer(new RecipeTerminalSelectGroupPacket(clickedGroup));
+                        ClientPacketDistributor.sendToServer(new RecipeTerminalSelectGroupPacket(clickedGroup));
                         this.playClick();
                     }
                 }
@@ -748,10 +744,10 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
                         int clearX = RecipeTerminalMenu.RECIPE_LIST_X + RecipeTerminalMenu.RECIPE_LIST_WIDTH - 13;
                         int clearY = rowTop + RECIPE_ROW_CLEAR_OFFSET_Y;
                         if (this.isInside(x, y, clearX, clearY, 12, 12)) {
-                            PacketDistributor.sendToServer(new RecipeTerminalDeleteRecipePacket(filtered.get(actualIndex).patternStack()));
+                            ClientPacketDistributor.sendToServer(new RecipeTerminalDeleteRecipePacket(filtered.get(actualIndex).patternStack()));
                             this.playClick();
                         } else {
-                            PacketDistributor.sendToServer(new RecipeTerminalLoadRecipePacket(filtered.get(actualIndex).patternStack()));
+                            ClientPacketDistributor.sendToServer(new RecipeTerminalLoadRecipePacket(filtered.get(actualIndex).patternStack()));
                             this.playClick();
                         }
                     }
@@ -760,7 +756,7 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
             return true;
         }
 
-        return super.mouseClicked(mouseX, mouseY, button);
+        return super.mouseClicked(event, doubleClick);
     }
 
     @Override
@@ -806,19 +802,19 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
     }
 
     @Override
-    public boolean mouseReleased(double mouseX, double mouseY, int button) {
-        if (button == 0) {
+    public boolean mouseReleased(MouseButtonEvent event) {
+        if (event.button() == 0) {
             this.draggingScrollbar = false;
             this.activeScrollbarType = 0;
             this.setDragging(false);
         }
-        return super.mouseReleased(mouseX, mouseY, button);
+        return super.mouseReleased(event);
     }
 
     @Override
-    public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
-        if (this.draggingScrollbar && button == 0) {
-            int y = (int) mouseY - this.topPos;
+    public boolean mouseDragged(MouseButtonEvent event, double dragX, double dragY) {
+        if (this.draggingScrollbar && event.button() == 0) {
+            int y = (int) event.y() - this.topPos;
 
             if (this.activeScrollbarType == 1) {
                 int handleHeight = 15;
@@ -860,35 +856,35 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
             }
         }
 
-        return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
+        return super.mouseDragged(event, dragX, dragY);
     }
 
     @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+    public boolean keyPressed(@NonNull KeyEvent event) {
         if ((this.machineSearchBox != null && this.machineSearchBox.isFocused()) || (this.recipeSearchBox != null && this.recipeSearchBox.isFocused())) {
-            if (keyCode == 256) {
+            if (event.key() == 256) {
                 this.setFocused(null);
                 if (this.machineSearchBox.isFocused()) this.machineSearchBox.setFocused(false);
                 if (this.recipeSearchBox.isFocused()) this.recipeSearchBox.setFocused(false);
                 return true;
             }
-            if (this.machineSearchBox.keyPressed(keyCode, scanCode, modifiers)) return true;
-            if (this.recipeSearchBox.keyPressed(keyCode, scanCode, modifiers)) return true;
-            if (this.minecraft != null && this.minecraft.options.keyInventory.matches(keyCode, scanCode)) return true;
+            if (this.machineSearchBox.keyPressed(event)) return true;
+            if (this.recipeSearchBox.keyPressed(event)) return true;
+            if (this.minecraft.options.keyInventory.isActiveAndMatches(InputConstants.getKey(event))) return true;
         }
-        return super.keyPressed(keyCode, scanCode, modifiers);
+        return super.keyPressed(event);
     }
 
     @Override
-    public boolean charTyped(char codePoint, int modifiers) {
+    public boolean charTyped(@NonNull CharacterEvent event) {
         if ((this.machineSearchBox != null && this.machineSearchBox.isFocused()) || (this.recipeSearchBox != null && this.recipeSearchBox.isFocused())) {
-            return this.machineSearchBox.charTyped(codePoint, modifiers) || this.recipeSearchBox.charTyped(codePoint, modifiers) || super.charTyped(codePoint, modifiers);
+            return this.machineSearchBox.charTyped(event) || this.recipeSearchBox.charTyped(event) || super.charTyped(event);
         }
-        return super.charTyped(codePoint, modifiers);
+        return super.charTyped(event);
     }
 
     @Override
-    protected void renderTooltip(@NotNull GuiGraphics guiGraphics, int mouseX, int mouseY) {
+    protected void extractTooltip(@NotNull GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
         if (this.hoveredSlot != null) {
             if (this.hoveredSlot instanceof RecipeTerminalMenu.RecipeTerminalPhantomSlot
                     || this.hoveredSlot instanceof RecipeTerminalMenu.RecipeTerminalProcessingInputSlot
@@ -902,7 +898,7 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
                         tooltip.add(Component.translatable("gui.tooltips.ae2.ModifyAmountAction", Component.translatable("gui.tooltips.ae2.MiddleClick")).withStyle(ChatFormatting.DARK_GRAY));
                     }
 
-                    guiGraphics.renderComponentTooltip(this.font, tooltip, mouseX, mouseY);
+                    graphics.setTooltipForNextFrame(this.font, tooltip, Optional.empty(), mouseX, mouseY);
                     return;
                 } else if (this.menu.getEncodingMode() == EncodingMode.PROCESSING && this.menu.isProcessingOutputSlot(this.hoveredSlot)) {
                     var tooltip = new ArrayList<Component>();
@@ -914,7 +910,7 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
                         tooltip.add(Component.translatable("gui.ae2.PatternEncoding.secondary_processing_result_tooltip"));
                         tooltip.add(Component.translatable("gui.ae2.PatternEncoding.secondary_processing_result_hint").withStyle(ChatFormatting.DARK_GRAY));
                     }
-                    guiGraphics.renderComponentTooltip(this.font, tooltip, mouseX, mouseY);
+                    graphics.setTooltipForNextFrame(this.font, tooltip, Optional.empty(), mouseX, mouseY);
                     return;
                 }
             }
@@ -934,7 +930,7 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
                     int actualIndex = index + this.groupScrollOffset;
                     if (actualIndex >= 0 && actualIndex < groups.size()) {
                         String fullName = groups.get(actualIndex).name();
-                        guiGraphics.renderTooltip(this.font, Component.literal(fullName), mouseX, mouseY);
+                        graphics.setTooltipForNextFrame(this.font, Component.literal(fullName), mouseX, mouseY);
                         return;
                     }
                 }
@@ -954,7 +950,7 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
                         var recipe = filtered.get(actualIndex);
                         var stack = recipe.outputStack().isEmpty() ? recipe.patternStack() : recipe.outputStack();
                         String fullName = stack.getHoverName().getString();
-                        guiGraphics.renderTooltip(this.font, Component.literal(fullName), mouseX, mouseY);
+                        graphics.setTooltipForNextFrame(this.font, Component.literal(fullName), mouseX, mouseY);
                         return;
                     }
                 }
@@ -964,7 +960,7 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
         var currentMode = this.menu.getEncodingMode();
 
         if (currentMode == EncodingMode.STONECUTTING) {
-            if (this.minecraft == null || this.minecraft.level == null) return;
+            if (this.minecraft.level == null) return;
             var matched = this.cachedStonecutterRecipes;
             int startIndex = this.stonecutterScrollOffset << 2;
             int endIndex = startIndex + 8;
@@ -972,67 +968,67 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
             for (int i = startIndex; i < endIndex && i < matched.size(); ++i) {
                 var slotBounds = getRecipeBounds(i - startIndex, this.leftPos, this.topPos);
                 if (isMouseInBounds(mouseX, mouseY, slotBounds)) {
-                    var outputStack = matched.get(i).value().getResultItem(this.minecraft.level.registryAccess());
-                    guiGraphics.renderTooltip(this.font, outputStack, mouseX, mouseY);
+                    var outputStack = matched.get(i).value().assemble(new SingleRecipeInput(ItemStack.EMPTY));
+                    graphics.setTooltipForNextFrame(this.font, outputStack, mouseX, mouseY);
                     return;
                 }
             }
         }
-        super.renderTooltip(guiGraphics, mouseX, mouseY);
+        super.extractTooltip(graphics, mouseX, mouseY);
 
         if (currentMode == EncodingMode.CRAFTING) {
             if (this.isInside(x, y, CRAFT_SUB_X, CRAFT_SUB_Y, BUTTON_MINI, BUTTON_MINI)) {
                 var title = Component.translatable(this.menu.substitute ? "gui.tooltips.ae2.SubstitutionsOn" : "gui.tooltips.ae2.SubstitutionsOff");
                 var desc = Component.translatable(this.menu.substitute ? "gui.tooltips.ae2.SubstitutionsDescEnabled" : "gui.tooltips.ae2.SubstitutionsDescDisabled");
-                this.renderCustomTooltip(guiGraphics, title, desc, mouseX, mouseY);
+                this.renderCustomTooltip(graphics, title, desc, mouseX, mouseY);
                 return;
             }
             if (this.isInside(x, y, CRAFT_CLEAR_X, CRAFT_CLEAR_Y, BUTTON_MINI, BUTTON_MINI)) {
-                this.renderCustomTooltip(guiGraphics, Component.translatable("gui.tooltips.ae2.Clear"), Component.translatable("gui.tooltips.ae2.ClearSettings"), mouseX, mouseY);
+                this.renderCustomTooltip(graphics, Component.translatable("gui.tooltips.ae2.Clear"), Component.translatable("gui.tooltips.ae2.ClearSettings"), mouseX, mouseY);
                 return;
             }
             if (this.isInside(x, y, CRAFT_FLUID_X, CRAFT_FLUID_Y, BUTTON_MINI, BUTTON_MINI)) {
                 var title = Component.translatable("gui.tooltips.ae2.FluidSubstitutions");
                 var desc = Component.translatable(this.menu.substituteFluids ? "gui.tooltips.ae2.FluidSubstitutionsDescEnabled" : "gui.tooltips.ae2.FluidSubstitutionsDescDisabled");
-                this.renderCustomTooltip(guiGraphics, title, desc, mouseX, mouseY);
+                this.renderCustomTooltip(graphics, title, desc, mouseX, mouseY);
                 return;
             }
         } else if (currentMode == EncodingMode.SMITHING_TABLE) {
             if (this.isInside(x, y, SMITH_SUB_X, SMITH_SUB_Y, BUTTON_MINI, BUTTON_MINI)) {
                 var title = Component.translatable(this.menu.substitute ? "gui.tooltips.ae2.SubstitutionsOn" : "gui.tooltips.ae2.SubstitutionsOff");
                 var desc = Component.translatable(this.menu.substitute ? "gui.tooltips.ae2.SubstitutionsDescEnabled" : "gui.tooltips.ae2.SubstitutionsDescDisabled");
-                this.renderCustomTooltip(guiGraphics, title, desc, mouseX, mouseY);
+                this.renderCustomTooltip(graphics, title, desc, mouseX, mouseY);
                 return;
             }
             if (this.isInside(x, y, SMITH_CLEAR_X, SMITH_CLEAR_Y, BUTTON_MINI, BUTTON_MINI)) {
-                this.renderCustomTooltip(guiGraphics, Component.translatable("gui.tooltips.ae2.Clear"), Component.translatable("gui.tooltips.ae2.ClearSettings"), mouseX, mouseY);
+                this.renderCustomTooltip(graphics, Component.translatable("gui.tooltips.ae2.Clear"), Component.translatable("gui.tooltips.ae2.ClearSettings"), mouseX, mouseY);
                 return;
             }
         } else if (currentMode == EncodingMode.PROCESSING) {
             if (this.isInside(x, y, PROC_CLEAR_X, PROC_CLEAR_Y, BUTTON_MINI, BUTTON_MINI)) {
-                this.renderCustomTooltip(guiGraphics, Component.translatable("gui.tooltips.ae2.Clear"), Component.translatable("gui.tooltips.ae2.ClearSettings"), mouseX, mouseY);
+                this.renderCustomTooltip(graphics, Component.translatable("gui.tooltips.ae2.Clear"), Component.translatable("gui.tooltips.ae2.ClearSettings"), mouseX, mouseY);
                 return;
             }
             if (this.menu.canCycleProcessingOutputs() && this.isInside(x, y, PROC_CYCLE_X, PROC_CYCLE_Y, BUTTON_MINI, BUTTON_MINI)) {
-                this.renderCustomTooltip(guiGraphics, Component.translatable("gui.tooltips.ae2.CycleProcessingOutput"), Component.translatable("gui.tooltips.ae2.CycleProcessingOutputTooltip"), mouseX, mouseY);
+                this.renderCustomTooltip(graphics, Component.translatable("gui.tooltips.ae2.CycleProcessingOutput"), Component.translatable("gui.tooltips.ae2.CycleProcessingOutputTooltip"), mouseX, mouseY);
                 return;
             }
         }
 
         for (int i = 0; i < MODE_ORDER.length; i++) {
             if (this.isInside(x, y, TABS_X, TABS_Y + i * TAB_STEP_Y, TAB_W, TAB_H)) {
-                guiGraphics.renderTooltip(this.font, this.getModeTooltip(MODE_ORDER[i]), mouseX, mouseY);
+                graphics.setTooltipForNextFrame(this.font, this.getModeTooltip(MODE_ORDER[i]), mouseX, mouseY);
                 return;
             }
         }
 
         if (this.isInside(x, y, SAVE_X, SAVE_Y, SAVE_W, SAVE_H)) {
             var title = Component.translatable("gui.tooltips.ae2.Encode");
-            this.renderCustomTooltip(guiGraphics, title, Component.nullToEmpty(null), mouseX, mouseY);
+            this.renderCustomTooltip(graphics, title, Component.nullToEmpty(null), mouseX, mouseY);
         }
     }
 
-    private void renderCustomTooltip(GuiGraphics guiGraphics, Component title, Component desc, int mouseX, int mouseY) {
+    private void renderCustomTooltip(GuiGraphicsExtractor graphics, Component title, Component desc, int mouseX, int mouseY) {
         var tooltip = new ArrayList<Component>();
         tooltip.add(title.copy().withStyle(ChatFormatting.WHITE));
 
@@ -1064,7 +1060,7 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
             }
         }
 
-        guiGraphics.renderComponentTooltip(this.font, tooltip, mouseX, mouseY);
+        graphics.setTooltipForNextFrame(this.font, tooltip, java.util.Optional.empty(), mouseX, mouseY);
     }
 
     private Component getModeTooltip(EncodingMode mode) {
@@ -1089,9 +1085,7 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
     }
 
     private void playClick() {
-        if (this.minecraft != null) {
-            this.minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0f));
-        }
+        this.minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0f));
     }
 
     private Blitter getModeBackground() {
@@ -1193,7 +1187,7 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
 
         boolean hasSearch = this.recipeSearchQuery != null && !this.recipeSearchQuery.isEmpty();
         String query = hasSearch ? this.recipeSearchQuery.toLowerCase(ROOT) : "";
-        var level = this.minecraft != null ? this.minecraft.level : null;
+        var level = this.minecraft.level;
 
         for (var pattern : currentList) {
             if (!this.getPatternGroup(pattern).equalsIgnoreCase(selected)) continue;
@@ -1222,12 +1216,12 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
 
     private void rebuildStonecutterRecipes() {
         this.cachedStonecutterRecipes.clear();
-        if (this.minecraft != null && this.minecraft.level != null) {
+        if (this.minecraft.level != null) {
             var inputStack = this.getStonecutterInputStack();
             if (!inputStack.isEmpty()) {
                 var level = this.minecraft.level;
                 var recipeInput = new SingleRecipeInput(inputStack);
-                this.cachedStonecutterRecipes.addAll(level.getRecipeManager().getRecipesFor(RecipeType.STONECUTTING, recipeInput, level));
+                this.cachedStonecutterRecipes.addAll(RecipeAccess.getRecipesFor(level, RecipeType.STONECUTTING, recipeInput).toList());
             }
         }
         this.stonecutterDirty = false;
@@ -1245,7 +1239,7 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
     private String getPatternGroup(ItemStack pattern) {
         var customData = pattern.get(net.minecraft.core.component.DataComponents.CUSTOM_DATA);
         if (customData == null) return "";
-        if (customData.contains(RECIPEMACHINEGROUP)) return customData.copyTag().getString(RECIPEMACHINEGROUP);
+        if (customData.contains(RECIPEMACHINEGROUP)) return customData.copyTag().getStringOr(RECIPEMACHINEGROUP, "");
         return "";
     }
 
@@ -1279,8 +1273,8 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
         return mouseX >= rect.getX() && mouseX < rect.getX() + rect.getWidth() && mouseY >= rect.getY() && mouseY < rect.getY() + rect.getHeight();
     }
 
-    private boolean selectedIdEquals(ResourceLocation selected, Object recipeId) {
+    private boolean selectedIdEquals(ResourceKey<Recipe<?>> selected, Object recipeId) {
         if (selected == null || recipeId == null) return false;
-        return selected.equals(recipeId) || recipeId.toString().contains(selected.toString());
+        return selected.equals(recipeId);
     }
 }

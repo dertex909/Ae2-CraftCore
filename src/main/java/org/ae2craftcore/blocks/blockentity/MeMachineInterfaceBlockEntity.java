@@ -47,8 +47,7 @@ import appeng.util.inv.AppEngInternalInventory;
 import appeng.util.inv.InternalInventoryHost;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Inventory;
@@ -58,6 +57,8 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.storage.ValueInput;  // Добавлен импорт ValueInput
+import net.minecraft.world.level.storage.ValueOutput; // Добавлен импорт ValueOutput
 import net.neoforged.neoforge.capabilities.Capabilities;
 import org.ae2craftcore.blocks.block.MeMachineInterfaceBlock;
 import org.ae2craftcore.blocks.menu.MeMachineInterfaceMenu;
@@ -145,7 +146,7 @@ public class MeMachineInterfaceBlockEntity extends AENetworkedPoweredBlockEntity
                 if (customData != null) {
                     var tag = customData.copyTag();
                     if (tag.contains(RECIPEMACHINEGROUP)) {
-                        String patternGroup = tag.getString(RECIPEMACHINEGROUP);
+                        String patternGroup = tag.getStringOr(RECIPEMACHINEGROUP, "");
                         matchesGroup = patternGroup.equalsIgnoreCase(this.getInterfaceName());
                     }
                 }
@@ -247,8 +248,8 @@ public class MeMachineInterfaceBlockEntity extends AENetworkedPoweredBlockEntity
         if (ICraftingMachine.of(this.level, pos, side) != null) return true;
 
         if (be != null) {
-            if (this.level.getCapability(Capabilities.ItemHandler.BLOCK, pos, state, be, side) != null) return true;
-            return this.level.getCapability(Capabilities.FluidHandler.BLOCK, pos, state, be, side) != null;
+            if (this.level.getCapability(Capabilities.Item.BLOCK, pos, state, be, side) != null) return true;
+            return this.level.getCapability(Capabilities.Fluid.BLOCK, pos, state, be, side) != null;
         }
         return false;
     }
@@ -332,10 +333,23 @@ public class MeMachineInterfaceBlockEntity extends AENetworkedPoweredBlockEntity
     }
 
     @Override
-    public @NotNull CompoundTag getUpdateTag(HolderLookup.@NotNull Provider registries) {
-        var tag = new CompoundTag();
-        this.saveAdditional(tag, registries);
-        return tag;
+    protected void writeToStream(RegistryFriendlyByteBuf data) {
+        super.writeToStream(data);
+        data.writeEnum(this.machineDirection);
+        data.writeUtf(this.customName);
+    }
+
+    @Override
+    protected boolean readFromStream(RegistryFriendlyByteBuf data) {
+        boolean changed = super.readFromStream(data);
+        var newDir = data.readEnum(Direction.class);
+        var newName = data.readUtf();
+        if (newDir != this.machineDirection || !newName.equals(this.customName)) {
+            this.machineDirection = newDir;
+            this.customName = newName;
+            changed = true;
+        }
+        return changed;
     }
 
     @Override
@@ -365,21 +379,21 @@ public class MeMachineInterfaceBlockEntity extends AENetworkedPoweredBlockEntity
     private static final String PRIORITY_KEY = "PRT";
 
     @Override
-    public void saveAdditional(@NotNull CompoundTag tag, HolderLookup.@NotNull Provider registries) {
-        super.saveAdditional(tag, registries);
+    public void saveAdditional(ValueOutput tag) {
+        super.saveAdditional(tag);
         tag.putInt(MACHINEDIRECTION, this.machineDirection.ordinal());
         tag.putString(CUSTOMNAME, this.customName);
         tag.putInt(PRIORITY_KEY, this.priority);
-        this.configManager.writeToNBT(tag, registries);
+        this.configManager.writeToNBT(tag);
     }
 
     @Override
-    public void loadTag(@NotNull CompoundTag tag, HolderLookup.@NotNull Provider registries) {
-        super.loadTag(tag, registries);
-        this.machineDirection = Direction.values()[tag.getInt(MACHINEDIRECTION)];
-        this.customName = tag.getString(CUSTOMNAME);
-        if (tag.contains(PRIORITY_KEY)) this.priority = tag.getInt(PRIORITY_KEY);
-        this.configManager.readFromNBT(tag, registries);
+    public void loadTag(ValueInput tag) {
+        super.loadTag(tag);
+        this.machineDirection = Direction.values()[tag.getIntOr(MACHINEDIRECTION, 0)];
+        this.customName = tag.getStringOr(CUSTOMNAME, "Unknown recipe");
+        this.priority = tag.getIntOr(PRIORITY_KEY, 0);
+        this.configManager.readFromNBT(tag);
         this.setPowerSides(getGridConnectableSides(getOrientation()));
     }
 

@@ -27,7 +27,7 @@ import me.shedaniel.rei.api.client.registry.display.DisplayCategory;
 import me.shedaniel.rei.api.common.category.CategoryIdentifier;
 import me.shedaniel.rei.api.common.util.EntryStacks;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.ae2craftcore.Ae2craftcore;
 import org.ae2craftcore.blocks.block.LogicAssemblerBlock;
 import org.ae2craftcore.compat.CompatUtil;
@@ -39,7 +39,7 @@ public class LogicAssemblerRecipeCategory implements DisplayCategory<LogicAssemb
     private static final int PADDING = 5;
 
     public static final CategoryIdentifier<LogicAssemblerRecipeDisplay> ID = CategoryIdentifier.of(
-            ResourceLocation.fromNamespaceAndPath(Ae2craftcore.MODID, "logic_assembling")
+            Identifier.fromNamespaceAndPath(Ae2craftcore.MODID, "logic_assembling")
     );
 
     @Override

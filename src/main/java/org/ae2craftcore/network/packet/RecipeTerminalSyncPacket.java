@@ -22,9 +22,9 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.network.PacketDistributor;
+import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import org.ae2craftcore.Ae2craftcore;
 import org.ae2craftcore.blocks.menu.RecipeTerminalMenu;
@@ -43,7 +43,7 @@ public record RecipeTerminalSyncPacket(List<ItemStack> patterns, List<MachineGro
     public record MachineGroupInfo(String name, ItemStack icon, int count) {
     }
 
-    public static final Type<RecipeTerminalSyncPacket> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(Ae2craftcore.MODID, "recipe_terminal_sync"));
+    public static final Type<RecipeTerminalSyncPacket> TYPE = new Type<>(Identifier.fromNamespaceAndPath(Ae2craftcore.MODID, "recipe_terminal_sync"));
 
     public static final StreamCodec<FriendlyByteBuf, RecipeTerminalSyncPacket> STREAM_CODEC = StreamCodec.of((buf, value) -> {
         var registryBuf = (RegistryFriendlyByteBuf) buf;
@@ -86,7 +86,7 @@ public record RecipeTerminalSyncPacket(List<ItemStack> patterns, List<MachineGro
                 if (menu.getSelectedGroup().isEmpty() && !packet.groups().isEmpty()) {
                     String firstGroup = packet.groups().getFirst().name();
                     menu.setSelectedGroup(firstGroup);
-                    PacketDistributor.sendToServer(new RecipeTerminalSelectGroupPacket(firstGroup));
+                    ClientPacketDistributor.sendToServer(new RecipeTerminalSelectGroupPacket(firstGroup));
                 }
             }
         });

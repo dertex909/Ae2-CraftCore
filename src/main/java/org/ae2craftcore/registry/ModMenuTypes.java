@@ -32,7 +32,7 @@ import org.ae2craftcore.blocks.menu.RecipeTerminalMenu;
 import org.ae2craftcore.parts.RecipeTerminalPart;
 
 import static appeng.menu.implementations.MenuTypeBuilder.create;
-import static net.minecraft.resources.ResourceLocation.fromNamespaceAndPath;
+import static net.minecraft.resources.Identifier.fromNamespaceAndPath;
 
 public class ModMenuTypes {
 

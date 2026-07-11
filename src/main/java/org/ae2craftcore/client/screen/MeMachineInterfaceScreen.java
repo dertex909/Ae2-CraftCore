@@ -24,25 +24,28 @@ import appeng.api.config.YesNo;
 import appeng.client.Point;
 import appeng.client.gui.AEBaseScreen;
 import appeng.client.gui.ICompositeWidget;
-import appeng.client.gui.Icon;
 import appeng.client.gui.Tooltip;
+import appeng.client.gui.style.Blitter;
 import appeng.client.gui.style.StyleManager;
 import appeng.client.gui.widgets.ServerSettingToggleButton;
 import appeng.client.gui.widgets.SettingToggleButton;
 import appeng.core.localization.GuiText;
 import appeng.core.localization.InGameTooltip;
+import appeng.util.Icon;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.renderer.Rect2i;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
-import net.minecraft.util.Mth;
+import net.minecraft.network.chat.TextColor;
 import net.minecraft.world.entity.player.Inventory;
-import net.neoforged.neoforge.network.PacketDistributor;
+import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import org.ae2craftcore.blocks.menu.MeMachineInterfaceMenu;
 import org.ae2craftcore.network.packet.MeMachineInterfaceSyncPacket;
 import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.NonNull;
 
 public class MeMachineInterfaceScreen extends AEBaseScreen<MeMachineInterfaceMenu> {
 
@@ -54,8 +57,6 @@ public class MeMachineInterfaceScreen extends AEBaseScreen<MeMachineInterfaceMen
 
     public MeMachineInterfaceScreen(MeMachineInterfaceMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title, StyleManager.loadStyleDoc("/screens/me_machine_interface.json"));
-        this.imageWidth = 176;
-        this.imageHeight = 60;
 
         this.blockingModeButton = new ServerSettingToggleButton<>(Settings.BLOCKING_MODE, YesNo.NO);
         this.addToLeftToolbar(this.blockingModeButton);
@@ -88,14 +89,14 @@ public class MeMachineInterfaceScreen extends AEBaseScreen<MeMachineInterfaceMen
     }
 
     private void sendSyncPacket(String name) {
-        PacketDistributor.sendToServer(new MeMachineInterfaceSyncPacket(this.menu.getBlockPos(), name));
+        ClientPacketDistributor.sendToServer(new MeMachineInterfaceSyncPacket(this.menu.getBlockPos(), name));
     }
 
     @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (this.nameInput.keyPressed(keyCode, scanCode, modifiers)) return true;
-        if (this.nameInput.isFocused() && keyCode != 256) return true;
-        return super.keyPressed(keyCode, scanCode, modifiers);
+    public boolean keyPressed(@NonNull KeyEvent event) {
+        if (this.nameInput.keyPressed(event)) return true;
+        if (this.nameInput.isFocused() && event.key() != 256) return true;
+        return super.keyPressed(event);
     }
 
     @Override
@@ -107,8 +108,8 @@ public class MeMachineInterfaceScreen extends AEBaseScreen<MeMachineInterfaceMen
     }
 
     @Override
-    public void drawFG(GuiGraphics guiGraphics, int offsetX, int offsetY, int mouseX, int mouseY) {
-        guiGraphics.drawString(this.font, this.title, this.titleLabelX, 10, 0xFF3F3D52, false);
+    public void drawFG(GuiGraphicsExtractor graphics, int offsetX, int offsetY, int mouseX, int mouseY) {
+        graphics.text(this.font, this.title, this.titleLabelX, 10, 0xFF3F3D52, false);
     }
 
     private static class MeMachineInterfaceLockReason implements ICompositeWidget {
@@ -146,19 +147,19 @@ public class MeMachineInterfaceScreen extends AEBaseScreen<MeMachineInterfaceMen
         }
 
         @Override
-        public void drawForegroundLayer(GuiGraphics guiGraphics, Rect2i bounds, Point mouse) {
+        public void drawForegroundLayer(GuiGraphicsExtractor graphics, Rect2i bounds, Point mouse) {
             var menu = this.screen.getMenu();
             Icon icon;
             Component lockStatusText;
             if (menu.getCraftingLockedReason() == LockCraftingMode.NONE) {
                 icon = Icon.UNLOCKED;
-                lockStatusText = GuiText.CraftingLockIsUnlocked.text().setStyle(Style.EMPTY.withColor(Mth.color(125 / 255f, 169 / 255f, 210 / 255f)));
+                lockStatusText = GuiText.CraftingLockIsUnlocked.text().setStyle(Style.EMPTY.withColor(TextColor.fromRgb(0x7DA9D2)));
             } else {
                 icon = Icon.LOCKED;
-                lockStatusText = GuiText.CraftingLockIsLocked.text().setStyle(Style.EMPTY.withColor(Mth.color(193 / 255f, 66 / 255f, 75 / 255f)));
+                lockStatusText = GuiText.CraftingLockIsLocked.text().setStyle(Style.EMPTY.withColor(TextColor.fromRgb(0xC1424B)));
             }
-            icon.getBlitter().dest(this.x, this.y).blit(guiGraphics);
-            guiGraphics.drawString(Minecraft.getInstance().font, lockStatusText, this.x + 15, this.y + 5, -1, false);
+            Blitter.icon(icon).dest(this.x, this.y).blit(graphics);
+            graphics.text(Minecraft.getInstance().font, lockStatusText, this.x + 15, this.y + 5, -1, false);
         }
 
         @Nullable

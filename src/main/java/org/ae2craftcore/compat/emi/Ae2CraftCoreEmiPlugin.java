@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
-
+/*
 package org.ae2craftcore.compat.emi;
 
 import dev.emi.emi.api.EmiEntrypoint;
@@ -36,3 +36,4 @@ public class Ae2CraftCoreEmiPlugin implements EmiPlugin {
                 .map(EmiLogicAssemblerRecipe::new).forEach(registry::addRecipe);
     }
 }
+*/

@@ -24,6 +24,7 @@ import appeng.api.orientation.OrientationStrategies;
 import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.Containers;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
@@ -39,7 +40,7 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
-import net.minecraft.world.level.block.state.properties.DirectionProperty;
+import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.phys.BlockHitResult;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import org.ae2craftcore.blocks.blockentity.LogicAssemblerBlockEntity;
@@ -52,7 +53,7 @@ public class LogicAssemblerBlock extends BaseEntityBlock implements IOrientableB
 
     public static DeferredHolder<Block, LogicAssemblerBlock> HOLDER;
 
-    public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
+    public static final EnumProperty<Direction> FACING = HorizontalDirectionalBlock.FACING;
     public static final BooleanProperty ACTIVE = BooleanProperty.create("active");
     public static final MapCodec<LogicAssemblerBlock> CODEC = simpleCodec(LogicAssemblerBlock::new);
 
@@ -96,17 +97,16 @@ public class LogicAssemblerBlock extends BaseEntityBlock implements IOrientableB
     @Override
     protected @NotNull InteractionResult useWithoutItem(@NotNull BlockState state, @NotNull Level level, @NotNull BlockPos pos,
                                                         @NotNull Player player, @NotNull BlockHitResult hitResult) {
-        if (!level.isClientSide) {
+        if (!level.isClientSide()) {
             var blockEntity = level.getBlockEntity(pos);
             if (blockEntity instanceof LogicAssemblerBlockEntity assembler) player.openMenu(assembler, pos);
         }
-        return InteractionResult.sidedSuccess(level.isClientSide);
+        return level.isClientSide() ? InteractionResult.SUCCESS : InteractionResult.SUCCESS_SERVER;
     }
 
     @Override
-    public void onRemove(@NotNull BlockState state, @NotNull Level level, @NotNull BlockPos pos,
-                         @NotNull BlockState newState, boolean movedByPiston) {
-        if (!state.is(newState.getBlock())) {
+    protected void affectNeighborsAfterRemoval(@NotNull BlockState state, @NotNull ServerLevel level, @NotNull BlockPos pos, boolean movedByPiston) {
+        if (!level.getBlockState(pos).is(this)) {
             var blockEntity = level.getBlockEntity(pos);
             if (blockEntity instanceof LogicAssemblerBlockEntity assembler) {
                 Containers.dropContents(level, pos, assembler);
@@ -114,7 +114,7 @@ public class LogicAssemblerBlock extends BaseEntityBlock implements IOrientableB
                 if (rolled != null && !rolled.isEmpty()) Block.popResource(level, pos, rolled);
                 level.updateNeighbourForOutputSignal(pos, this);
             }
-            super.onRemove(state, level, pos, newState, movedByPiston);
+            super.affectNeighborsAfterRemoval(state, level, pos, movedByPiston);
         }
     }
 

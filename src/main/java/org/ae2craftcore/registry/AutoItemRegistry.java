@@ -19,7 +19,8 @@
 package org.ae2craftcore.registry;
 
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Rarity;
 import net.neoforged.bus.api.IEventBus;
@@ -31,6 +32,8 @@ import org.ae2craftcore.registry.utils.RegistryScanHelper;
 
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Modifier;
+
+import static net.minecraft.core.registries.Registries.ITEM;
 
 public class AutoItemRegistry {
     public static final DeferredRegister<Item> ITEMS = DeferredRegister.create(BuiltInRegistries.ITEM, Ae2craftcore.MODID);
@@ -123,6 +126,7 @@ public class AutoItemRegistry {
 
     private static Item.Properties buildProperties(RegisterItem anno, String name) {
         var props = new Item.Properties();
+        props.setId(ResourceKey.create(ITEM, Identifier.fromNamespaceAndPath(Ae2craftcore.MODID, name)));
         props.stacksTo(anno.stacksTo());
         if (anno.durability() > 0) props.durability(anno.durability());
         if (anno.fireResistant()) props.fireResistant();
@@ -131,7 +135,7 @@ public class AutoItemRegistry {
         } catch (IllegalArgumentException e) {
             Ae2craftcore.LOGGER.warn("Unknown rarity '{}' for item '{}', using COMMON", anno.rarity(), name);
         }
-        if (!anno.craftRemainder().isEmpty()) BuiltInRegistries.ITEM.getOptional(ResourceLocation.tryParse(
+        if (!anno.craftRemainder().isEmpty()) BuiltInRegistries.ITEM.getOptional(Identifier.tryParse(
                 anno.craftRemainder())).ifPresent(props::craftRemainder);
         return props;
     }

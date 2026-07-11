@@ -21,7 +21,7 @@ package org.ae2craftcore.compat.rei;
 import appeng.client.gui.style.BackgroundGenerator;
 import me.shedaniel.math.Rectangle;
 import me.shedaniel.rei.api.client.gui.Renderer;
-import net.minecraft.client.gui.GuiGraphics;
+import me.shedaniel.rei.api.client.gui.compat.GuiGraphics;
 
 public record BackgroundRenderer(int width, int height) implements Renderer {
     @Override

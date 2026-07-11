@@ -25,12 +25,11 @@ import appeng.api.inventories.InternalInventory;
 import appeng.api.orientation.BlockOrientation;
 import appeng.api.util.AECableType;
 import appeng.blockentity.grid.AENetworkedPoweredBlockEntity;
+import appeng.crafting.RecipeAccess;
 import appeng.util.inv.AppEngInternalInventory;
 import appeng.util.inv.filter.IAEItemFilter;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.Container;
 import net.minecraft.world.MenuProvider;
@@ -45,6 +44,8 @@ import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.storage.ValueInput;  // Добавлен импорт ValueInput
+import net.minecraft.world.level.storage.ValueOutput; // Добавлен импорт ValueOutput
 import org.ae2craftcore.blocks.block.LogicAssemblerBlock;
 import org.ae2craftcore.blocks.menu.LogicAssemblerMenu;
 import org.ae2craftcore.items.BaseResources;
@@ -100,9 +101,7 @@ public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity imp
                     this.lastCheckedBottom = bottom.copy();
 
                     var input = new LogicAssemblerRecipe.LogicAssemblerInput(top, bottom);
-                    this.cachedRecipe = this.level.getRecipeManager()
-                            .getRecipeFor(ModRecipeTypes.LOGIC_ASSEMBLING_TYPE.get(), input, this.level)
-                            .orElse(null);
+                    this.cachedRecipe = RecipeAccess.getRecipeFor(this.level, ModRecipeTypes.LOGIC_ASSEMBLING_TYPE.get(), input);
                 }
 
                 if (this.cachedRecipe != null) {
@@ -227,7 +226,7 @@ public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity imp
     }
 
     public static void tick(Level level, BlockPos pos, BlockState state, LogicAssemblerBlockEntity blockEntity) {
-        if (level.isClientSide) return;
+        if (level.isClientSide()) return;
 
         blockEntity.chargeInternalBuffer();
 
@@ -243,13 +242,12 @@ public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity imp
                     blockEntity.lastCheckedBottom = bottom.copy();
 
                     var input = new LogicAssemblerRecipe.LogicAssemblerInput(top, bottom);
-                    blockEntity.cachedRecipe = level.getRecipeManager()
-                            .getRecipeFor(ModRecipeTypes.LOGIC_ASSEMBLING_TYPE.get(), input, level).orElse(null);
+                    blockEntity.cachedRecipe = RecipeAccess.getRecipeFor(level, ModRecipeTypes.LOGIC_ASSEMBLING_TYPE.get(), input);
                 }
 
                 if (blockEntity.cachedRecipe != null) {
                     var recipe = blockEntity.cachedRecipe.value();
-                    var recipeResult = recipe.getResultItem(level.registryAccess());
+                    var recipeResult = recipe.getResultItem();
 
                     top.shrink(1);
                     bottom.shrink(1);
@@ -259,7 +257,7 @@ public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity imp
                     float penalty = speedCards * 0.01f;
                     float finalChance = Math.clamp(recipe.getChance() + recipeBonus - penalty, 0.0f, 1.0f);
 
-                    if (level.random.nextFloat() <= finalChance) {
+                    if (level.getRandom().nextFloat() <= finalChance) {
                         blockEntity.rolledResult = recipeResult.copy();
                     } else {
                         blockEntity.rolledResult = new ItemStack(BaseResources.QUANTUM_SCRAP);
@@ -340,7 +338,7 @@ public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity imp
     public boolean isValidInput(int slot, @NotNull ItemStack stack) {
         if (this.level == null) return true;
         var otherStack = this.getItem(slot ^ 1);
-        var recipes = this.level.getRecipeManager().getAllRecipesFor(ModRecipeTypes.LOGIC_ASSEMBLING_TYPE.get());
+        var recipes = appeng.crafting.RecipeAccess.byType(this.level, ModRecipeTypes.LOGIC_ASSEMBLING_TYPE.get());
 
         for (var holder : recipes) {
             var recipe = holder.value();
@@ -466,29 +464,21 @@ public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity imp
     private static final String ROLLEDRESULT = "RR";
 
     @Override
-    public void saveAdditional(@NotNull CompoundTag tag, HolderLookup.@NotNull Provider registries) {
-        super.saveAdditional(tag, registries);
+    public void saveAdditional(ValueOutput tag) {
+        super.saveAdditional(tag);
         tag.putDouble(PROGRESSDOUBLE, this.progress);
         tag.putInt(PROGRESS, (int) Math.round(this.progress));
         tag.putInt(MAXPROGRESS, this.maxProgress);
         tag.putInt(ACTIVERECIPECHANCE, this.activeRecipeChance);
-        if (!this.rolledResult.isEmpty()) tag.put(ROLLEDRESULT, this.rolledResult.save(registries));
+        if (!this.rolledResult.isEmpty()) tag.store(ROLLEDRESULT, ItemStack.OPTIONAL_CODEC, this.rolledResult);
     }
 
     @Override
-    public void loadTag(@NotNull CompoundTag tag, HolderLookup.@NotNull Provider registries) {
-        super.loadTag(tag, registries);
-        if (tag.contains(PROGRESSDOUBLE)) {
-            this.progress = tag.getDouble(PROGRESSDOUBLE);
-        } else {
-            this.progress = tag.getInt(PROGRESS);
-        }
-        this.maxProgress = tag.getInt(MAXPROGRESS);
-        this.activeRecipeChance = tag.getInt(ACTIVERECIPECHANCE);
-        if (tag.contains(ROLLEDRESULT)) {
-            this.rolledResult = ItemStack.parseOptional(registries, tag.getCompound(ROLLEDRESULT));
-        } else {
-            this.rolledResult = ItemStack.EMPTY;
-        }
+    public void loadTag(ValueInput tag) {
+        super.loadTag(tag);
+        this.progress = tag.getDoubleOr(PROGRESSDOUBLE, tag.getIntOr(PROGRESS, 0));
+        this.maxProgress = tag.getIntOr(MAXPROGRESS, 100);
+        this.activeRecipeChance = tag.getIntOr(ACTIVERECIPECHANCE, 0);
+        this.rolledResult = tag.read(ROLLEDRESULT, ItemStack.OPTIONAL_CODEC).orElse(ItemStack.EMPTY);
     }
 }

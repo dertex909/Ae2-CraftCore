@@ -3,7 +3,7 @@
  * Copyright (C) 2026 dertex909
  *
  * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
+ * taxation of the GNU Lesser General Public License as published by
  * the Free Software Foundation; either version 3 of the License, or
  * (at your option) any later version.
  *
@@ -19,6 +19,7 @@
 package org.ae2craftcore.blocks.menu;
 
 import appeng.api.upgrades.Upgrades;
+import appeng.crafting.RecipeAccess;
 import net.minecraft.world.Container;
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.player.Inventory;
@@ -28,15 +29,22 @@ import net.minecraft.world.inventory.ContainerData;
 import net.minecraft.world.inventory.SimpleContainerData;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.level.Level;
 import org.ae2craftcore.blocks.block.LogicAssemblerBlock;
+import org.ae2craftcore.recipe.LogicAssemblerRecipe;
 import org.ae2craftcore.registry.ModMenuTypes;
 import org.ae2craftcore.registry.ModRecipeTypes;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.List;
+
 public class LogicAssemblerMenu extends AbstractContainerMenu {
     private final Container container;
     private final ContainerData data;
+
+    private final List<RecipeHolder<LogicAssemblerRecipe>> recipes;
+
     private ItemStack lastCheckedSlot0 = ItemStack.EMPTY;
     private ItemStack lastCheckedSlot1 = ItemStack.EMPTY;
     private boolean lastResultSlot0 = false;
@@ -78,6 +86,8 @@ public class LogicAssemblerMenu extends AbstractContainerMenu {
 
         container.startOpen(playerInventory.player);
         var level = playerInventory.player.level();
+
+        this.recipes = List.copyOf(RecipeAccess.byType(level, ModRecipeTypes.LOGIC_ASSEMBLING_TYPE.get()));
 
         this.addSlot(new Slot(container, 0, 39, 23) {
             @Override
@@ -144,11 +154,10 @@ public class LogicAssemblerMenu extends AbstractContainerMenu {
             }
         }
 
-        var recipes = level.getRecipeManager().getAllRecipesFor(ModRecipeTypes.LOGIC_ASSEMBLING_TYPE.get());
         boolean result = false;
 
         if (slot == 0) {
-            for (var holder : recipes) {
+            for (var holder : this.recipes) {
                 var recipe = holder.value();
                 if (recipe.getTop().test(stack)) {
                     if (otherStack.isEmpty()) {
@@ -165,7 +174,7 @@ public class LogicAssemblerMenu extends AbstractContainerMenu {
             this.lastCheckedSlot1 = otherStack.copy();
             this.lastResultSlot0 = result;
         } else {
-            for (var holder : recipes) {
+            for (var holder : this.recipes) {
                 var recipe = holder.value();
                 if (recipe.getBottom().test(stack)) {
                     if (otherStack.isEmpty()) {

@@ -23,6 +23,7 @@ import appeng.api.inventories.InternalInventory;
 import appeng.api.parts.IPartHost;
 import appeng.helpers.InterfaceLogicHost;
 import appeng.helpers.patternprovider.PatternProviderLogicHost;
+import appeng.menu.guisync.ClientActionKey;
 import appeng.menu.guisync.GuiSync;
 import appeng.menu.me.common.IClientRepo;
 import appeng.menu.me.items.PatternEncodingTermMenu;
@@ -31,7 +32,8 @@ import appeng.parts.encoding.EncodingMode;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.NonNullList;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.player.Inventory;
@@ -40,6 +42,7 @@ import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.CraftingInput;
+import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.item.crafting.SmithingRecipeInput;
 import net.minecraft.world.level.Level;
@@ -62,8 +65,6 @@ import static net.minecraft.world.item.Items.AIR;
 import static org.ae2craftcore.registry.ModMenuTypes.RECIPE_TERMINAL;
 
 public class RecipeTerminalMenu extends PatternEncodingTermMenu {
-    public static final int IMAGE_WIDTH = 322;
-    public static final int IMAGE_HEIGHT = 236;
 
     public static final int MACHINE_LIST_X = 6;
     public static final int MACHINE_LIST_Y = 16;
@@ -113,8 +114,9 @@ public class RecipeTerminalMenu extends PatternEncodingTermMenu {
     public boolean substituteFluids = true;
     @GuiSync(294)
     @Nullable
-    public ResourceLocation stonecuttingRecipeId;
-    private static final String SETSTONECUTTINGRECIPEID = "setStonecuttingRecipeId";
+    public ResourceKey<Recipe<?>> stonecuttingRecipeId;
+
+    private static final ClientActionKey<ResourceKey<Recipe<?>>> SET_STONECUTTING_RECIPE = new ClientActionKey<>("setStonecuttingRecipeId");
 
     public RecipeTerminalMenu(int containerId, Inventory playerInventory, RecipeTerminalPart part) {
         super(RECIPE_TERMINAL.get(), containerId, playerInventory, part, false);
@@ -124,7 +126,7 @@ public class RecipeTerminalMenu extends PatternEncodingTermMenu {
 
         this.addEncodingModeSlots();
         try {
-            this.registerClientAction(SETSTONECUTTINGRECIPEID, ResourceLocation.class, this.part.getLogic()::setStonecuttingRecipeId);
+            this.registerClientAction(SET_STONECUTTING_RECIPE, ResourceKey.streamCodec(Registries.RECIPE), this.part.getLogic()::setStonecuttingRecipeId);
         } catch (IllegalArgumentException ignored) {
         }
 
@@ -449,9 +451,9 @@ public class RecipeTerminalMenu extends PatternEncodingTermMenu {
         if (!hasInput) return ItemStack.EMPTY;
 
         var input = CraftingInput.of(3, 3, grid);
-        var recipe = level.getRecipeManager().getRecipeFor(RecipeType.CRAFTING, input, level).orElse(null);
+        var recipe = appeng.crafting.RecipeAccess.getRecipesFor(level, RecipeType.CRAFTING, input).findFirst().orElse(null);
         if (recipe == null) return ItemStack.EMPTY;
-        return recipe.value().assemble(input, level.registryAccess());
+        return recipe.value().assemble(input);
     }
 
     public ItemStack getSmithingResult() {
@@ -466,9 +468,9 @@ public class RecipeTerminalMenu extends PatternEncodingTermMenu {
         if (templateStack.isEmpty() || baseStack.isEmpty() || additionStack.isEmpty()) return ItemStack.EMPTY;
 
         var input = new SmithingRecipeInput(templateStack, baseStack, additionStack);
-        var recipe = level.getRecipeManager().getRecipeFor(RecipeType.SMITHING, input, level).orElse(null);
+        var recipe = appeng.crafting.RecipeAccess.getRecipesFor(level, RecipeType.SMITHING, input).findFirst().orElse(null);
         if (recipe == null) return ItemStack.EMPTY;
-        return recipe.value().assemble(input, level.registryAccess());
+        return recipe.value().assemble(input);
     }
 
     public class RecipeTerminalPhantomSlot extends FakeSlot {
@@ -501,8 +503,8 @@ public class RecipeTerminalMenu extends PatternEncodingTermMenu {
         }
     }
 
-    public void selectStonecutterRecipeOnServer(ResourceLocation recipeId) {
-        this.sendClientAction(SETSTONECUTTINGRECIPEID, recipeId);
+    public void selectStonecutterRecipeOnServer(ResourceKey<Recipe<?>> recipeId) {
+        this.sendClientAction(SET_STONECUTTING_RECIPE, recipeId);
     }
 
     public static class RecipeTerminalLargeFakeSlot extends FakeSlot {
@@ -593,7 +595,7 @@ public class RecipeTerminalMenu extends PatternEncodingTermMenu {
         if (repo != null) return repo;
 
         if (this.cachedProxyRepo == null) try {
-            this.cachedProxyRepo = (IClientRepo) Proxy.newProxyInstance(RecipeTerminalMenu.class.getClassLoader(), new Class<?>[]{IClientRepo.class}, (proxy, method, args) -> {
+            this.cachedProxyRepo = (IClientRepo) Proxy.newProxyInstance(RecipeTerminalMenu.class.getClassLoader(), new Class<?>[]{IClientRepo.class}, (_, method, _) -> {
                 var retType = method.getReturnType();
                 if (method.getName().equals("getAllEntries")) {
                     if (retType == Set.class) return Collections.emptySet();
@@ -673,8 +675,8 @@ public class RecipeTerminalMenu extends PatternEncodingTermMenu {
 
         if (ICraftingMachine.of(l, pos, side) != null) return true;
         if (be != null) {
-            if (l.getCapability(Capabilities.ItemHandler.BLOCK, pos, state, be, side) != null) return true;
-            return l.getCapability(Capabilities.FluidHandler.BLOCK, pos, state, be, side) != null;
+            if (l.getCapability(Capabilities.Item.BLOCK, pos, state, be, side) != null) return true;
+            return l.getCapability(Capabilities.Fluid.BLOCK, pos, state, be, side) != null;
         }
         return false;
     }

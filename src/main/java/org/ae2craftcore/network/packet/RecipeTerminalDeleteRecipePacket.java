@@ -25,7 +25,7 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import org.ae2craftcore.Ae2craftcore;
@@ -45,7 +45,7 @@ import static org.ae2craftcore.registry.AttachmentRegistry.STORED_PATTERNS;
 @NetworkPayload(direction = PayloadDirection.TO_SERVER)
 public record RecipeTerminalDeleteRecipePacket(ItemStack patternToDelete) implements CustomPacketPayload {
 
-    public static final Type<RecipeTerminalDeleteRecipePacket> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(Ae2craftcore.MODID, "recipe_terminal_delete_recipe"));
+    public static final Type<RecipeTerminalDeleteRecipePacket> TYPE = new Type<>(Identifier.fromNamespaceAndPath(Ae2craftcore.MODID, "recipe_terminal_delete_recipe"));
 
     @SuppressWarnings("unused")
     public static final StreamCodec<FriendlyByteBuf, RecipeTerminalDeleteRecipePacket> STREAM_CODEC = StreamCodec.of((buf, value) -> {

@@ -20,14 +20,14 @@ package org.ae2craftcore.compat;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.RegistryAccess;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.ae2craftcore.Ae2craftcore;
 
 public final class CompatUtil {
     private CompatUtil() {
     }
 
-    public static final ResourceLocation TEXTURE = ResourceLocation.fromNamespaceAndPath(
+    public static final Identifier TEXTURE = Identifier.fromNamespaceAndPath(
             Ae2craftcore.MODID, "textures/gui/container/logic_assembler.png");
 
     public static final int BG_U = 30;
@@ -52,13 +52,6 @@ public final class CompatUtil {
 
     public static final int CHANCE_X = 92;
     public static final int CHANCE_Y = 11;
-
-    public static RegistryAccess getRegistryAccess() {
-        var mc = Minecraft.getInstance();
-        if (mc.level != null) return mc.level.registryAccess();
-        if (mc.getConnection() != null) return mc.getConnection().registryAccess();
-        return RegistryAccess.EMPTY;
-    }
 
     public static String formatChance(double chance) {
         return (int) (chance * 100) + "%";

@@ -31,8 +31,8 @@ import org.ae2craftcore.blocks.menu.RecipeTerminalMenu;
 
 import java.util.function.Consumer;
 
-import static appeng.client.gui.Icon.BACK;
 import static appeng.core.localization.GuiText.Set;
+import static appeng.util.Icon.BACK;
 
 public class RecipeTerminalSetAmountScreen extends AESubScreen<RecipeTerminalMenu, RecipeTerminalScreen> {
     private final NumberEntryWidget amount;
@@ -44,7 +44,7 @@ public class RecipeTerminalSetAmountScreen extends AESubScreen<RecipeTerminalMen
         this.currentStack = currentStack;
         this.setter = setter;
         widgets.addButton("save", Set.text(), this::confirm);
-        var button = new TabButton(BACK, Component.translatable("item.ae2.pattern_encoding_terminal"), btn -> returnToParent());
+        var button = new TabButton(BACK, Component.translatable("item.ae2.pattern_encoding_terminal"), _ -> returnToParent());
         widgets.add("back", button);
         this.amount = widgets.addNumberEntryWidget("amountToStock", NumberEntryType.of(currentStack.what()));
         this.amount.setLongValue(currentStack.amount());

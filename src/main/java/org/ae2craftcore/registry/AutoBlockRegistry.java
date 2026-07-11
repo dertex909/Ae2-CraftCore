@@ -21,6 +21,9 @@ package org.ae2craftcore.registry;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
@@ -73,12 +76,13 @@ public class AutoBlockRegistry {
 
         try {
             var props = BlockBehaviour.Properties.of();
+            props.setId(ResourceKey.create(Registries.BLOCK, Identifier.fromNamespaceAndPath(Ae2craftcore.MODID, name)));
             props.strength(anno.strength(), anno.resistance() < 0 ? anno.strength() : anno.resistance());
             props.sound(getSoundType(anno.sound()));
             if (anno.requiresCorrectTool()) props.requiresCorrectToolForDrops();
             if (anno.noOcclusion()) props.noOcclusion();
             if (anno.dynamicShape()) props.dynamicShape();
-            if (anno.lightLevel() > 0) props.lightLevel(state -> anno.lightLevel());
+            if (anno.lightLevel() > 0) props.lightLevel(_ -> anno.lightLevel());
             props.friction(anno.friction());
 
             var lookup = MethodHandles.lookup();
@@ -103,10 +107,13 @@ public class AutoBlockRegistry {
             });
 
             if (anno.hasItem()) {
-                AutoItemRegistry.ITEMS.register(name, () -> new BlockItem(holder.get(), new Item.Properties()));
+                AutoItemRegistry.ITEMS.register(name, () -> {
+                    var itemKey = ResourceKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath(Ae2craftcore.MODID, name));
+                    return new BlockItem(holder.get(), new Item.Properties().setId(itemKey));
+                });
             }
 
-            REGISTERED_BLOCKS.computeIfAbsent(clazz, k -> new ObjectArrayList<>()).add(holder);
+            REGISTERED_BLOCKS.computeIfAbsent(clazz, _ -> new ObjectArrayList<>()).add(holder);
             injectHolder(clazz, holder, anno);
 
             Ae2craftcore.LOGGER.info("Auto-registered block: '{}'", name);

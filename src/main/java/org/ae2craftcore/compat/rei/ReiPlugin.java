@@ -21,6 +21,7 @@ package org.ae2craftcore.compat.rei;
 import me.shedaniel.rei.api.client.plugins.REIClientPlugin;
 import me.shedaniel.rei.api.client.registry.category.CategoryRegistry;
 import me.shedaniel.rei.api.client.registry.display.DisplayRegistry;
+import me.shedaniel.rei.api.common.registry.display.DisplayConsumer;
 import me.shedaniel.rei.api.common.util.EntryStacks;
 import me.shedaniel.rei.forge.REIPluginClient;
 import org.ae2craftcore.blocks.block.LogicAssemblerBlock;
@@ -37,6 +38,7 @@ public class ReiPlugin implements REIClientPlugin {
 
     @Override
     public void registerDisplays(DisplayRegistry registry) {
-        registry.registerRecipeFiller(LogicAssemblerRecipe.class, ModRecipeTypes.LOGIC_ASSEMBLING_TYPE.get(), LogicAssemblerRecipeDisplay::new);
+        ((DisplayConsumer.RecipeManagerConsumer) registry).beginRecipeFiller(LogicAssemblerRecipe.class)
+                .filterType(ModRecipeTypes.LOGIC_ASSEMBLING_TYPE.get()).fill(LogicAssemblerRecipeDisplay::new);
     }
 }

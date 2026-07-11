@@ -25,6 +25,6 @@ import org.spongepowered.asm.mixin.gen.Invoker;
 
 @Mixin(AbstractContainerScreen.class)
 public interface AbstractContainerScreenAccessor {
-    @Invoker("findSlot")
+    @Invoker("getHoveredSlot")
     Slot ae2craftcore$findSlot(double mouseX, double mouseY);
 }

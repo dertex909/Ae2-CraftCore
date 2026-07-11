@@ -16,7 +16,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-package org.ae2craftcore.compat.emi;
+/*package org.ae2craftcore.compat.emi;
 
 import dev.emi.emi.api.recipe.BasicEmiRecipe;
 import dev.emi.emi.api.recipe.EmiRecipeCategory;
@@ -25,7 +25,7 @@ import dev.emi.emi.api.stack.EmiStack;
 import dev.emi.emi.api.widget.WidgetHolder;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import org.ae2craftcore.Ae2craftcore;
 import org.ae2craftcore.blocks.block.LogicAssemblerBlock;
@@ -34,7 +34,7 @@ import org.ae2craftcore.recipe.LogicAssemblerRecipe;
 
 public class EmiLogicAssemblerRecipe extends BasicEmiRecipe {
     public static final EmiRecipeCategory CATEGORY = new EmiRecipeCategory(
-            ResourceLocation.fromNamespaceAndPath(Ae2craftcore.MODID, "logic_assembling"),
+            Identifier.fromNamespaceAndPath(Ae2craftcore.MODID, "logic_assembling"),
             EmiStack.of(LogicAssemblerBlock.HOLDER.get())
     ) {
         @Override
@@ -80,3 +80,4 @@ public class EmiLogicAssemblerRecipe extends BasicEmiRecipe {
         widgets.addText(Component.literal(text), CompatUtil.CHANCE_X - (textWidth >> 1), CompatUtil.CHANCE_Y, 0x000000, false);
     }
 }
+*/

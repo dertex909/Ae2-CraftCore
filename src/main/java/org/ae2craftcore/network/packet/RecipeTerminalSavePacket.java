@@ -24,20 +24,21 @@ import appeng.api.stacks.AEItemKey;
 import appeng.api.stacks.GenericStack;
 import appeng.blockentity.storage.DriveBlockEntity;
 import appeng.blockentity.storage.MEChestBlockEntity;
+import appeng.crafting.RecipeAccess;
 import appeng.parts.encoding.EncodingMode;
 import net.minecraft.core.NonNullList;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
-import net.minecraft.world.item.crafting.CraftingInput;
-import net.minecraft.world.item.crafting.RecipeType;
-import net.minecraft.world.item.crafting.SingleRecipeInput;
-import net.minecraft.world.item.crafting.SmithingRecipeInput;
+import net.minecraft.world.item.crafting.*;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import org.ae2craftcore.Ae2craftcore;
 import org.ae2craftcore.blocks.blockentity.MeMachineInterfaceBlockEntity;
@@ -60,11 +61,11 @@ public record RecipeTerminalSavePacket(String groupName, String modeName, String
                                        boolean substitutionsEnabled, boolean fluidSubstitutionsEnabled)
         implements CustomPacketPayload {
 
-    public static final Type<RecipeTerminalSavePacket> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(Ae2craftcore.MODID, "recipe_terminal_save"));
+    public static final Type<RecipeTerminalSavePacket> TYPE = new Type<>(Identifier.fromNamespaceAndPath(Ae2craftcore.MODID, "recipe_terminal_save"));
     public static final String RECIPEMACHINEGROUP = "RecMacG";
 
-    public RecipeTerminalSavePacket(String groupName, EncodingMode mode, @Nullable ResourceLocation stonecuttingRecipeId, boolean substitutionsEnabled, boolean fluidSubstitutionsEnabled) {
-        this(groupName, mode.name(), stonecuttingRecipeId != null ? stonecuttingRecipeId.toString() : "", substitutionsEnabled, fluidSubstitutionsEnabled);
+    public RecipeTerminalSavePacket(String groupName, EncodingMode mode, @Nullable ResourceKey<Recipe<?>> stonecuttingRecipeId, boolean substitutionsEnabled, boolean fluidSubstitutionsEnabled) {
+        this(groupName, mode.name(), stonecuttingRecipeId != null ? stonecuttingRecipeId.identifier().toString() : "", substitutionsEnabled, fluidSubstitutionsEnabled);
     }
 
     @SuppressWarnings("unused")
@@ -155,7 +156,7 @@ public record RecipeTerminalSavePacket(String groupName, String modeName, String
                 }
 
                 if (!saved) {
-                    player.displayClientMessage(Component.literal("§cNo active Recipe Storage Cells with available space found in the network!"), true);
+                    player.sendOverlayMessage(Component.literal("§cNo active Recipe Storage Cells with available space found in the network!"));
                 }
 
                 for (var machine : grid.getMachines(MeMachineInterfaceBlockEntity.class)) {
@@ -217,10 +218,10 @@ public record RecipeTerminalSavePacket(String groupName, String modeName, String
 
         var level = player.level();
         var input = CraftingInput.of(3, 3, craftingGrid);
-        var recipe = level.getRecipeManager().getRecipeFor(RecipeType.CRAFTING, input, level).orElse(null);
+        var recipe = RecipeAccess.getRecipesFor(level, RecipeType.CRAFTING, input).findFirst().orElse(null);
         if (recipe == null) return null;
 
-        var result = recipe.value().assemble(input, level.registryAccess());
+        var result = recipe.value().assemble(input);
         if (result.isEmpty()) return null;
 
         return PatternDetailsHelper.encodeCraftingPattern(recipe, ingredients, result, substitutionsEnabled, fluidSubstitutionsEnabled);
@@ -272,10 +273,10 @@ public record RecipeTerminalSavePacket(String groupName, String modeName, String
 
         var input = new SmithingRecipeInput(templateKey.toStack(), baseKey.toStack(), additionKey.toStack());
         var level = player.level();
-        var recipe = level.getRecipeManager().getRecipeFor(RecipeType.SMITHING, input, level).orElse(null);
+        var recipe = RecipeAccess.getRecipesFor(level, RecipeType.SMITHING, input).findFirst().orElse(null);
         if (recipe == null) return null;
 
-        var outputStack = recipe.value().assemble(input, level.registryAccess());
+        var outputStack = recipe.value().assemble(input);
         var output = AEItemKey.of(outputStack);
         if (output == null) return null;
 
@@ -283,6 +284,7 @@ public record RecipeTerminalSavePacket(String groupName, String modeName, String
     }
 
     @Nullable
+    @SuppressWarnings("unchecked")
     private static ItemStack encodeStonecuttingPattern(RecipeTerminalMenu menu, Player player, String stonecuttingRecipeId) {
         var inputInv = menu.getPart().getLogic().getEncodedInputInv();
         var inputStack = inputInv.getStack(0);
@@ -293,13 +295,24 @@ public record RecipeTerminalSavePacket(String groupName, String modeName, String
 
         var level = player.level();
         var recipeInput = new SingleRecipeInput(inputKey.toStack());
-        var recipeId = stonecuttingRecipeId.isEmpty() ? null : ResourceLocation.tryParse(stonecuttingRecipeId);
-        var recipe = recipeId != null
-                ? level.getRecipeManager().getRecipeFor(RecipeType.STONECUTTING, recipeInput, level, recipeId).orElse(null)
-                : level.getRecipeManager().getRecipesFor(RecipeType.STONECUTTING, recipeInput, level).stream().findFirst().orElse(null);
+
+        RecipeHolder<StonecutterRecipe> recipe = null;
+        var parsedId = Identifier.tryParse(stonecuttingRecipeId);
+        var recipeKey = parsedId == null ? null : ResourceKey.create(Registries.RECIPE, parsedId);
+
+        if (recipeKey != null) {
+            if (level instanceof ServerLevel serverLevel) {
+                var recipeManager = serverLevel.getServer().getRecipeManager();
+                var opt = recipeManager.byKey(recipeKey);
+                if (opt.isPresent()) recipe = (RecipeHolder<StonecutterRecipe>) opt.get();
+            }
+        } else {
+            recipe = RecipeAccess.getRecipesFor(level, RecipeType.STONECUTTING, recipeInput).findFirst().orElse(null);
+        }
+
         if (recipe == null) return null;
 
-        var output = AEItemKey.of(recipe.value().getResultItem(level.registryAccess()));
+        var output = AEItemKey.of(recipe.value().assemble(recipeInput));
         if (output == null) return null;
 
         return PatternDetailsHelper.encodeStonecuttingPattern(recipe, inputKey, output, false);

@@ -36,7 +36,7 @@ public class ModRecipeTypes {
             "logic_assembling", () -> LogicAssemblerRecipe.Type.INSTANCE);
 
     public static final DeferredHolder<RecipeSerializer<?>, RecipeSerializer<LogicAssemblerRecipe>> LOGIC_ASSEMBLING_SERIALIZER = RECIPE_SERIALIZERS.register(
-            "logic_assembling", () -> LogicAssemblerRecipe.Serializer.INSTANCE);
+            "logic_assembling", () -> LogicAssemblerRecipe.SERIALIZER);
 
     public static void register(IEventBus bus) {
         RECIPE_TYPES.register(bus);

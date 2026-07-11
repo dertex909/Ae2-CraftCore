@@ -21,12 +21,13 @@ package org.ae2craftcore.compat.rei;
 import com.google.common.collect.ImmutableList;
 import me.shedaniel.rei.api.common.category.CategoryIdentifier;
 import me.shedaniel.rei.api.common.display.Display;
+import me.shedaniel.rei.api.common.display.DisplaySerializer;
 import me.shedaniel.rei.api.common.entry.EntryIngredient;
 import me.shedaniel.rei.api.common.util.EntryIngredients;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.crafting.RecipeHolder;
-import org.ae2craftcore.compat.CompatUtil;
 import org.ae2craftcore.recipe.LogicAssemblerRecipe;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 import java.util.Optional;
@@ -43,7 +44,7 @@ public class LogicAssemblerRecipeDisplay implements Display {
                 EntryIngredients.ofIngredient(recipe.getTop()),
                 EntryIngredients.ofIngredient(recipe.getBottom())
         );
-        this.outputs = ImmutableList.of(EntryIngredients.of(recipe.getResultItem(CompatUtil.getRegistryAccess())));
+        this.outputs = ImmutableList.of(EntryIngredients.of(recipe.getResultItem()));
     }
 
     public RecipeHolder<LogicAssemblerRecipe> getHolder() {
@@ -66,7 +67,13 @@ public class LogicAssemblerRecipeDisplay implements Display {
     }
 
     @Override
-    public Optional<ResourceLocation> getDisplayLocation() {
-        return Optional.of(holder.id());
+    public Optional<Identifier> getDisplayLocation() {
+        return Optional.of(holder.id().identifier());
+    }
+
+    @Override
+    @Nullable
+    public DisplaySerializer<? extends Display> getSerializer() {
+        return null;
     }
 }

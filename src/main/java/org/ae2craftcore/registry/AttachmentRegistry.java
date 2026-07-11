@@ -43,7 +43,7 @@ public final class AttachmentRegistry {
     );
 
     public static final Supplier<DataComponentType<List<ItemStack>>> STORED_PATTERNS = DATA_COMPONENTS.registerComponentType(
-            "stored_patterns", builder -> builder.persistent(ItemStack.CODEC.listOf()).networkSynchronized(ItemStack.LIST_STREAM_CODEC)
+            "stored_patterns", builder -> builder.persistent(ItemStack.CODEC.listOf()).networkSynchronized(ItemStack.OPTIONAL_LIST_STREAM_CODEC)
     );
 
     public static void register(IEventBus bus) {
