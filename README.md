@@ -10,10 +10,11 @@ Are you tired of spending countless hours of your life manually encoding hundred
 
 ### ⚙️ How It Works
 
-1. **Write Recipes to a Flash Drive:** In the new **ME Recipe Terminal**, you set up your crafts as usual, but instead of outputting a physical pattern item, you click "Save". The recipe is instantly written as digital data onto a **Recipe Storage Cell**.
-2. **Insert the Cell into your Drive:** Put your Recipe Storage Cell (tiers available from 1k to 256k) into a standard ME Drive or ME Chest. Now, the entire network digitally knows these recipes.
-3. **Name Your Interface:** Place an **ME Machine Interface** adjacent to your machine (furnace, crusher, custom workbench, etc.). Give it a name in the GUI, for example: `Industrial Crusher`.
-4. **Done!** The interface will automatically fetch all recipes assigned to the `Industrial Crusher` group from the network, and dynamically push ingredients into the machine when a craft is requested. **There is physically not a single pattern item inside the interface itself!**
+1. **Insert the Storage Cell:** First, insert a **Recipe Storage Cell** (tiers available from 1k to 256k) into the dedicated slot of the new **ME Recipe Terminal**. This is your digital recipe drive.
+2. **Configure and Encode:** Set up your recipe in the terminal as usual, type the target Machine Group name (e.g. `Industrial Crusher`) in the input box, and click the **Save** button. The recipe is written directly as digital data onto the cell inside the terminal.
+3. **Place the Cell in your Network:** Take the loaded Recipe Storage Cell out of the terminal and place it into any standard **ME Drive** or **ME Chest** connected to your network. The entire grid instantly reads and registers every recipe stored on that cell.
+4. **Name Your Interface:** Place an **ME Machine Interface** adjacent to your machine (furnace, crusher, custom workbench, etc.). Give it a matching name in the GUI (e.g., `Industrial Crusher`).
+5. **Done!** The interface will automatically fetch all recipes assigned to the `Industrial Crusher` group from the network, and dynamically push ingredients into the machine when a craft is requested. **There is physically not a single pattern item inside the interface itself!**
 
 ---
 
