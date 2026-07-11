@@ -53,8 +53,8 @@ public class LogicAssemblerRecipeCategory implements DisplayCategory<LogicAssemb
         var ingredients = recipeDisplay.getInputEntries();
         var output = recipeDisplay.getOutputEntries().getFirst();
 
-        widgets.add(Widgets.createSlot(new Point(innerX + CompatUtil.SLOT_TOP_X, innerY + CompatUtil.SLOT_TOP_Y)).disableBackground().markInput().entries(ingredients.get(0)));
-        widgets.add(Widgets.createSlot(new Point(innerX + CompatUtil.SLOT_BOTTOM_X, innerY + CompatUtil.SLOT_BOTTOM_Y)).disableBackground().markInput().entries(ingredients.get(1)));
+        widgets.add(Widgets.createSlot(new Point(innerX + CompatUtil.SLOT_IN_X, innerY + CompatUtil.SLOT_TOP_Y)).disableBackground().markInput().entries(ingredients.get(0)));
+        widgets.add(Widgets.createSlot(new Point(innerX + CompatUtil.SLOT_IN_X, innerY + CompatUtil.SLOT_BOTTOM_Y)).disableBackground().markInput().entries(ingredients.get(1)));
         widgets.add(Widgets.createSlot(new Point(innerX + CompatUtil.SLOT_OUT_X, innerY + CompatUtil.SLOT_OUT_Y)).disableBackground().markOutput().entries(output));
 
         String text = CompatUtil.formatChance(recipeDisplay.getHolder().value().getChance());

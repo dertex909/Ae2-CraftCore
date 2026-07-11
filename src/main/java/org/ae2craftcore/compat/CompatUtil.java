@@ -25,10 +25,10 @@ public final class CompatUtil {
     public static final int PROGRESS_V = 0;
     public static final int PROGRESS_DURATION_MS = 2000;
 
-    public static final int SLOT_TOP_X = 9;
+    public static final int SLOT_IN_X = 9;
     public static final int SLOT_TOP_Y = 8;
-    public static final int SLOT_BOTTOM_X = 9;
     public static final int SLOT_BOTTOM_Y = 40;
+
     public static final int SLOT_OUT_X = 83;
     public static final int SLOT_OUT_Y = 25;
 

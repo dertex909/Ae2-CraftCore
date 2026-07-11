@@ -52,9 +52,9 @@ public class EmiLogicAssemblerRecipe extends BasicEmiRecipe {
 
         var recipe = holder.value();
 
-        widgets.addSlot(this.topInput, CompatUtil.SLOT_TOP_X, CompatUtil.SLOT_TOP_Y).drawBack(false);
-        widgets.addSlot(this.bottomInput, CompatUtil.SLOT_BOTTOM_X, CompatUtil.SLOT_BOTTOM_Y).drawBack(false);
-        widgets.addSlot(this.outputStack, CompatUtil.SLOT_OUT_X, CompatUtil.SLOT_OUT_Y).drawBack(false);
+        widgets.addSlot(this.topInput, CompatUtil.SLOT_IN_X - 1, CompatUtil.SLOT_TOP_Y - 1).drawBack(false);
+        widgets.addSlot(this.bottomInput, CompatUtil.SLOT_IN_X - 1, CompatUtil.SLOT_BOTTOM_Y - 1).drawBack(false);
+        widgets.addSlot(this.outputStack, CompatUtil.SLOT_OUT_X - 1, CompatUtil.SLOT_OUT_Y - 1).drawBack(false).recipeContext(this);
 
         String text = CompatUtil.formatChance(recipe.getChance());
         var font = Minecraft.getInstance().font;

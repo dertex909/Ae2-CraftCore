@@ -32,7 +32,7 @@ public class LogicAssemblerRecipeCategory implements IRecipeCategory<RecipeHolde
         this.icon = guiHelper.createDrawableItemStack(new ItemStack(LogicAssemblerBlock.HOLDER.get()));
         this.title = Component.translatable("block.ae2craftcore.logic_assembler");
         var progressStatic = guiHelper.createDrawable(texture, CompatUtil.PROGRESS_U, CompatUtil.PROGRESS_V, CompatUtil.PROGRESS_WIDTH, CompatUtil.PROGRESS_HEIGHT);
-        this.progress = guiHelper.createAnimatedDrawable(progressStatic, CompatUtil.PROGRESS_DURATION_MS / 50, IDrawableAnimated.StartDirection.TOP, false);
+        this.progress = guiHelper.createAnimatedDrawable(progressStatic, CompatUtil.PROGRESS_DURATION_MS / 50, IDrawableAnimated.StartDirection.BOTTOM, false);
     }
 
     @Override
@@ -64,8 +64,8 @@ public class LogicAssemblerRecipeCategory implements IRecipeCategory<RecipeHolde
     public void setRecipe(IRecipeLayoutBuilder builder, RecipeHolder<LogicAssemblerRecipe> holder, @NotNull IFocusGroup focuses) {
         var recipe = holder.value();
 
-        builder.addInputSlot(CompatUtil.SLOT_TOP_X, CompatUtil.SLOT_TOP_Y).addIngredients(recipe.getTop());
-        builder.addInputSlot(CompatUtil.SLOT_BOTTOM_X, CompatUtil.SLOT_BOTTOM_Y).addIngredients(recipe.getBottom());
+        builder.addInputSlot(CompatUtil.SLOT_IN_X, CompatUtil.SLOT_TOP_Y).addIngredients(recipe.getTop());
+        builder.addInputSlot(CompatUtil.SLOT_IN_X, CompatUtil.SLOT_BOTTOM_Y).addIngredients(recipe.getBottom());
         builder.addOutputSlot(CompatUtil.SLOT_OUT_X, CompatUtil.SLOT_OUT_Y).addItemStack(recipe.getResultItem(CompatUtil.getRegistryAccess()));
     }
 
