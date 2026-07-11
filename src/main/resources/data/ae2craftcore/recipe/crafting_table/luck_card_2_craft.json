@@ -1,12 +1,8 @@
 {
   "type": "minecraft:crafting_shapeless",
   "ingredients": [
-    {
-      "item": "ae2craftcore:quantum_processor_3"
-    },
-    {
-      "item": "ae2:advanced_card"
-    }
+    "ae2craftcore:quantum_processor_3",
+    "ae2:advanced_card"
   ],
   "result": {
     "count": 1,

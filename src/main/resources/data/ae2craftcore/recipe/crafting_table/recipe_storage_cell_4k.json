@@ -1,12 +1,8 @@
 {
   "type": "minecraft:crafting_shapeless",
   "ingredients": [
-    {
-      "item": "ae2craftcore:recipe_cell_housing"
-    },
-    {
-      "item": "ae2craftcore:recipe_cell_component_4k"
-    }
+    "ae2craftcore:recipe_cell_housing",
+    "ae2craftcore:recipe_cell_component_4k"
   ],
   "result": {
     "count": 1,

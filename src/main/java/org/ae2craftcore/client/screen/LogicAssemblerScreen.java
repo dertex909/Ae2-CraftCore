@@ -50,7 +50,7 @@ public class LogicAssemblerScreen extends AbstractContainerScreen<LogicAssembler
         if (chance >= 0) {
             var text = Component.literal(chance + "%");
             int textWidth = this.font.width(text);
-            graphics.text(this.font, text, 122 - (textWidth >> 1), 26, 0x000000, false);
+            graphics.text(this.font, text, 122 - (textWidth >> 1), 26, 0xFF000000, false);
         }
     }
 

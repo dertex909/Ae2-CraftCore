@@ -1,18 +1,10 @@
 {
   "type": "minecraft:crafting_shaped",
   "key": {
-    "f": {
-      "tag": "c:gems/fluix"
-    },
-    "q": {
-      "item": "ae2craftcore:quantum_processor_3"
-    },
-    "b": {
-      "item": "ae2:pattern_provider"
-    },
-    "p": {
-      "item": "ae2:fluix_pearl"
-    }
+    "f": "#c:gems/fluix",
+    "q": "ae2craftcore:quantum_processor_3",
+    "b": "ae2:pattern_provider",
+    "p": "ae2:fluix_pearl"
   },
   "pattern": [
     "fbf",

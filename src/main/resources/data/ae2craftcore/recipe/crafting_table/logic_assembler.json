@@ -1,21 +1,11 @@
 {
   "type": "minecraft:crafting_shaped",
   "key": {
-    "Q": {
-      "item": "ae2craftcore:quantum_processor_1"
-    },
-    "S": {
-      "tag": "c:ingots/copper"
-    },
-    "O": {
-      "tag": "c:ingots/iron"
-    },
-    "U": {
-      "item": "ae2:singularity"
-    },
-    "F": {
-      "item": "ae2:fluix_pearl"
-    }
+    "Q": "ae2craftcore:quantum_processor_1",
+    "S": "#c:ingots/copper",
+    "O": "#c:ingots/iron",
+    "U": "ae2:singularity",
+    "F": "ae2:fluix_pearl"
   },
   "pattern": [
     "OFO",

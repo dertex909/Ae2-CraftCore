@@ -25,6 +25,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.*;
@@ -33,36 +34,9 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
-public class LogicAssemblerRecipe implements Recipe<LogicAssemblerRecipe.LogicAssemblerInput> {
-    private final Ingredient top;
-    private final Ingredient bottom;
-    private final ItemStack result;
-    private final float chance;
-    private final List<RecipeUpgrade> upgrades;
-
-    public LogicAssemblerRecipe(Ingredient top, Ingredient bottom, ItemStack result, float chance, List<RecipeUpgrade> upgrades) {
-        this.top = top;
-        this.bottom = bottom;
-        this.result = result;
-        this.chance = chance;
-        this.upgrades = upgrades;
-    }
-
-    public Ingredient getTop() {
-        return top;
-    }
-
-    public Ingredient getBottom() {
-        return bottom;
-    }
-
-    public float getChance() {
-        return chance;
-    }
-
-    public List<RecipeUpgrade> getUpgrades() {
-        return upgrades;
-    }
+public record LogicAssemblerRecipe(Ingredient top, Ingredient bottom, Identifier resultId, int resultCount,
+                                   float chance,
+                                   List<RecipeUpgrade> upgrades) implements Recipe<LogicAssemblerRecipe.LogicAssemblerInput> {
 
     @Override
     public boolean matches(LogicAssemblerInput input, @NotNull Level level) {
@@ -71,11 +45,12 @@ public class LogicAssemblerRecipe implements Recipe<LogicAssemblerRecipe.LogicAs
 
     @Override
     public @NotNull ItemStack assemble(@NotNull LogicAssemblerInput input) {
-        return this.result.copy();
+        return getResultItem();
     }
 
     public @NotNull ItemStack getResultItem() {
-        return this.result;
+        Item item = BuiltInRegistries.ITEM.getValue(Identifier.tryParse(resultId.toString()));
+        return new ItemStack(item, resultCount);
     }
 
     @Override
@@ -136,19 +111,21 @@ public class LogicAssemblerRecipe implements Recipe<LogicAssemblerRecipe.LogicAs
     }
 
     public static final MapCodec<LogicAssemblerRecipe> CODEC = RecordCodecBuilder.mapCodec(inst -> inst.group(
-            Ingredient.CODEC.fieldOf("top").forGetter(LogicAssemblerRecipe::getTop),
-            Ingredient.CODEC.fieldOf("bottom").forGetter(LogicAssemblerRecipe::getBottom),
-            ItemStack.CODEC.fieldOf("result").forGetter(r -> r.result),
-            Codec.FLOAT.fieldOf("chance").forGetter(LogicAssemblerRecipe::getChance),
-            Codec.list(RecipeUpgrade.CODEC).optionalFieldOf("upgrades", List.of()).forGetter(LogicAssemblerRecipe::getUpgrades)
+            Ingredient.CODEC.fieldOf("top").forGetter(LogicAssemblerRecipe::top),
+            Ingredient.CODEC.fieldOf("bottom").forGetter(LogicAssemblerRecipe::bottom),
+            Identifier.CODEC.fieldOf("id").forGetter(LogicAssemblerRecipe::resultId),
+            Codec.INT.optionalFieldOf("count", 1).forGetter(LogicAssemblerRecipe::resultCount),
+            Codec.FLOAT.fieldOf("chance").forGetter(LogicAssemblerRecipe::chance),
+            Codec.list(RecipeUpgrade.CODEC).optionalFieldOf("upgrades", List.of()).forGetter(LogicAssemblerRecipe::upgrades)
     ).apply(inst, LogicAssemblerRecipe::new));
 
     public static final StreamCodec<RegistryFriendlyByteBuf, LogicAssemblerRecipe> STREAM_CODEC = StreamCodec.composite(
-            Ingredient.CONTENTS_STREAM_CODEC, LogicAssemblerRecipe::getTop,
-            Ingredient.CONTENTS_STREAM_CODEC, LogicAssemblerRecipe::getBottom,
-            ItemStack.STREAM_CODEC, r -> r.result,
-            ByteBufCodecs.FLOAT, LogicAssemblerRecipe::getChance,
-            RecipeUpgrade.STREAM_CODEC.apply(ByteBufCodecs.list()), LogicAssemblerRecipe::getUpgrades,
+            Ingredient.CONTENTS_STREAM_CODEC, LogicAssemblerRecipe::top,
+            Ingredient.CONTENTS_STREAM_CODEC, LogicAssemblerRecipe::bottom,
+            Identifier.STREAM_CODEC, LogicAssemblerRecipe::resultId,
+            ByteBufCodecs.VAR_INT, LogicAssemblerRecipe::resultCount,
+            ByteBufCodecs.FLOAT, LogicAssemblerRecipe::chance,
+            RecipeUpgrade.STREAM_CODEC.apply(ByteBufCodecs.list()), LogicAssemblerRecipe::upgrades,
             LogicAssemblerRecipe::new
     );
 

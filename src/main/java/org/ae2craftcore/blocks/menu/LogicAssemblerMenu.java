@@ -159,12 +159,12 @@ public class LogicAssemblerMenu extends AbstractContainerMenu {
         if (slot == 0) {
             for (var holder : this.recipes) {
                 var recipe = holder.value();
-                if (recipe.getTop().test(stack)) {
+                if (recipe.top().test(stack)) {
                     if (otherStack.isEmpty()) {
                         result = true;
                         break;
                     }
-                    if (recipe.getBottom().test(otherStack)) {
+                    if (recipe.bottom().test(otherStack)) {
                         result = true;
                         break;
                     }
@@ -176,12 +176,12 @@ public class LogicAssemblerMenu extends AbstractContainerMenu {
         } else {
             for (var holder : this.recipes) {
                 var recipe = holder.value();
-                if (recipe.getBottom().test(stack)) {
+                if (recipe.bottom().test(stack)) {
                     if (otherStack.isEmpty()) {
                         result = true;
                         break;
                     }
-                    if (recipe.getTop().test(otherStack)) {
+                    if (recipe.top().test(otherStack)) {
                         result = true;
                         break;
                     }

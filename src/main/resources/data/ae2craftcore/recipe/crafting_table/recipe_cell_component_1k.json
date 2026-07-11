@@ -1,15 +1,9 @@
 {
   "type": "minecraft:crafting_shaped",
   "key": {
-    "a": {
-      "tag": "c:dusts/sky_stone"
-    },
-    "b": {
-      "tag": "c:gems/fluix"
-    },
-    "c": {
-      "item": "ae2craftcore:quantum_processor_1"
-    }
+    "a": "#c:dusts/sky_stone",
+    "b": "#c:gems/fluix",
+    "c": "ae2craftcore:quantum_processor_1"
   },
   "pattern": [
     "aba",

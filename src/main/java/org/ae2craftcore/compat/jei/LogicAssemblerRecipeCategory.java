@@ -85,8 +85,8 @@ public class LogicAssemblerRecipeCategory implements IRecipeCategory<RecipeHolde
     public void setRecipe(IRecipeLayoutBuilder builder, RecipeHolder<LogicAssemblerRecipe> holder, @NotNull IFocusGroup focuses) {
         var recipe = holder.value();
 
-        builder.addInputSlot(CompatUtil.SLOT_IN_X, CompatUtil.SLOT_TOP_Y).add(recipe.getTop());
-        builder.addInputSlot(CompatUtil.SLOT_IN_X, CompatUtil.SLOT_BOTTOM_Y).add(recipe.getBottom());
+        builder.addInputSlot(CompatUtil.SLOT_IN_X, CompatUtil.SLOT_TOP_Y).add(recipe.top());
+        builder.addInputSlot(CompatUtil.SLOT_IN_X, CompatUtil.SLOT_BOTTOM_Y).add(recipe.bottom());
         builder.addOutputSlot(CompatUtil.SLOT_OUT_X, CompatUtil.SLOT_OUT_Y).add(recipe.getResultItem());
     }
 
@@ -95,7 +95,7 @@ public class LogicAssemblerRecipeCategory implements IRecipeCategory<RecipeHolde
         background.draw(guiGraphics, 0, 0);
         progress.draw(guiGraphics, CompatUtil.PROGRESS_X, CompatUtil.PROGRESS_Y);
 
-        String text = CompatUtil.formatChance(holder.value().getChance());
+        String text = CompatUtil.formatChance(holder.value().chance());
         var font = Minecraft.getInstance().font;
         int textWidth = font.width(text);
         guiGraphics.text(font, text, CompatUtil.CHANCE_X - (textWidth >> 1), CompatUtil.CHANCE_Y, 0x000000, false);

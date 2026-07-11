@@ -1,32 +1,26 @@
 {
   "type": "ae2craftcore:logic_assembling",
-  "top": {
-    "item": "ae2craftcore:quantum_processor_1"
-  },
-  "bottom": {
-    "item": "ae2craftcore:quantum_processor_1"
-  },
-  "result": {
-    "id": "ae2craftcore:quantum_processor_2",
-    "count": 1
-  },
-  "chance": 0.30,
+  "top": "ae2craftcore:quantum_processor_1",
+  "bottom": "ae2craftcore:quantum_processor_1",
+  "chance": 0.3,
   "upgrades": [
     {
       "card": "ae2craftcore:luck_card_1",
-      "chance_bonus": 0.20
+      "chance_bonus": 0.2
     },
     {
       "card": "ae2craftcore:luck_card_2",
-      "chance_bonus": 0.30
+      "chance_bonus": 0.3
     },
     {
       "card": "ae2craftcore:luck_card_3",
-      "chance_bonus": 0.40
+      "chance_bonus": 0.4
     },
     {
       "card": "ae2craftcore:luck_card_4",
-      "chance_bonus": 0.50
+      "chance_bonus": 0.5
     }
-  ]
+  ],
+  "id": "ae2craftcore:quantum_processor_2",
+  "count": 1
 }

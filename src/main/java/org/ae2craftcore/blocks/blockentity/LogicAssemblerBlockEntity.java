@@ -109,7 +109,7 @@ public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity imp
                     float recipeBonus = this.calculateRecipeBonus(recipe);
                     int speedCards = this.getSpeedCardsCount();
                     float penalty = speedCards * 0.01f;
-                    float finalChance = Math.clamp(recipe.getChance() + recipeBonus - penalty, 0.0f, 1.0f);
+                    float finalChance = Math.clamp(recipe.chance() + recipeBonus - penalty, 0.0f, 1.0f);
                     return Math.round(finalChance * 100);
                 }
             } else {
@@ -213,7 +213,7 @@ public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity imp
 
     public float calculateRecipeBonus(LogicAssemblerRecipe recipe) {
         float bonus = 0.0f;
-        for (var upgrade : recipe.getUpgrades()) if (hasUpgradeCard(upgrade.card())) bonus += upgrade.chanceBonus();
+        for (var upgrade : recipe.upgrades()) if (hasUpgradeCard(upgrade.card())) bonus += upgrade.chanceBonus();
         return bonus;
     }
 
@@ -255,7 +255,7 @@ public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity imp
                     float recipeBonus = blockEntity.calculateRecipeBonus(recipe);
                     int speedCards = blockEntity.getSpeedCardsCount();
                     float penalty = speedCards * 0.01f;
-                    float finalChance = Math.clamp(recipe.getChance() + recipeBonus - penalty, 0.0f, 1.0f);
+                    float finalChance = Math.clamp(recipe.chance() + recipeBonus - penalty, 0.0f, 1.0f);
 
                     if (level.getRandom().nextFloat() <= finalChance) {
                         blockEntity.rolledResult = recipeResult.copy();
@@ -342,10 +342,10 @@ public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity imp
 
         for (var holder : recipes) {
             var recipe = holder.value();
-            boolean matchesCurrent = (slot == 0) ? recipe.getTop().test(stack) : recipe.getBottom().test(stack);
+            boolean matchesCurrent = (slot == 0) ? recipe.top().test(stack) : recipe.bottom().test(stack);
             if (matchesCurrent) {
                 if (otherStack.isEmpty()) return true;
-                boolean matchesOther = (slot == 0) ? recipe.getBottom().test(otherStack) : recipe.getTop().test(otherStack);
+                boolean matchesOther = (slot == 0) ? recipe.bottom().test(otherStack) : recipe.top().test(otherStack);
                 if (matchesOther) return true;
             }
         }

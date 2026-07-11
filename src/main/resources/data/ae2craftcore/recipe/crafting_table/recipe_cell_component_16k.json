@@ -1,18 +1,10 @@
 {
   "type": "minecraft:crafting_shaped",
   "key": {
-    "a": {
-      "tag": "c:dusts/ender_pearl"
-    },
-    "b": {
-      "tag": "c:gems/fluix"
-    },
-    "c": {
-      "item": "ae2craftcore:quantum_processor_3"
-    },
-    "d": {
-      "item": "ae2craftcore:recipe_cell_component_4k"
-    }
+    "a": "#c:dusts/ender_pearl",
+    "b": "#c:gems/fluix",
+    "c": "ae2craftcore:quantum_processor_3",
+    "d": "ae2craftcore:recipe_cell_component_4k"
   },
   "pattern": [
     "aba",

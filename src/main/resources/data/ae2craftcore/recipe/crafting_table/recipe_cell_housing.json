@@ -1,15 +1,9 @@
 {
   "type": "minecraft:crafting_shaped",
   "key": {
-    "q": {
-      "item": "ae2:quartz_glass"
-    },
-    "r": {
-      "tag": "c:dusts/redstone"
-    },
-    "g": {
-      "tag": "c:ingots/gold"
-    }
+    "q": "ae2:quartz_glass",
+    "r": "#c:dusts/redstone",
+    "g": "#c:ingots/gold"
   },
   "pattern": [
     "qrq",

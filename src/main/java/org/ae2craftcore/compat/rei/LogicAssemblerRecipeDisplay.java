@@ -41,8 +41,8 @@ public class LogicAssemblerRecipeDisplay implements Display {
         this.holder = holder;
         var recipe = holder.value();
         this.inputs = ImmutableList.of(
-                EntryIngredients.ofIngredient(recipe.getTop()),
-                EntryIngredients.ofIngredient(recipe.getBottom())
+                EntryIngredients.ofIngredient(recipe.top()),
+                EntryIngredients.ofIngredient(recipe.bottom())
         );
         this.outputs = ImmutableList.of(EntryIngredients.of(recipe.getResultItem()));
     }
