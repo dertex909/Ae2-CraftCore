@@ -18,8 +18,6 @@
 
 package org.ae2craftcore.compat;
 
-import net.minecraft.client.Minecraft;
-import net.minecraft.core.RegistryAccess;
 import net.minecraft.resources.Identifier;
 import org.ae2craftcore.Ae2craftcore;
 
