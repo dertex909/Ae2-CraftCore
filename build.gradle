@@ -41,7 +41,7 @@ base {
     archivesName = mod_id
 }
 
-java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+java.toolchain.languageVersion = JavaLanguageVersion.of(25)
 
 neoForge {
     version = project.neo_version
@@ -63,8 +63,8 @@ neoForge {
             systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
         }
 
-        data {
-            data()
+        clientData {
+            clientData()
             programArguments.addAll '--mod', project.mod_id, '--all', '--output', file('src/generated/resources/').getAbsolutePath(), '--existing', file('src/main/resources/').getAbsolutePath()
         }
 
@@ -88,14 +88,13 @@ dependencies {
     // AE2
     compileOnly "org.appliedenergistics:appliedenergistics2:${ae2_version}"
     // JEI
-    compileOnly "mezz.jei:jei-${minecraft_version}-neoforge:19.25.0.325"
+    compileOnly "mezz.jei:jei-${minecraft_version}-neoforge:29.16.0.46"
     // EMI
-    compileOnly "dev.emi:emi-neoforge:1.1.22+${minecraft_version}"
+   // compileOnly "dev.emi:emi-neoforge:1.1.22+${minecraft_version}"
     // REI
-    compileOnly "me.shedaniel:RoughlyEnoughItems-neoforge:16.0.729"
+    compileOnly "me.shedaniel:RoughlyEnoughItems-neoforge:26.1.819"
 
-    runtimeOnly "dev.emi:emi-neoforge:1.1.22+${minecraft_version}"
-
+    runtimeOnly "mezz.jei:jei-${minecraft_version}-neoforge:29.16.0.46"
 
 //    runtimeOnly "me.shedaniel:RoughlyEnoughItems-neoforge:16.0.729"
 //    runtimeOnly "dev.architectury:architectury-neoforge:13.0.6"
