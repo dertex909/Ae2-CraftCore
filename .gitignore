@@ -8,3 +8,5 @@ out/
 hs_err_pid*
 run
 /appliedenergistics2-19.2.17-sources/
+/.vscode/
+/bin/

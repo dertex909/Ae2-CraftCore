@@ -23,6 +23,8 @@
   "item.ae2craftcore.recipe_cell_component_64k": "64К МЭ компонент рецептов",
   "item.ae2craftcore.recipe_cell_component_256k": "256К МЭ компонент рецептов",
   "item.ae2craftcore.recipe_cell_housing": "МЭ корпус для ячейки рецептов",
+  "item.ae2craftcore.logic_assembler": "Логический сборщик",
+  "item.ae2craftcore.me_machine_interface": "МЭ интерфейс машин",
   "block.ae2craftcore.logic_assembler": "Логический сборщик",
   "block.ae2craftcore.me_machine_interface": "МЭ интерфейс машин",
   "gui.ae2craftcore.recipe_terminal.machines": "Машины",

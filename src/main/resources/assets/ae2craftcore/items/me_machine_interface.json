@@ -1,0 +1,6 @@
+{
+  "model": {
+    "type": "minecraft:model",
+    "model": "ae2craftcore:block/me_machine_interface"
+  }
+}

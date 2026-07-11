@@ -23,6 +23,8 @@
   "item.ae2craftcore.recipe_cell_component_64k": "64k ME Recipe Component",
   "item.ae2craftcore.recipe_cell_component_256k": "256k ME Recipe Component",
   "item.ae2craftcore.recipe_cell_housing": "ME Recipe Cell Housing",
+  "item.ae2craftcore.logic_assembler": "Logic Assembler",
+  "item.ae2craftcore.me_machine_interface": "ME Machine Interface",
   "block.ae2craftcore.logic_assembler": "Logic Assembler",
   "block.ae2craftcore.me_machine_interface": "ME Machine Interface",
   "gui.ae2craftcore.recipe_terminal.machines": "Machines",

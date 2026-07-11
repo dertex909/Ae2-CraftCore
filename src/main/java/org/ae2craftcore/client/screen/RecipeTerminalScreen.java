@@ -38,6 +38,7 @@ import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.renderer.Rect2i;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
@@ -249,7 +250,7 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
         int relMouseX = mouseX - x;
         int relMouseY = mouseY - y;
 
-        graphics.blit(BACKGROUND_TEXTURE, x, y, 0, 0, this.imageWidth, this.imageHeight, this.imageWidth, this.imageHeight);
+        graphics.blit(RenderPipelines.GUI_TEXTURED, BACKGROUND_TEXTURE, x, y, 0.0f, 0.0f, this.imageWidth, this.imageHeight, this.imageWidth, this.imageHeight);
 
         this.drawEncodingPanel(graphics, x, y, relMouseX, relMouseY);
         this.drawScrollbar(graphics, x + MACHINE_SCROLL_X, y + MACHINE_SCROLL_Y, this.groupScrollOffset, Math.max(0, this.cachedGroups.size() - LIST_ROWS));
@@ -407,7 +408,7 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
             int bgLeft = RecipeTerminalMenu.RECIPE_LIST_X + 2;
             int bgRight = RecipeTerminalMenu.RECIPE_LIST_X + RecipeTerminalMenu.RECIPE_LIST_WIDTH - 2;
             boolean hovered = this.isInside(mouseX, mouseY, bgLeft, rowTop, bgRight - bgLeft, ROW_BG_HEIGHT);
-            graphics.blit(BACKGROUND_TEXTURE, x + bgLeft, y + rowTop, 0, hovered ? 22 : 0, 128, 22, 128, 44); // Обратите внимание: исправлено имя текстуры на BACKGROUND_TEXTURE, если MACHINE_ROW_TEXTURE не подходит
+            graphics.blit(RenderPipelines.GUI_TEXTURED, BACKGROUND_TEXTURE, x + bgLeft, y + rowTop, 0.0f, hovered ? 22.0f : 0.0f, 128, 22, 128, 44);
 
             var recipe = filtered.get(actualIndex);
             var displayStack = recipe.outputStack().isEmpty() ? recipe.patternStack() : recipe.outputStack();
@@ -437,7 +438,7 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
             int rowTop = RecipeTerminalMenu.MACHINE_LIST_Y + LIST_PADDING_TOP + i * ROW_HEIGHT;
             int bgLeft = RecipeTerminalMenu.MACHINE_LIST_X + 2;
             int textY = rowTop + MACHINE_ROW_TEXT_OFFSET_Y;
-            graphics.blit(MACHINE_ROW_TEXTURE, bgLeft, rowTop, 0, selected ? 22 : 0, 128, 22, 128, 44);
+            graphics.blit(RenderPipelines.GUI_TEXTURED, MACHINE_ROW_TEXTURE, bgLeft, rowTop, 0.0f, selected ? 22.0f : 0.0f, 128, 22, 128, 44);
 
             String displayName = group.name();
             if (this.font.width(displayName) > 85) {
