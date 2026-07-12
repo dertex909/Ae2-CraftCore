@@ -29,6 +29,8 @@ import appeng.blockentity.storage.DriveBlockEntity;
 import appeng.blockentity.storage.MEChestBlockEntity;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.Style;
+import net.minecraft.network.chat.TextColor;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
@@ -55,6 +57,9 @@ public class RecipeStorageCellItem extends Item {
     public static DeferredHolder<Item, RecipeStorageCellItem> RECIPE_STORAGE_CELL_16K;
     public static DeferredHolder<Item, RecipeStorageCellItem> RECIPE_STORAGE_CELL_64K;
     public static DeferredHolder<Item, RecipeStorageCellItem> RECIPE_STORAGE_CELL_256K;
+
+    private static final Style NORMAL_STYLE = Style.EMPTY.withColor(ChatFormatting.GRAY).withItalic(false);
+    private static final Style NUMBER_STYLE = Style.EMPTY.withColor(TextColor.fromRgb(0x886eff)).withItalic(false);
 
     public enum Tier {
         CELL_1K("recipe_storage_cell_1k", 2, 8),
@@ -139,6 +144,17 @@ public class RecipeStorageCellItem extends Item {
         cellStack.set(AttachmentRegistry.MACHINE_COUNT.get(), uniqueGroups.size());
     }
 
+    public static Style colorFromRatio(double ratio, boolean oneIsGreen) {
+        double p = ratio;
+        if (!oneIsGreen) p = 1 - p;
+
+        int r = (int) (255d * (Math.clamp(2 - 2 * p, 0, 1)));
+        int g = (int) (255d * (Math.clamp(2 * p, 0, 1)));
+        int rgb = 0xFF000000 + (r << 16) + (g << 8);
+
+        return Style.EMPTY.withItalic(false).withColor(TextColor.fromRgb(rgb));
+    }
+
     @Override
     public void appendHoverText(@NotNull ItemStack stack, @NotNull TooltipContext context, @NotNull List<Component> tooltipComponents, @NotNull TooltipFlag tooltipFlag) {
         int count = stack.getOrDefault(AttachmentRegistry.RECIPE_COUNT.get(), 0);
@@ -146,13 +162,20 @@ public class RecipeStorageCellItem extends Item {
 
         var tier = getTierForStack(stack);
 
-        tooltipComponents.add(Component.literal("Recipes (Patterns): ").withStyle(ChatFormatting.GRAY)
-                .append(Component.literal(String.valueOf(count)).withStyle(ChatFormatting.YELLOW))
-                .append(Component.literal(" / " + tier.getMaxRecipes()).withStyle(ChatFormatting.DARK_GRAY)));
+        double recipeRatio = tier.getMaxRecipes() > 0 ? (double) count / tier.getMaxRecipes() : 0.0;
+        double machineRatio = tier.getMaxMachines() > 0 ? (double) machineCount / tier.getMaxMachines() : 0.0;
 
-        tooltipComponents.add(Component.literal("Machines: ").withStyle(ChatFormatting.GRAY)
-                .append(Component.literal(String.valueOf(machineCount)).withStyle(ChatFormatting.YELLOW))
-                .append(Component.literal(" / " + tier.getMaxMachines()).withStyle(ChatFormatting.DARK_GRAY)));
+        var recipeCountComp = Component.literal(String.valueOf(count)).withStyle(colorFromRatio(recipeRatio, false));
+        var recipeMaxComp = Component.literal(String.valueOf(tier.getMaxRecipes())).withStyle(NUMBER_STYLE);
+
+        var machineCountComp = Component.literal(String.valueOf(machineCount)).withStyle(colorFromRatio(machineRatio, false));
+        var machineMaxComp = Component.literal(String.valueOf(tier.getMaxMachines())).withStyle(NUMBER_STYLE);
+
+        tooltipComponents.add(Component.translatable("tooltip.ae2craftcore.recipes_used", recipeCountComp, recipeMaxComp)
+                .withStyle(NORMAL_STYLE));
+
+        tooltipComponents.add(Component.translatable("tooltip.ae2craftcore.machines_used", machineCountComp, machineMaxComp)
+                .withStyle(NORMAL_STYLE));
     }
 
     public static List<ItemStack> getAllPatternsForGrid(IGrid grid) {
