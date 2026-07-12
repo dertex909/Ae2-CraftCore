@@ -27,6 +27,8 @@
   "item.ae2craftcore.me_machine_interface": "ME Machine Interface",
   "block.ae2craftcore.logic_assembler": "Logic Assembler",
   "block.ae2craftcore.me_machine_interface": "ME Machine Interface",
+  "tooltip.ae2craftcore.recipes_used": "Recipes (Patterns): %s of %s",
+  "tooltip.ae2craftcore.machines_used": "Machines: %s of %s",
   "gui.ae2craftcore.recipe_terminal.machines": "Machines",
   "gui.ae2craftcore.recipe_terminal.recipes": "Recipes"
 }

@@ -27,6 +27,8 @@
   "item.ae2craftcore.me_machine_interface": "МЭ интерфейс машин",
   "block.ae2craftcore.logic_assembler": "Логический сборщик",
   "block.ae2craftcore.me_machine_interface": "МЭ интерфейс машин",
+  "tooltip.ae2craftcore.recipes_used": "Рецепты (Шаблоны): %s из %s",
+  "tooltip.ae2craftcore.machines_used": "Машины: %s из %s",
   "gui.ae2craftcore.recipe_terminal.machines": "Машины",
   "gui.ae2craftcore.recipe_terminal.recipes": "Рецепты"
 }
