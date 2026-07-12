@@ -60,7 +60,7 @@ public class RecipeCacheService implements IRecipeCacheService, IGridServiceProv
         this.lastSignature = -1;
     }
 
-    private long calculateGridSignature() {
+    public long calculateGridSignature() {
         long signature = 17;
 
         for (var drive : grid.getMachines(DriveBlockEntity.class)) {
