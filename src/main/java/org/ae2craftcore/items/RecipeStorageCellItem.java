@@ -44,7 +44,6 @@ public class RecipeStorageCellItem extends Item {
     public static DeferredHolder<Item, RecipeStorageCellItem> RECIPE_STORAGE_CELL_64K;
     public static DeferredHolder<Item, RecipeStorageCellItem> RECIPE_STORAGE_CELL_256K;
 
-    // Стили тултипов напрямую из AE2 (Tooltips.class) [1]
     private static final Style NORMAL_STYLE = Style.EMPTY.withColor(ChatFormatting.GRAY).withItalic(false);
     private static final Style NUMBER_STYLE = Style.EMPTY.withColor(TextColor.fromRgb(0x886eff)).withItalic(false);
 
