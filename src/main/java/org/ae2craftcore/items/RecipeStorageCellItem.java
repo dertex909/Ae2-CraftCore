@@ -1,21 +1,3 @@
-/*
- * Ae2 CraftCore
- * Copyright (C) 2026 dertex909
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation; either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with this program. If not, see <https://www.gnu.org/licenses/>.
- */
-
 package org.ae2craftcore.items;
 
 import appeng.api.inventories.InternalInventory;
@@ -31,16 +13,16 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.TooltipFlag;
-import net.minecraft.world.item.component.TooltipDisplay;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.entity.player.ItemTooltipEvent;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import org.ae2craftcore.registry.AttachmentRegistry;
 import org.ae2craftcore.registry.annotations.RegisterItem;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
-import java.util.function.Consumer;
 
 import static net.minecraft.core.component.DataComponents.CUSTOM_DATA;
 import static org.ae2craftcore.network.packet.RecipeTerminalSavePacket.RECIPEMACHINEGROUP;
@@ -50,6 +32,8 @@ import static org.ae2craftcore.network.packet.RecipeTerminalSavePacket.RECIPEMAC
 @RegisterItem(name = "recipe_storage_cell_16k", stacksTo = 1)
 @RegisterItem(name = "recipe_storage_cell_64k", stacksTo = 1)
 @RegisterItem(name = "recipe_storage_cell_256k", stacksTo = 1)
+
+@EventBusSubscriber(modid = "ae2craftcore", value = Dist.CLIENT)
 public class RecipeStorageCellItem extends Item {
 
     public static DeferredHolder<Item, RecipeStorageCellItem> RECIPE_STORAGE_CELL_1K;
@@ -142,21 +126,25 @@ public class RecipeStorageCellItem extends Item {
         cellStack.set(AttachmentRegistry.MACHINE_COUNT.get(), uniqueGroups.size());
     }
 
-    @Override
-    @SuppressWarnings("deprecation")
-    public void appendHoverText(@NotNull ItemStack stack, @NotNull Item.TooltipContext context, @NotNull TooltipDisplay display, @NotNull Consumer<Component> tooltipComponents, @NotNull TooltipFlag tooltipFlag) {
-        int count = stack.getOrDefault(AttachmentRegistry.RECIPE_COUNT.get(), 0);
-        int machineCount = stack.getOrDefault(AttachmentRegistry.MACHINE_COUNT.get(), 0);
+    @SubscribeEvent
+    public static void onItemTooltip(ItemTooltipEvent event) {
+        var stack = event.getItemStack();
 
-        var tier = getTierForStack(stack);
+        if (stack.getItem() instanceof RecipeStorageCellItem) {
+            int count = stack.getOrDefault(AttachmentRegistry.RECIPE_COUNT.get(), 0);
+            int machineCount = stack.getOrDefault(AttachmentRegistry.MACHINE_COUNT.get(), 0);
 
-        tooltipComponents.accept(Component.literal("Recipes (Patterns): ").withStyle(ChatFormatting.GRAY)
-                .append(Component.literal(String.valueOf(count)).withStyle(ChatFormatting.YELLOW))
-                .append(Component.literal(" / " + tier.getMaxRecipes()).withStyle(ChatFormatting.DARK_GRAY)));
+            var tier = getTierForStack(stack);
+            var tooltip = event.getToolTip();
 
-        tooltipComponents.accept(Component.literal("Machines: ").withStyle(ChatFormatting.GRAY)
-                .append(Component.literal(String.valueOf(machineCount)).withStyle(ChatFormatting.YELLOW))
-                .append(Component.literal(" / " + tier.getMaxMachines()).withStyle(ChatFormatting.DARK_GRAY)));
+            tooltip.add(Component.literal("Recipes (Patterns): ").withStyle(ChatFormatting.GRAY)
+                    .append(Component.literal(String.valueOf(count)).withStyle(ChatFormatting.YELLOW))
+                    .append(Component.literal(" / " + tier.getMaxRecipes()).withStyle(ChatFormatting.DARK_GRAY)));
+
+            tooltip.add(Component.literal("Machines: ").withStyle(ChatFormatting.GRAY)
+                    .append(Component.literal(String.valueOf(machineCount)).withStyle(ChatFormatting.YELLOW))
+                    .append(Component.literal(" / " + tier.getMaxMachines()).withStyle(ChatFormatting.DARK_GRAY)));
+        }
     }
 
     public static List<ItemStack> getAllPatternsForGrid(IGrid grid) {
