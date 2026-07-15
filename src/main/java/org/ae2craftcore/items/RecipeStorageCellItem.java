@@ -40,8 +40,12 @@ import org.ae2craftcore.registry.annotations.RegisterItem;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
 
+import static java.util.Locale.ROOT;
 import static net.minecraft.core.component.DataComponents.CUSTOM_DATA;
 import static org.ae2craftcore.network.packet.RecipeTerminalSavePacket.RECIPEMACHINEGROUP;
 
@@ -91,7 +95,7 @@ public class RecipeStorageCellItem extends Item {
         var customData = p.get(CUSTOM_DATA);
         if (customData != null) {
             var tag = customData.copyTag();
-            if (tag.contains(RECIPEMACHINEGROUP)) return tag.getString(RECIPEMACHINEGROUP).toLowerCase(Locale.ROOT);
+            if (tag.contains(RECIPEMACHINEGROUP)) return tag.getString(RECIPEMACHINEGROUP).toLowerCase(ROOT);
         }
         return "";
     }
@@ -108,7 +112,7 @@ public class RecipeStorageCellItem extends Item {
                 var tag = customData.copyTag();
                 if (tag.contains(RECIPEMACHINEGROUP)) group = tag.getString(RECIPEMACHINEGROUP);
             }
-            uniqueGroups.add(group.toLowerCase(Locale.ROOT));
+            uniqueGroups.add(group.toLowerCase(ROOT));
         }
         cellStack.set(AttachmentRegistry.MACHINE_COUNT.get(), uniqueGroups.size());
     }

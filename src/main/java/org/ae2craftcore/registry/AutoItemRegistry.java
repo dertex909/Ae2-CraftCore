@@ -32,6 +32,8 @@ import org.ae2craftcore.registry.utils.RegistryScanHelper;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Modifier;
 
+import static java.util.Locale.ROOT;
+
 public class AutoItemRegistry {
     public static final DeferredRegister<Item> ITEMS = DeferredRegister.create(BuiltInRegistries.ITEM, Ae2craftcore.MODID);
 
@@ -132,7 +134,7 @@ public class AutoItemRegistry {
     }
 
     private static void injectHolder(Class<?> clazz, DeferredHolder<Item, ?> holder, RegisterItem anno) {
-        String name = anno.name().toUpperCase();
+        String name = anno.name().toUpperCase(ROOT);
 
         for (var field : clazz.getDeclaredFields()) {
             if (!Modifier.isStatic(field.getModifiers())) continue;
