@@ -49,18 +49,15 @@ neoForge {
     runs {
         client {
             client()
-            systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
         }
 
         server {
             server()
             programArgument '--nogui'
-            systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
         }
 
         gameTestServer {
             type = "gameTestServer"
-            systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
         }
 
         data {
@@ -70,6 +67,9 @@ neoForge {
 
         configureEach {
             systemProperty('forge.logging.markers', 'REGISTRIES')
+            systemProperty 'guideme.ae2.guide.sources', file("src/main/resources/assets/${project.mod_id}/ae2guide").getAbsolutePath()
+            systemProperty 'guideme.ae2.guide.sourcesNamespace', project.mod_id
+            systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
             logLevel = org.slf4j.event.Level.DEBUG
             additionalRuntimeClasspathConfiguration.extendsFrom(project.configurations.implementation)
         }
@@ -87,6 +87,10 @@ sourceSets.main.resources { srcDir 'src/generated/resources' }
 dependencies {
     // AE2
     compileOnly "org.appliedenergistics:appliedenergistics2:${ae2_version}"
+    runtimeOnly "org.appliedenergistics:appliedenergistics2:${ae2_version}"
+    // guideme
+    compileOnly "org.appliedenergistics:guideme:21.1.17"
+    runtimeOnly "org.appliedenergistics:guideme:21.1.17"
     // JEI
     compileOnly "mezz.jei:jei-${minecraft_version}-neoforge:19.25.0.325"
     // EMI
