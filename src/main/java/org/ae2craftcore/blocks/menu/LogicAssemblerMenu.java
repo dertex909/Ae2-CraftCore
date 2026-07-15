@@ -20,17 +20,18 @@ package org.ae2craftcore.blocks.menu;
 
 import appeng.api.upgrades.Upgrades;
 import appeng.crafting.RecipeAccess;
+import appeng.menu.AEBaseMenu;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.Container;
-import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ContainerData;
 import net.minecraft.world.inventory.SimpleContainerData;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import org.ae2craftcore.blocks.block.LogicAssemblerBlock;
 import org.ae2craftcore.recipe.LogicAssemblerRecipe;
 import org.ae2craftcore.registry.ModMenuTypes;
@@ -39,7 +40,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
-public class LogicAssemblerMenu extends AbstractContainerMenu {
+public class LogicAssemblerMenu extends AEBaseMenu {
     private final Container container;
     private final ContainerData data;
 
@@ -50,12 +51,12 @@ public class LogicAssemblerMenu extends AbstractContainerMenu {
     private boolean lastResultSlot0 = false;
     private boolean lastResultSlot1 = false;
 
-    public LogicAssemblerMenu(int containerId, Inventory playerInventory) {
-        this(containerId, playerInventory, new SimpleContainer(7), new SimpleContainerData(3));
+    public LogicAssemblerMenu(int containerId, Inventory playerInventory, FriendlyByteBuf buf) {
+        this(containerId, playerInventory, (Container) playerInventory.player.level().getBlockEntity(buf.readBlockPos()), new SimpleContainerData(3));
     }
 
     public LogicAssemblerMenu(int containerId, Inventory playerInventory, Container container, ContainerData data) {
-        super(ModMenuTypes.LOGIC_ASSEMBLER.get(), containerId);
+        super(ModMenuTypes.LOGIC_ASSEMBLER.get(), containerId, playerInventory, container instanceof BlockEntity ? container : null);
         checkContainerSize(container, 7);
         this.container = container;
         this.data = data;

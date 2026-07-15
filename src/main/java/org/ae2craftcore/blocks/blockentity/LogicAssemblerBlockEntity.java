@@ -67,15 +67,7 @@ public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity imp
     private static final int[] SLOTS_OUTPUT = {2};
     private static final int[] SLOTS_EMPTY = {};
     private static final String PROGRESSDOUBLE = "PD";
-    private static final String PROGRESS = "P";    private final AppEngInternalInventory inv = new AppEngInternalInventory(this, 7, 64, new IAEItemFilter() {
-        @Override
-        public boolean allowInsert(InternalInventory inventory, int slot, ItemStack stack) {
-            if (slot == 2) return false;
-            if (slot >= 3 && slot <= 6)
-                return LogicAssemblerMenu.canInstallUpgradeCard(LogicAssemblerBlockEntity.this, slot, stack);
-            return LogicAssemblerBlockEntity.this.isValidInput(slot, stack);
-        }
-    });
+    private static final String PROGRESS = "P";
     private static final String MAXPROGRESS = "MP";
     private static final String ACTIVERECIPECHANCE = "ARC";
     private static final String ROLLEDRESULT = "RR";
@@ -84,31 +76,7 @@ public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity imp
     private double progress = 0.0;
     private int maxProgress = 100;
     private int activeRecipeChance = 0;
-    private ItemStack lastCheckedTop = ItemStack.EMPTY;    protected final ContainerData dataAccess = new ContainerData() {
-        @Override
-        public int get(int index) {
-            return switch (index) {
-                case 0 -> (int) Math.round(LogicAssemblerBlockEntity.this.progress);
-                case 1 -> LogicAssemblerBlockEntity.this.maxProgress;
-                case 2 -> LogicAssemblerBlockEntity.this.getPotentialOrActiveChance();
-                default -> 0;
-            };
-        }
-
-        @Override
-        public void set(int index, int value) {
-            switch (index) {
-                case 0 -> LogicAssemblerBlockEntity.this.progress = value;
-                case 1 -> LogicAssemblerBlockEntity.this.maxProgress = value;
-                case 2 -> LogicAssemblerBlockEntity.this.activeRecipeChance = value;
-            }
-        }
-
-        @Override
-        public int getCount() {
-            return 3;
-        }
-    };
+    private ItemStack lastCheckedTop = ItemStack.EMPTY;
     private ItemStack lastCheckedBottom = ItemStack.EMPTY;
     private RecipeHolder<LogicAssemblerRecipe> cachedRecipe = null;
 
@@ -474,7 +442,39 @@ public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity imp
         this.rolledResult = tag.read(ROLLEDRESULT, ItemStack.OPTIONAL_CODEC).orElse(ItemStack.EMPTY);
     }
 
+    protected final ContainerData dataAccess = new ContainerData() {
+        @Override
+        public int get(int index) {
+            return switch (index) {
+                case 0 -> (int) Math.round(LogicAssemblerBlockEntity.this.progress);
+                case 1 -> LogicAssemblerBlockEntity.this.maxProgress;
+                case 2 -> LogicAssemblerBlockEntity.this.getPotentialOrActiveChance();
+                default -> 0;
+            };
+        }
 
+        @Override
+        public void set(int index, int value) {
+            switch (index) {
+                case 0 -> LogicAssemblerBlockEntity.this.progress = value;
+                case 1 -> LogicAssemblerBlockEntity.this.maxProgress = value;
+                case 2 -> LogicAssemblerBlockEntity.this.activeRecipeChance = value;
+            }
+        }
 
+        @Override
+        public int getCount() {
+            return 3;
+        }
+    };
 
+    private final AppEngInternalInventory inv = new AppEngInternalInventory(this, 7, 64, new IAEItemFilter() {
+        @Override
+        public boolean allowInsert(InternalInventory inventory, int slot, ItemStack stack) {
+            if (slot == 2) return false;
+            if (slot >= 3 && slot <= 6)
+                return LogicAssemblerMenu.canInstallUpgradeCard(LogicAssemblerBlockEntity.this, slot, stack);
+            return LogicAssemblerBlockEntity.this.isValidInput(slot, stack);
+        }
+    });
 }

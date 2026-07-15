@@ -1246,11 +1246,6 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
         return EncodingMode.PROCESSING;
     }
 
-    @Override
-    protected boolean shouldAddToolbar() {
-        return false;
-    }
-
     private Rect2i getRecipeBounds(int index, int screenLeft, int screenTop) {
         int col = index & 3;
         int row = index >> 2;

@@ -42,6 +42,7 @@ public final class CompatUtil {
     public static final int SLOT_OUT_Y = 25;
     public static final int CHANCE_X = 92;
     public static final int CHANCE_Y = 11;
+
     private CompatUtil() {
     }
 

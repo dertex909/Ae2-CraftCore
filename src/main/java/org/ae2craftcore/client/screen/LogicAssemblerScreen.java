@@ -18,21 +18,21 @@
 
 package org.ae2craftcore.client.screen;
 
+import appeng.client.gui.AEBaseScreen;
+import appeng.client.gui.style.StyleManager;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.Inventory;
 import org.ae2craftcore.Ae2craftcore;
 import org.ae2craftcore.blocks.menu.LogicAssemblerMenu;
-import org.jetbrains.annotations.NotNull;
 
-public class LogicAssemblerScreen extends AbstractContainerScreen<LogicAssemblerMenu> {
+public class LogicAssemblerScreen extends AEBaseScreen<LogicAssemblerMenu> {
     private static final Identifier TEXTURE = Identifier.fromNamespaceAndPath(Ae2craftcore.MODID, "textures/gui/container/logic_assembler.png");
 
     public LogicAssemblerScreen(LogicAssemblerMenu menu, Inventory playerInventory, Component title) {
-        super(menu, playerInventory, title, 197, 178);
+        super(menu, playerInventory, title, StyleManager.loadStyleDoc("/screens/logic_assembler.json"));
     }
 
     @Override
@@ -43,9 +43,8 @@ public class LogicAssemblerScreen extends AbstractContainerScreen<LogicAssembler
     }
 
     @Override
-    protected void extractLabels(@NotNull GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
-        super.extractLabels(graphics, mouseX, mouseY);
-
+    public void drawFG(GuiGraphicsExtractor graphics, int offsetX, int offsetY, int mouseX, int mouseY) {
+        super.drawFG(graphics, offsetX, offsetY, mouseX, mouseY);
         int chance = this.menu.getCraftingChance();
         if (chance >= 0) {
             var text = Component.literal(chance + "%");
@@ -55,20 +54,14 @@ public class LogicAssemblerScreen extends AbstractContainerScreen<LogicAssembler
     }
 
     @Override
-    public void extractContents(@NotNull GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
-        int x = this.leftPos;
-        int y = this.topPos;
-
-        graphics.blit(RenderPipelines.GUI_TEXTURED, TEXTURE, x, y, 0.0f, 0.0f, this.imageWidth, this.imageHeight, 256, 256);
-
+    public void drawBG(GuiGraphicsExtractor graphics, int offsetX, int offsetY, int mouseX, int mouseY, float partialTicks) {
+        super.drawBG(graphics, offsetX, offsetY, mouseX, mouseY, partialTicks);
         int progress = this.menu.getProgress();
         int maxProgress = this.menu.getMaxProgress();
         if (progress > 0 && maxProgress > 0) {
             int h = (progress * 18) / maxProgress;
             int offset = 18 - h;
-            graphics.blit(RenderPipelines.GUI_TEXTURED, TEXTURE, x + 135, y + 39 + offset, 197.0f, (float) offset, 6, h, 256, 256);
+            graphics.blit(RenderPipelines.GUI_TEXTURED, TEXTURE, this.leftPos + 135, this.topPos + 39 + offset, 197.0f, (float) offset, 6, h, 256, 256);
         }
-
-        super.extractContents(graphics, mouseX, mouseY, partialTick);
     }
 }
