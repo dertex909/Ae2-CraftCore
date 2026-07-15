@@ -40,11 +40,7 @@ import java.util.List;
 public record RecipeTerminalSyncPacket(List<ItemStack> patterns, List<MachineGroupInfo> groups)
         implements CustomPacketPayload {
 
-    public record MachineGroupInfo(String name, ItemStack icon, int count) {
-    }
-
     public static final Type<RecipeTerminalSyncPacket> TYPE = new Type<>(Identifier.fromNamespaceAndPath(Ae2craftcore.MODID, "recipe_terminal_sync"));
-
     public static final StreamCodec<FriendlyByteBuf, RecipeTerminalSyncPacket> STREAM_CODEC = StreamCodec.of((buf, value) -> {
         var registryBuf = (RegistryFriendlyByteBuf) buf;
         registryBuf.writeInt(value.patterns().size());
@@ -71,11 +67,6 @@ public record RecipeTerminalSyncPacket(List<ItemStack> patterns, List<MachineGro
         return new RecipeTerminalSyncPacket(list, groupsList);
     });
 
-    @Override
-    public @NotNull Type<? extends CustomPacketPayload> type() {
-        return TYPE;
-    }
-
     @PacketHandler
     public static void handle(RecipeTerminalSyncPacket packet, IPayloadContext context) {
         context.enqueueWork(() -> {
@@ -90,5 +81,13 @@ public record RecipeTerminalSyncPacket(List<ItemStack> patterns, List<MachineGro
                 }
             }
         });
+    }
+
+    @Override
+    public @NotNull Type<? extends CustomPacketPayload> type() {
+        return TYPE;
+    }
+
+    public record MachineGroupInfo(String name, ItemStack icon, int count) {
     }
 }

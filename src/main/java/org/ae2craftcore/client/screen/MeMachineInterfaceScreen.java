@@ -113,10 +113,10 @@ public class MeMachineInterfaceScreen extends AEBaseScreen<MeMachineInterfaceMen
     }
 
     private static class MeMachineInterfaceLockReason implements ICompositeWidget {
+        private final MeMachineInterfaceScreen screen;
         protected boolean visible = false;
         protected int x;
         protected int y;
-        private final MeMachineInterfaceScreen screen;
 
         public MeMachineInterfaceLockReason(MeMachineInterfaceScreen screen) {
             this.screen = screen;

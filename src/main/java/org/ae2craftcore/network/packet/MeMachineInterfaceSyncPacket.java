@@ -42,11 +42,6 @@ public record MeMachineInterfaceSyncPacket(BlockPos pos, String customName) impl
         buf.writeUtf(value.customName());
     }, buf -> new MeMachineInterfaceSyncPacket(buf.readBlockPos(), buf.readUtf()));
 
-    @Override
-    public @NotNull Type<? extends CustomPacketPayload> type() {
-        return TYPE;
-    }
-
     @PacketHandler
     public static void handle(MeMachineInterfaceSyncPacket packet, IPayloadContext context) {
         context.enqueueWork(() -> {
@@ -56,5 +51,10 @@ public record MeMachineInterfaceSyncPacket(BlockPos pos, String customName) impl
                 if (be instanceof MeMachineInterfaceBlockEntity inter) inter.setCustomName(packet.customName());
             }
         });
+    }
+
+    @Override
+    public @NotNull Type<? extends CustomPacketPayload> type() {
+        return TYPE;
     }
 }

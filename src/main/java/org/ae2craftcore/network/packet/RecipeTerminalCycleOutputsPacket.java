@@ -37,16 +37,16 @@ public record RecipeTerminalCycleOutputsPacket() implements CustomPacketPayload 
     @SuppressWarnings("unused")
     public static final StreamCodec<FriendlyByteBuf, RecipeTerminalCycleOutputsPacket> STREAM_CODEC = StreamCodec.unit(new RecipeTerminalCycleOutputsPacket());
 
-    @Override
-    public @NotNull Type<? extends CustomPacketPayload> type() {
-        return TYPE;
-    }
-
     @PacketHandler
     public static void handle(RecipeTerminalCycleOutputsPacket packet, IPayloadContext context) {
         context.enqueueWork(() -> {
             var player = context.player();
             if (player.containerMenu instanceof RecipeTerminalMenu menu) menu.cycleProcessingOutputs();
         });
+    }
+
+    @Override
+    public @NotNull Type<? extends CustomPacketPayload> type() {
+        return TYPE;
     }
 }

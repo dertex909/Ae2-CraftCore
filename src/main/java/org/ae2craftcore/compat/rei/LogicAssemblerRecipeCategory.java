@@ -36,11 +36,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class LogicAssemblerRecipeCategory implements DisplayCategory<LogicAssemblerRecipeDisplay> {
-    private static final int PADDING = 5;
-
     public static final CategoryIdentifier<LogicAssemblerRecipeDisplay> ID = CategoryIdentifier.of(
             Identifier.fromNamespaceAndPath(Ae2craftcore.MODID, "logic_assembling")
     );
+    private static final int PADDING = 5;
 
     @Override
     public Renderer getIcon() {

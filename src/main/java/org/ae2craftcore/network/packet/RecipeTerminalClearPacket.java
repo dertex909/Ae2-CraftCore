@@ -37,16 +37,16 @@ public record RecipeTerminalClearPacket() implements CustomPacketPayload {
     @SuppressWarnings("unused")
     public static final StreamCodec<FriendlyByteBuf, RecipeTerminalClearPacket> STREAM_CODEC = StreamCodec.unit(new RecipeTerminalClearPacket());
 
-    @Override
-    public @NotNull Type<? extends CustomPacketPayload> type() {
-        return TYPE;
-    }
-
     @PacketHandler
     public static void handle(RecipeTerminalClearPacket packet, IPayloadContext context) {
         context.enqueueWork(() -> {
             var player = context.player();
             if (player.containerMenu instanceof RecipeTerminalMenu menu) menu.clearEncodingSlots();
         });
+    }
+
+    @Override
+    public @NotNull Type<? extends CustomPacketPayload> type() {
+        return TYPE;
     }
 }

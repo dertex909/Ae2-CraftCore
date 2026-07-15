@@ -80,15 +80,15 @@ import static org.ae2craftcore.registry.ModMenuTypes.ME_MACHINE_INTERFACE;
 
 @RegisterBlockEntity(name = "me_machine_interface", blocks = {MeMachineInterfaceBlock.class})
 public class MeMachineInterfaceBlockEntity extends AENetworkedPoweredBlockEntity implements ICraftingProvider, MenuProvider, InternalInventoryHost, IPriorityHost, IConfigurableObject {
+    private static final String MACHINEDIRECTION = "MD";
+    private static final String CUSTOMNAME = "CN";
+    private static final String PRIORITY_KEY = "PRT";
     public static BlockEntityType<MeMachineInterfaceBlockEntity> TYPE;
-
     private final AppEngInternalInventory inv = new AppEngInternalInventory(this, 9);
-
+    private final ConfigManager configManager = new ConfigManager(this::setChanged);
     private Direction machineDirection = Direction.NORTH;
     private String customName = "Unknown recipe";
     private int priority = 0;
-    private final ConfigManager configManager = new ConfigManager(this::setChanged);
-
     private int updateCooldown = 0;
     private long lastSignature = -1;
 
@@ -399,10 +399,6 @@ public class MeMachineInterfaceBlockEntity extends AENetworkedPoweredBlockEntity
     public InternalInventory getInternalInventory() {
         return this.inv;
     }
-
-    private static final String MACHINEDIRECTION = "MD";
-    private static final String CUSTOMNAME = "CN";
-    private static final String PRIORITY_KEY = "PRT";
 
     @Override
     public void saveAdditional(ValueOutput tag) {

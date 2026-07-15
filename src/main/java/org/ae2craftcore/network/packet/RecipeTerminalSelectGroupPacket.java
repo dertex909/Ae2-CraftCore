@@ -38,16 +38,16 @@ public record RecipeTerminalSelectGroupPacket(String groupName) implements Custo
     public static final StreamCodec<FriendlyByteBuf, RecipeTerminalSelectGroupPacket> STREAM_CODEC = StreamCodec.of((buf, value) ->
             buf.writeUtf(value.groupName()), buf -> new RecipeTerminalSelectGroupPacket(buf.readUtf()));
 
-    @Override
-    public @NotNull Type<? extends CustomPacketPayload> type() {
-        return TYPE;
-    }
-
     @PacketHandler
     public static void handle(RecipeTerminalSelectGroupPacket packet, IPayloadContext context) {
         context.enqueueWork(() -> {
             var player = context.player();
             if (player.containerMenu instanceof RecipeTerminalMenu menu) menu.setSelectedGroup(packet.groupName());
         });
+    }
+
+    @Override
+    public @NotNull Type<? extends CustomPacketPayload> type() {
+        return TYPE;
     }
 }

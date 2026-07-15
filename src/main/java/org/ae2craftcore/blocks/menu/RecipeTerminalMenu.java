@@ -88,24 +88,13 @@ public class RecipeTerminalMenu extends PatternEncodingTermMenu {
     public static final int PLAYER_INV_X = 8;
     public static final int PLAYER_INV_Y = 152;
     public static final int HOTBAR_Y = 210;
-
+    private static final ClientActionKey<ResourceKey<Recipe<?>>> SET_STONECUTTING_RECIPE = new ClientActionKey<>("setStonecuttingRecipeId");
     private final RecipeTerminalPart part;
     private final List<Slot> processingInputSlots = new ArrayList<>(81);
     private final List<Slot> processingOutputSlots = new ArrayList<>(27);
-
     private final Slot[] craftingInputSlots = new Slot[9];
-    private Slot smithingTemplateSlot;
-    private Slot smithingBaseSlot;
-    private Slot smithingAdditionSlot;
-    private Slot stonecutterInputSlot;
-
-    private int processingScrollOffset = 0;
-    private String selectedGroup = "";
     private final List<ItemStack> clientRecipes = new ArrayList<>();
     private final List<RecipeTerminalSyncPacket.MachineGroupInfo> clientGroups = new ArrayList<>();
-    private boolean firstSync = true;
-    private IClientRepo cachedProxyRepo;
-
     @GuiSync(297)
     public EncodingMode mode = EncodingMode.PROCESSING;
     @GuiSync(296)
@@ -115,8 +104,14 @@ public class RecipeTerminalMenu extends PatternEncodingTermMenu {
     @GuiSync(294)
     @Nullable
     public ResourceKey<Recipe<?>> stonecuttingRecipeId;
-
-    private static final ClientActionKey<ResourceKey<Recipe<?>>> SET_STONECUTTING_RECIPE = new ClientActionKey<>("setStonecuttingRecipeId");
+    private Slot smithingTemplateSlot;
+    private Slot smithingBaseSlot;
+    private Slot smithingAdditionSlot;
+    private Slot stonecutterInputSlot;
+    private int processingScrollOffset = 0;
+    private String selectedGroup = "";
+    private boolean firstSync = true;
+    private IClientRepo cachedProxyRepo;
 
     public RecipeTerminalMenu(int containerId, Inventory playerInventory, RecipeTerminalPart part) {
         super(RECIPE_TERMINAL.get(), containerId, playerInventory, part, false);
@@ -276,22 +271,22 @@ public class RecipeTerminalMenu extends PatternEncodingTermMenu {
         return this.processingOutputSlots.contains(slot);
     }
 
+    public List<ItemStack> getClientRecipes() {
+        return this.clientRecipes;
+    }
+
     public void setClientRecipes(List<ItemStack> recipes) {
         this.clientRecipes.clear();
         this.clientRecipes.addAll(recipes);
     }
 
-    public List<ItemStack> getClientRecipes() {
-        return this.clientRecipes;
+    public List<RecipeTerminalSyncPacket.MachineGroupInfo> getClientGroups() {
+        return this.clientGroups;
     }
 
     public void setClientGroups(List<RecipeTerminalSyncPacket.MachineGroupInfo> groups) {
         this.clientGroups.clear();
         this.clientGroups.addAll(groups);
-    }
-
-    public List<RecipeTerminalSyncPacket.MachineGroupInfo> getClientGroups() {
-        return this.clientGroups;
     }
 
     public RecipeTerminalPart getPart() {
@@ -473,120 +468,8 @@ public class RecipeTerminalMenu extends PatternEncodingTermMenu {
         return recipe.value().assemble(input);
     }
 
-    public class RecipeTerminalPhantomSlot extends FakeSlot {
-        final EncodingMode mode;
-
-        public RecipeTerminalPhantomSlot(InternalInventory inv, int index, int x, int y, EncodingMode mode) {
-            super(inv, index);
-            ((SlotAccessor) this).ae2craftcore$setX(x);
-            ((SlotAccessor) this).ae2craftcore$setY(y);
-            this.mode = mode;
-        }
-
-        public EncodingMode getMode() {
-            return this.mode;
-        }
-
-        @Override
-        public int getMaxStackSize() {
-            return 1;
-        }
-
-        @Override
-        public int getMaxStackSize(@NotNull ItemStack stack) {
-            return 1;
-        }
-
-        @Override
-        public boolean isActive() {
-            return RecipeTerminalMenu.this.mode == this.mode;
-        }
-    }
-
     public void selectStonecutterRecipeOnServer(ResourceKey<Recipe<?>> recipeId) {
         this.sendClientAction(SET_STONECUTTING_RECIPE, recipeId);
-    }
-
-    public static class RecipeTerminalLargeFakeSlot extends FakeSlot {
-        public RecipeTerminalLargeFakeSlot(InternalInventory inv, int index, int x, int y) {
-            super(inv, index);
-            ((SlotAccessor) this).ae2craftcore$setX(x);
-            ((SlotAccessor) this).ae2craftcore$setY(y);
-        }
-
-        @Override
-        public int getMaxStackSize() {
-            return 999999;
-        }
-
-        @Override
-        public int getMaxStackSize(@NotNull ItemStack stack) {
-            return 999999;
-        }
-    }
-
-    public class RecipeTerminalProcessingInputSlot extends RecipeTerminalLargeFakeSlot {
-        public RecipeTerminalProcessingInputSlot(InternalInventory inv, int index, int x, int y) {
-            super(inv, index, x, y);
-        }
-
-        @Override
-        public boolean isActive() {
-            if (RecipeTerminalMenu.this.mode != EncodingMode.PROCESSING) return false;
-            int row = this.getContainerSlot() / 3;
-            int scroll = RecipeTerminalMenu.this.processingScrollOffset;
-            int effectiveRow = row - scroll;
-            return effectiveRow >= 0 && effectiveRow < 3;
-        }
-    }
-
-    public class RecipeTerminalProcessingOutputSlot extends RecipeTerminalLargeFakeSlot {
-        public RecipeTerminalProcessingOutputSlot(InternalInventory inv, int index, int x, int y) {
-            super(inv, index, x, y);
-        }
-
-        @Override
-        public boolean isActive() {
-            if (RecipeTerminalMenu.this.mode != EncodingMode.PROCESSING) return false;
-            int row = this.getContainerSlot();
-            int scroll = RecipeTerminalMenu.this.processingScrollOffset;
-            int effectiveRow = row - scroll;
-            return effectiveRow >= 0 && effectiveRow < 3;
-        }
-    }
-
-    public class RecipeResultSlot extends Slot {
-        private final EncodingMode mode;
-
-        public RecipeResultSlot(EncodingMode mode, int x, int y) {
-            super(new SimpleContainer(1), 0, x, y);
-            this.mode = mode;
-        }
-
-        @Override
-        public @NotNull ItemStack getItem() {
-            if (this.mode == EncodingMode.CRAFTING) {
-                return RecipeTerminalMenu.this.getCraftingResult();
-            } else if (this.mode == EncodingMode.SMITHING_TABLE) {
-                return RecipeTerminalMenu.this.getSmithingResult();
-            }
-            return ItemStack.EMPTY;
-        }
-
-        @Override
-        public boolean mayPlace(@NotNull ItemStack stack) {
-            return false;
-        }
-
-        @Override
-        public boolean mayPickup(@NotNull Player player) {
-            return false;
-        }
-
-        @Override
-        public boolean isActive() {
-            return RecipeTerminalMenu.this.mode == this.mode;
-        }
     }
 
     @Override
@@ -679,5 +562,117 @@ public class RecipeTerminalMenu extends PatternEncodingTermMenu {
             return l.getCapability(Capabilities.Fluid.BLOCK, pos, state, be, side) != null;
         }
         return false;
+    }
+
+    public static class RecipeTerminalLargeFakeSlot extends FakeSlot {
+        public RecipeTerminalLargeFakeSlot(InternalInventory inv, int index, int x, int y) {
+            super(inv, index);
+            ((SlotAccessor) this).ae2craftcore$setX(x);
+            ((SlotAccessor) this).ae2craftcore$setY(y);
+        }
+
+        @Override
+        public int getMaxStackSize() {
+            return 999999;
+        }
+
+        @Override
+        public int getMaxStackSize(@NotNull ItemStack stack) {
+            return 999999;
+        }
+    }
+
+    public class RecipeTerminalPhantomSlot extends FakeSlot {
+        final EncodingMode mode;
+
+        public RecipeTerminalPhantomSlot(InternalInventory inv, int index, int x, int y, EncodingMode mode) {
+            super(inv, index);
+            ((SlotAccessor) this).ae2craftcore$setX(x);
+            ((SlotAccessor) this).ae2craftcore$setY(y);
+            this.mode = mode;
+        }
+
+        public EncodingMode getMode() {
+            return this.mode;
+        }
+
+        @Override
+        public int getMaxStackSize() {
+            return 1;
+        }
+
+        @Override
+        public int getMaxStackSize(@NotNull ItemStack stack) {
+            return 1;
+        }
+
+        @Override
+        public boolean isActive() {
+            return RecipeTerminalMenu.this.mode == this.mode;
+        }
+    }
+
+    public class RecipeTerminalProcessingInputSlot extends RecipeTerminalLargeFakeSlot {
+        public RecipeTerminalProcessingInputSlot(InternalInventory inv, int index, int x, int y) {
+            super(inv, index, x, y);
+        }
+
+        @Override
+        public boolean isActive() {
+            if (RecipeTerminalMenu.this.mode != EncodingMode.PROCESSING) return false;
+            int row = this.getContainerSlot() / 3;
+            int scroll = RecipeTerminalMenu.this.processingScrollOffset;
+            int effectiveRow = row - scroll;
+            return effectiveRow >= 0 && effectiveRow < 3;
+        }
+    }
+
+    public class RecipeTerminalProcessingOutputSlot extends RecipeTerminalLargeFakeSlot {
+        public RecipeTerminalProcessingOutputSlot(InternalInventory inv, int index, int x, int y) {
+            super(inv, index, x, y);
+        }
+
+        @Override
+        public boolean isActive() {
+            if (RecipeTerminalMenu.this.mode != EncodingMode.PROCESSING) return false;
+            int row = this.getContainerSlot();
+            int scroll = RecipeTerminalMenu.this.processingScrollOffset;
+            int effectiveRow = row - scroll;
+            return effectiveRow >= 0 && effectiveRow < 3;
+        }
+    }
+
+    public class RecipeResultSlot extends Slot {
+        private final EncodingMode mode;
+
+        public RecipeResultSlot(EncodingMode mode, int x, int y) {
+            super(new SimpleContainer(1), 0, x, y);
+            this.mode = mode;
+        }
+
+        @Override
+        public @NotNull ItemStack getItem() {
+            if (this.mode == EncodingMode.CRAFTING) {
+                return RecipeTerminalMenu.this.getCraftingResult();
+            } else if (this.mode == EncodingMode.SMITHING_TABLE) {
+                return RecipeTerminalMenu.this.getSmithingResult();
+            }
+            return ItemStack.EMPTY;
+        }
+
+        @Override
+        public boolean mayPlace(@NotNull ItemStack stack) {
+            return false;
+        }
+
+        @Override
+        public boolean mayPickup(@NotNull Player player) {
+            return false;
+        }
+
+        @Override
+        public boolean isActive() {
+            return RecipeTerminalMenu.this.mode == this.mode;
+        }
     }
 }

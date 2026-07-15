@@ -50,30 +50,6 @@ public class LogicAssemblerMenu extends AbstractContainerMenu {
     private boolean lastResultSlot0 = false;
     private boolean lastResultSlot1 = false;
 
-    public static boolean canInstallUpgradeCard(Container inv, int slot, ItemStack stack) {
-        int maxAllowed = Upgrades.getMaxInstallable(stack.getItem(), LogicAssemblerBlock.HOLDER.get());
-        if (maxAllowed <= 0) return false;
-        int currentCount = 0;
-
-        if (slot != 3) {
-            var installed = inv.getItem(3);
-            if (!installed.isEmpty() && installed.is(stack.getItem())) currentCount += installed.getCount();
-        }
-        if (slot != 4) {
-            var installed = inv.getItem(4);
-            if (!installed.isEmpty() && installed.is(stack.getItem())) currentCount += installed.getCount();
-        }
-        if (slot != 5) {
-            var installed = inv.getItem(5);
-            if (!installed.isEmpty() && installed.is(stack.getItem())) currentCount += installed.getCount();
-        }
-        if (slot != 6) {
-            var installed = inv.getItem(6);
-            if (!installed.isEmpty() && installed.is(stack.getItem())) currentCount += installed.getCount();
-        }
-        return currentCount < maxAllowed;
-    }
-
     public LogicAssemblerMenu(int containerId, Inventory playerInventory) {
         this(containerId, playerInventory, new SimpleContainer(7), new SimpleContainerData(3));
     }
@@ -135,6 +111,30 @@ public class LogicAssemblerMenu extends AbstractContainerMenu {
         }
 
         this.addDataSlots(data);
+    }
+
+    public static boolean canInstallUpgradeCard(Container inv, int slot, ItemStack stack) {
+        int maxAllowed = Upgrades.getMaxInstallable(stack.getItem(), LogicAssemblerBlock.HOLDER.get());
+        if (maxAllowed <= 0) return false;
+        int currentCount = 0;
+
+        if (slot != 3) {
+            var installed = inv.getItem(3);
+            if (!installed.isEmpty() && installed.is(stack.getItem())) currentCount += installed.getCount();
+        }
+        if (slot != 4) {
+            var installed = inv.getItem(4);
+            if (!installed.isEmpty() && installed.is(stack.getItem())) currentCount += installed.getCount();
+        }
+        if (slot != 5) {
+            var installed = inv.getItem(5);
+            if (!installed.isEmpty() && installed.is(stack.getItem())) currentCount += installed.getCount();
+        }
+        if (slot != 6) {
+            var installed = inv.getItem(6);
+            if (!installed.isEmpty() && installed.is(stack.getItem())) currentCount += installed.getCount();
+        }
+        return currentCount < maxAllowed;
     }
 
     private boolean isValidInputForSlot(Level level, int slot, ItemStack stack) {

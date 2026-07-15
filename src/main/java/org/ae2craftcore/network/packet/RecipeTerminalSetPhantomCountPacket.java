@@ -39,11 +39,6 @@ public record RecipeTerminalSetPhantomCountPacket(int slotId, int count) impleme
         buf.writeInt(value.count());
     }, buf -> new RecipeTerminalSetPhantomCountPacket(buf.readInt(), buf.readInt()));
 
-    @Override
-    public @NotNull Type<? extends CustomPacketPayload> type() {
-        return TYPE;
-    }
-
     @PacketHandler
     public static void handle(RecipeTerminalSetPhantomCountPacket packet, IPayloadContext context) {
         context.enqueueWork(() -> {
@@ -52,5 +47,10 @@ public record RecipeTerminalSetPhantomCountPacket(int slotId, int count) impleme
                 menu.setPhantomSlotCount(packet.slotId(), packet.count());
             }
         });
+    }
+
+    @Override
+    public @NotNull Type<? extends CustomPacketPayload> type() {
+        return TYPE;
     }
 }

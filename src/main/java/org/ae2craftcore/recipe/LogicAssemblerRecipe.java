@@ -38,6 +38,25 @@ public record LogicAssemblerRecipe(Ingredient top, Ingredient bottom, Identifier
                                    float chance,
                                    List<RecipeUpgrade> upgrades) implements Recipe<LogicAssemblerRecipe.LogicAssemblerInput> {
 
+    public static final MapCodec<LogicAssemblerRecipe> CODEC = RecordCodecBuilder.mapCodec(inst -> inst.group(
+            Ingredient.CODEC.fieldOf("top").forGetter(LogicAssemblerRecipe::top),
+            Ingredient.CODEC.fieldOf("bottom").forGetter(LogicAssemblerRecipe::bottom),
+            Identifier.CODEC.fieldOf("id").forGetter(LogicAssemblerRecipe::resultId),
+            Codec.INT.optionalFieldOf("count", 1).forGetter(LogicAssemblerRecipe::resultCount),
+            Codec.FLOAT.fieldOf("chance").forGetter(LogicAssemblerRecipe::chance),
+            Codec.list(RecipeUpgrade.CODEC).optionalFieldOf("upgrades", List.of()).forGetter(LogicAssemblerRecipe::upgrades)
+    ).apply(inst, LogicAssemblerRecipe::new));
+    public static final StreamCodec<RegistryFriendlyByteBuf, LogicAssemblerRecipe> STREAM_CODEC = StreamCodec.composite(
+            Ingredient.CONTENTS_STREAM_CODEC, LogicAssemblerRecipe::top,
+            Ingredient.CONTENTS_STREAM_CODEC, LogicAssemblerRecipe::bottom,
+            Identifier.STREAM_CODEC, LogicAssemblerRecipe::resultId,
+            ByteBufCodecs.VAR_INT, LogicAssemblerRecipe::resultCount,
+            ByteBufCodecs.FLOAT, LogicAssemblerRecipe::chance,
+            RecipeUpgrade.STREAM_CODEC.apply(ByteBufCodecs.list()), LogicAssemblerRecipe::upgrades,
+            LogicAssemblerRecipe::new
+    );
+    public static final RecipeSerializer<LogicAssemblerRecipe> SERIALIZER = new RecipeSerializer<>(CODEC, STREAM_CODEC);
+
     @Override
     public boolean matches(LogicAssemblerInput input, @NotNull Level level) {
         return this.top.test(input.top()) && this.bottom.test(input.bottom());
@@ -109,25 +128,4 @@ public record LogicAssemblerRecipe(Ingredient top, Ingredient bottom, Identifier
     public static class Type implements RecipeType<LogicAssemblerRecipe> {
         public static final Type INSTANCE = new Type();
     }
-
-    public static final MapCodec<LogicAssemblerRecipe> CODEC = RecordCodecBuilder.mapCodec(inst -> inst.group(
-            Ingredient.CODEC.fieldOf("top").forGetter(LogicAssemblerRecipe::top),
-            Ingredient.CODEC.fieldOf("bottom").forGetter(LogicAssemblerRecipe::bottom),
-            Identifier.CODEC.fieldOf("id").forGetter(LogicAssemblerRecipe::resultId),
-            Codec.INT.optionalFieldOf("count", 1).forGetter(LogicAssemblerRecipe::resultCount),
-            Codec.FLOAT.fieldOf("chance").forGetter(LogicAssemblerRecipe::chance),
-            Codec.list(RecipeUpgrade.CODEC).optionalFieldOf("upgrades", List.of()).forGetter(LogicAssemblerRecipe::upgrades)
-    ).apply(inst, LogicAssemblerRecipe::new));
-
-    public static final StreamCodec<RegistryFriendlyByteBuf, LogicAssemblerRecipe> STREAM_CODEC = StreamCodec.composite(
-            Ingredient.CONTENTS_STREAM_CODEC, LogicAssemblerRecipe::top,
-            Ingredient.CONTENTS_STREAM_CODEC, LogicAssemblerRecipe::bottom,
-            Identifier.STREAM_CODEC, LogicAssemblerRecipe::resultId,
-            ByteBufCodecs.VAR_INT, LogicAssemblerRecipe::resultCount,
-            ByteBufCodecs.FLOAT, LogicAssemblerRecipe::chance,
-            RecipeUpgrade.STREAM_CODEC.apply(ByteBufCodecs.list()), LogicAssemblerRecipe::upgrades,
-            LogicAssemblerRecipe::new
-    );
-
-    public static final RecipeSerializer<LogicAssemblerRecipe> SERIALIZER = new RecipeSerializer<>(CODEC, STREAM_CODEC);
 }

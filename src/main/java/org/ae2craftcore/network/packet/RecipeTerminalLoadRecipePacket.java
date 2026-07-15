@@ -56,11 +56,6 @@ public record RecipeTerminalLoadRecipePacket(ItemStack patternToLoad) implements
         return new RecipeTerminalLoadRecipePacket(ItemStack.OPTIONAL_STREAM_CODEC.decode(registryBuf));
     });
 
-    @Override
-    public @NotNull Type<? extends CustomPacketPayload> type() {
-        return TYPE;
-    }
-
     @PacketHandler
     public static void handle(RecipeTerminalLoadRecipePacket packet, IPayloadContext context) {
         context.enqueueWork(() -> {
@@ -122,5 +117,10 @@ public record RecipeTerminalLoadRecipePacket(ItemStack patternToLoad) implements
         } finally {
             inv.endBatch();
         }
+    }
+
+    @Override
+    public @NotNull Type<? extends CustomPacketPayload> type() {
+        return TYPE;
     }
 }
