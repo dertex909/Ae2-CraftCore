@@ -55,7 +55,7 @@ public class MeMachineInterfaceScreen extends AEBaseScreen<MeMachineInterfaceMen
     public MeMachineInterfaceScreen(MeMachineInterfaceMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title, StyleManager.loadStyleDoc("/screens/me_machine_interface.json"));
         this.imageWidth = 176;
-        this.imageHeight = 60;
+        this.imageHeight = 92;
 
         this.blockingModeButton = new ServerSettingToggleButton<>(Settings.BLOCKING_MODE, YesNo.NO);
         this.addToLeftToolbar(this.blockingModeButton);

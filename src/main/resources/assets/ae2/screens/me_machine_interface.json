@@ -5,8 +5,8 @@
   "background": {
     "texture": "ae2craftcore:textures/gui/container/me_machine_interface.png",
     "textureWidth": 176,
-    "textureHeight": 60,
-    "srcRect": [0, 0, 176, 60]
+    "textureHeight": 92,
+    "srcRect": [0, 0, 176, 92]
   },
   "widgets": {
     "openPriority": {
