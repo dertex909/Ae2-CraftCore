@@ -40,16 +40,16 @@ public record RecipeTerminalChangeModePacket(EncodingMode mode) implements Custo
     public static final StreamCodec<FriendlyByteBuf, RecipeTerminalChangeModePacket> STREAM_CODEC = StreamCodec.of((buf, value) ->
             buf.writeEnum(value.mode()), buf -> new RecipeTerminalChangeModePacket(buf.readEnum(EncodingMode.class)));
 
-    @Override
-    public @NotNull Type<? extends CustomPacketPayload> type() {
-        return TYPE;
-    }
-
     @PacketHandler
     public static void handle(RecipeTerminalChangeModePacket packet, IPayloadContext context) {
         context.enqueueWork(() -> {
             var player = context.player();
             if (player.containerMenu instanceof RecipeTerminalMenu menu) menu.setEncodingMode(packet.mode());
         });
+    }
+
+    @Override
+    public @NotNull Type<? extends CustomPacketPayload> type() {
+        return TYPE;
     }
 }

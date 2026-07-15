@@ -41,11 +41,6 @@ public record RecipeTerminalUpdateSettingsPacket(boolean substitute, boolean sub
         buf.writeBoolean(value.substituteFluids());
     }, buf -> new RecipeTerminalUpdateSettingsPacket(buf.readBoolean(), buf.readBoolean()));
 
-    @Override
-    public @NotNull Type<? extends CustomPacketPayload> type() {
-        return TYPE;
-    }
-
     @PacketHandler
     public static void handle(RecipeTerminalUpdateSettingsPacket packet, IPayloadContext context) {
         context.enqueueWork(() -> {
@@ -58,5 +53,10 @@ public record RecipeTerminalUpdateSettingsPacket(boolean substitute, boolean sub
                 }
             }
         });
+    }
+
+    @Override
+    public @NotNull Type<? extends CustomPacketPayload> type() {
+        return TYPE;
     }
 }

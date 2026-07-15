@@ -52,44 +52,13 @@ import static org.ae2craftcore.network.packet.RecipeTerminalSavePacket.RECIPEMAC
 @RegisterItem(name = "recipe_storage_cell_256k", stacksTo = 1)
 public class RecipeStorageCellItem extends Item {
 
+    private static final Style NORMAL_STYLE = Style.EMPTY.withColor(ChatFormatting.GRAY).withItalic(false);
+    private static final Style NUMBER_STYLE = Style.EMPTY.withColor(TextColor.fromRgb(0x886eff)).withItalic(false);
     public static DeferredHolder<Item, RecipeStorageCellItem> RECIPE_STORAGE_CELL_1K;
     public static DeferredHolder<Item, RecipeStorageCellItem> RECIPE_STORAGE_CELL_4K;
     public static DeferredHolder<Item, RecipeStorageCellItem> RECIPE_STORAGE_CELL_16K;
     public static DeferredHolder<Item, RecipeStorageCellItem> RECIPE_STORAGE_CELL_64K;
     public static DeferredHolder<Item, RecipeStorageCellItem> RECIPE_STORAGE_CELL_256K;
-
-    private static final Style NORMAL_STYLE = Style.EMPTY.withColor(ChatFormatting.GRAY).withItalic(false);
-    private static final Style NUMBER_STYLE = Style.EMPTY.withColor(TextColor.fromRgb(0x886eff)).withItalic(false);
-
-    public enum Tier {
-        CELL_1K("recipe_storage_cell_1k", 2, 8),
-        CELL_4K("recipe_storage_cell_4k", 6, 32),
-        CELL_16K("recipe_storage_cell_16k", 16, 128),
-        CELL_64K("recipe_storage_cell_64k", 32, 256),
-        CELL_256K("recipe_storage_cell_256k", 64, 1024);
-
-        private final String name;
-        private final int maxMachines;
-        private final int maxRecipes;
-
-        Tier(String name, int maxMachines, int maxRecipes) {
-            this.name = name;
-            this.maxMachines = maxMachines;
-            this.maxRecipes = maxRecipes;
-        }
-
-        public String getName() {
-            return name;
-        }
-
-        public int getMaxMachines() {
-            return maxMachines;
-        }
-
-        public int getMaxRecipes() {
-            return maxRecipes;
-        }
-    }
 
     public RecipeStorageCellItem(Properties properties) {
         super(properties);
@@ -155,6 +124,31 @@ public class RecipeStorageCellItem extends Item {
         return Style.EMPTY.withItalic(false).withColor(TextColor.fromRgb(rgb));
     }
 
+    public static List<ItemStack> getAllPatternsForGrid(IGrid grid) {
+        var list = new ArrayList<ItemStack>();
+        if (grid == null) return list;
+
+        for (var drive : grid.getMachines(DriveBlockEntity.class)) {
+            collectPatternsFromInventory(drive.getInternalInventory(), list);
+        }
+
+        for (var chest : grid.getMachines(MEChestBlockEntity.class)) {
+            collectPatternsFromInventory(chest.getInternalInventory(), list);
+        }
+
+        return list;
+    }
+
+    private static void collectPatternsFromInventory(InternalInventory inv, List<ItemStack> list) {
+        if (inv != null) for (int i = 0; i < inv.size(); i++) {
+            var stack = inv.getStackInSlot(i);
+            if (stack.getItem() instanceof RecipeStorageCellItem) {
+                var stored = stack.get(AttachmentRegistry.STORED_PATTERNS.get());
+                if (stored != null) list.addAll(stored);
+            }
+        }
+    }
+
     @Override
     public void appendHoverText(@NotNull ItemStack stack, @NotNull TooltipContext context, @NotNull List<Component> tooltipComponents, @NotNull TooltipFlag tooltipFlag) {
         int count = stack.getOrDefault(AttachmentRegistry.RECIPE_COUNT.get(), 0);
@@ -178,28 +172,33 @@ public class RecipeStorageCellItem extends Item {
                 .withStyle(NORMAL_STYLE));
     }
 
-    public static List<ItemStack> getAllPatternsForGrid(IGrid grid) {
-        var list = new ArrayList<ItemStack>();
-        if (grid == null) return list;
+    public enum Tier {
+        CELL_1K("recipe_storage_cell_1k", 2, 8),
+        CELL_4K("recipe_storage_cell_4k", 6, 32),
+        CELL_16K("recipe_storage_cell_16k", 16, 128),
+        CELL_64K("recipe_storage_cell_64k", 32, 256),
+        CELL_256K("recipe_storage_cell_256k", 64, 1024);
 
-        for (var drive : grid.getMachines(DriveBlockEntity.class)) {
-            collectPatternsFromInventory(drive.getInternalInventory(), list);
+        private final String name;
+        private final int maxMachines;
+        private final int maxRecipes;
+
+        Tier(String name, int maxMachines, int maxRecipes) {
+            this.name = name;
+            this.maxMachines = maxMachines;
+            this.maxRecipes = maxRecipes;
         }
 
-        for (var chest : grid.getMachines(MEChestBlockEntity.class)) {
-            collectPatternsFromInventory(chest.getInternalInventory(), list);
+        public String getName() {
+            return name;
         }
 
-        return list;
-    }
+        public int getMaxMachines() {
+            return maxMachines;
+        }
 
-    private static void collectPatternsFromInventory(InternalInventory inv, List<ItemStack> list) {
-        if (inv != null) for (int i = 0; i < inv.size(); i++) {
-            var stack = inv.getStackInSlot(i);
-            if (stack.getItem() instanceof RecipeStorageCellItem) {
-                var stored = stack.get(AttachmentRegistry.STORED_PATTERNS.get());
-                if (stored != null) list.addAll(stored);
-            }
+        public int getMaxRecipes() {
+            return maxRecipes;
         }
     }
 

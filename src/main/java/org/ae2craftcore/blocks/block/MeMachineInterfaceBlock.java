@@ -46,8 +46,8 @@ import static org.ae2craftcore.registry.ModMenuTypes.ME_MACHINE_INTERFACE;
 @RegisterBlock(name = "me_machine_interface", strength = 3.0f, resistance = 3.0f, requiresCorrectTool = true)
 public class MeMachineInterfaceBlock extends BaseEntityBlock {
 
-    public static DeferredHolder<Block, MeMachineInterfaceBlock> HOLDER;
     public static final MapCodec<MeMachineInterfaceBlock> CODEC = simpleCodec(MeMachineInterfaceBlock::new);
+    public static DeferredHolder<Block, MeMachineInterfaceBlock> HOLDER;
 
     public MeMachineInterfaceBlock(Properties properties) {
         super(properties);

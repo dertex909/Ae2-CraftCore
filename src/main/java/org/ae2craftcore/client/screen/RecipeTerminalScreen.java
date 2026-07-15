@@ -139,24 +139,19 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
     private static final Blitter STONE_SLOT = STONECUTTING_BG.copy().src(124, 140, 20, 22);
     private static final Blitter STONE_SLOT_SELECTED = STONECUTTING_BG.copy().src(124, 162, 20, 22);
     private static final Blitter STONE_SLOT_HOVER = STONECUTTING_BG.copy().src(124, 184, 20, 22);
-
+    private final List<GroupInfo> cachedGroups = new ArrayList<>();
+    private final List<RecipeInfo> cachedFilteredRecipes = new ArrayList<>();
+    private final List<RecipeHolder<StonecutterRecipe>> cachedStonecutterRecipes = new ArrayList<>();
     private int groupScrollOffset = 0;
     private int recipeScrollOffset = 0;
     private int stonecutterScrollOffset = 0;
-
     private boolean draggingScrollbar = false;
     private int activeScrollbarType = 0;
     private double dragYOffset = 0;
-
     private EditBox machineSearchBox;
     private EditBox recipeSearchBox;
     private String machineSearchQuery = "";
     private String recipeSearchQuery = "";
-
-    private final List<GroupInfo> cachedGroups = new ArrayList<>();
-    private final List<RecipeInfo> cachedFilteredRecipes = new ArrayList<>();
-    private final List<RecipeHolder<StonecutterRecipe>> cachedStonecutterRecipes = new ArrayList<>();
-
     private boolean groupsDirty = true;
     private boolean recipesDirty = true;
     private boolean stonecutterDirty = true;
@@ -1256,17 +1251,6 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
         return EncodingMode.PROCESSING;
     }
 
-    @Override
-    protected boolean shouldAddToolbar() {
-        return false;
-    }
-
-    public record GroupInfo(String name, int count, ItemStack icon) {
-    }
-
-    public record RecipeInfo(ItemStack patternStack, ItemStack outputStack, EncodingMode mode) {
-    }
-
     private Rect2i getRecipeBounds(int index, int screenLeft, int screenTop) {
         int col = index & 3;
         int row = index >> 2;
@@ -1282,5 +1266,11 @@ public class RecipeTerminalScreen extends AEBaseScreen<RecipeTerminalMenu> {
     private boolean selectedIdEquals(ResourceLocation selected, Object recipeId) {
         if (selected == null || recipeId == null) return false;
         return selected.equals(recipeId) || recipeId.toString().contains(selected.toString());
+    }
+
+    public record GroupInfo(String name, int count, ItemStack icon) {
+    }
+
+    public record RecipeInfo(ItemStack patternStack, ItemStack outputStack, EncodingMode mode) {
     }
 }

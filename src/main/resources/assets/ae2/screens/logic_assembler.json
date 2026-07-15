@@ -1,0 +1,16 @@
+{
+  "includes": [
+    "common/common.json"
+  ],
+  "background": {
+    "texture": "ae2craftcore:textures/gui/container/logic_assembler.png",
+    "textureWidth": 256,
+    "textureHeight": 256,
+    "srcRect": [
+      0,
+      0,
+      197,
+      178
+    ]
+  }
+}

@@ -56,11 +56,6 @@ public record RecipeTerminalDeleteRecipePacket(ItemStack patternToDelete) implem
         return new RecipeTerminalDeleteRecipePacket(ItemStack.OPTIONAL_STREAM_CODEC.decode(registryBuf));
     });
 
-    @Override
-    public @NotNull Type<? extends CustomPacketPayload> type() {
-        return TYPE;
-    }
-
     @PacketHandler
     public static void handle(RecipeTerminalDeleteRecipePacket packet, IPayloadContext context) {
         context.enqueueWork(() -> {
@@ -144,5 +139,10 @@ public record RecipeTerminalDeleteRecipePacket(ItemStack patternToDelete) implem
                 menu.syncRecipesToClient();
             }
         });
+    }
+
+    @Override
+    public @NotNull Type<? extends CustomPacketPayload> type() {
+        return TYPE;
     }
 }

@@ -58,11 +58,6 @@ public class AutoItemRegistry {
         }
     }
 
-    @FunctionalInterface
-    private interface ItemFactory {
-        Item create() throws Throwable;
-    }
-
     private static void registerSingleItem(Class<?> clazz, RegisterItem anno) {
         String name = anno.name();
 
@@ -153,5 +148,10 @@ public class AutoItemRegistry {
                 Ae2craftcore.LOGGER.error("Failed to inject holder into field {} of {}", fieldName, clazz.getName());
             }
         }
+    }
+
+    @FunctionalInterface
+    private interface ItemFactory {
+        Item create() throws Throwable;
     }
 }

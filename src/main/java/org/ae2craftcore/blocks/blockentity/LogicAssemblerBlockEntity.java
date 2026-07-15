@@ -61,14 +61,13 @@ import static appeng.core.definitions.AEItems.SPEED_CARD;
 
 @RegisterBlockEntity(name = "logic_assembler", blocks = {LogicAssemblerBlock.class})
 public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity implements WorldlyContainer, MenuProvider {
-    public static BlockEntityType<LogicAssemblerBlockEntity> TYPE;
-
     private static final int[] SLOTS_UP = {0};
     private static final int[] SLOTS_DOWN = {1};
     private static final int[] SLOTS_OUTPUT = {2};
     private static final int[] SLOTS_EMPTY = {};
-
-    private final AppEngInternalInventory inv = new AppEngInternalInventory(this, 7, 64, new IAEItemFilter() {
+    private static final String PROGRESSDOUBLE = "PD";
+    private static final String PROGRESS = "P";
+    private static final String MAXPROGRESS = "MP";    private final AppEngInternalInventory inv = new AppEngInternalInventory(this, 7, 64, new IAEItemFilter() {
         @Override
         public boolean allowInsert(InternalInventory inventory, int slot, ItemStack stack) {
             if (slot == 2) return false;
@@ -77,54 +76,16 @@ public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity imp
             return LogicAssemblerBlockEntity.this.isValidInput(slot, stack);
         }
     });
-
+    private static final String ACTIVERECIPECHANCE = "ARC";
+    private static final String ROLLEDRESULT = "RR";
+    public static BlockEntityType<LogicAssemblerBlockEntity> TYPE;
     private ItemStack rolledResult = ItemStack.EMPTY;
     private double progress = 0.0;
     private int maxProgress = 100;
     private int activeRecipeChance = 0;
-
     private ItemStack lastCheckedTop = ItemStack.EMPTY;
     private ItemStack lastCheckedBottom = ItemStack.EMPTY;
-    private RecipeHolder<LogicAssemblerRecipe> cachedRecipe = null;
-
-    public int getPotentialOrActiveChance() {
-        if (!this.rolledResult.isEmpty()) return this.activeRecipeChance;
-        if (this.level != null) {
-            var top = this.getItem(0);
-            var bottom = this.getItem(1);
-            if (!top.isEmpty() && !bottom.isEmpty()) {
-                if (!ItemStack.isSameItemSameComponents(top, this.lastCheckedTop)
-                        || !ItemStack.isSameItemSameComponents(bottom, this.lastCheckedBottom)) {
-
-                    this.lastCheckedTop = top.copy();
-                    this.lastCheckedBottom = bottom.copy();
-
-                    var input = new LogicAssemblerRecipe.LogicAssemblerInput(top, bottom);
-                    this.cachedRecipe = this.level.getRecipeManager()
-                            .getRecipeFor(ModRecipeTypes.LOGIC_ASSEMBLING_TYPE.get(), input, this.level)
-                            .orElse(null);
-                }
-
-                if (this.cachedRecipe != null) {
-                    var recipe = this.cachedRecipe.value();
-                    float recipeBonus = this.calculateRecipeBonus(recipe);
-                    int speedCards = this.getSpeedCardsCount();
-                    float penalty = speedCards * 0.01f;
-                    float finalChance = Math.clamp(recipe.getChance() + recipeBonus - penalty, 0.0f, 1.0f);
-                    return Math.round(finalChance * 100);
-                }
-            } else {
-                if (!this.lastCheckedTop.isEmpty() || !this.lastCheckedBottom.isEmpty()) {
-                    this.lastCheckedTop = ItemStack.EMPTY;
-                    this.lastCheckedBottom = ItemStack.EMPTY;
-                    this.cachedRecipe = null;
-                }
-            }
-        }
-        return 0;
-    }
-
-    protected final ContainerData dataAccess = new ContainerData() {
+    private RecipeHolder<LogicAssemblerRecipe> cachedRecipe = null;    protected final ContainerData dataAccess = new ContainerData() {
         @Override
         public int get(int index) {
             return switch (index) {
@@ -149,81 +110,11 @@ public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity imp
             return 3;
         }
     };
-
     public LogicAssemblerBlockEntity(BlockPos pos, BlockState state) {
         super(TYPE, pos, state);
         this.getMainNode().setFlags().setIdlePowerUsage(10);
         this.setInternalMaxPower(10000);
         this.setPowerSides(getGridConnectableSides(getOrientation()));
-    }
-
-    public ItemStack getRolledResult() {
-        return this.rolledResult;
-    }
-
-    @Override
-    public InternalInventory getInternalInventory() {
-        return this.inv;
-    }
-
-    @Override
-    public AECableType getCableConnectionType(Direction dir) {
-        return AECableType.COVERED;
-    }
-
-    @Override
-    public Set<Direction> getGridConnectableSides(BlockOrientation orientation) {
-        return EnumSet.complementOf(EnumSet.of(orientation.getSide(appeng.api.orientation.RelativeSide.FRONT)));
-    }
-
-    @Override
-    protected void onOrientationChanged(BlockOrientation orientation) {
-        super.onOrientationChanged(orientation);
-        this.setPowerSides(getGridConnectableSides(orientation));
-    }
-
-    public int getSpeedCardsCount() {
-        int count = 0;
-        for (int i = 3; i < 7; i++) {
-            var stack = this.getItem(i);
-            if (!stack.isEmpty() && SPEED_CARD.is(stack)) count += stack.getCount();
-        }
-        return Math.min(4, count);
-    }
-
-    private double extractPower(double amount) {
-        double extracted = this.extractAEPower(amount, Actionable.MODULATE, PowerMultiplier.CONFIG);
-        if (extracted >= amount - 0.01) return extracted;
-
-        double missing = amount - extracted;
-        var grid = this.getMainNode().getGrid();
-        if (grid != null) {
-            double gridExtracted = grid.getEnergyService().extractAEPower(missing, Actionable.MODULATE, PowerMultiplier.ONE);
-            extracted += gridExtracted;
-        }
-        return extracted;
-    }
-
-    private void chargeInternalBuffer() {
-        if (this.getInternalCurrentPower() < this.getInternalMaxPower() - 1) this.getMainNode().ifPresent(grid -> {
-            double toExtract = Math.min(80.0, this.getInternalMaxPower() - this.getInternalCurrentPower());
-            double extracted = grid.getEnergyService().extractAEPower(toExtract, Actionable.MODULATE, PowerMultiplier.ONE);
-            this.injectExternalPower(PowerUnit.AE, extracted, Actionable.MODULATE);
-        });
-    }
-
-    public float calculateRecipeBonus(LogicAssemblerRecipe recipe) {
-        float bonus = 0.0f;
-        for (var upgrade : recipe.getUpgrades()) if (hasUpgradeCard(upgrade.card())) bonus += upgrade.chanceBonus();
-        return bonus;
-    }
-
-    private boolean hasUpgradeCard(Item cardItem) {
-        for (int i = 3; i < 7; i++) {
-            var stack = this.getItem(i);
-            if (!stack.isEmpty() && stack.is(cardItem)) return true;
-        }
-        return false;
     }
 
     public static void tick(Level level, BlockPos pos, BlockState state, LogicAssemblerBlockEntity blockEntity) {
@@ -335,6 +226,112 @@ public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity imp
         if (state.hasProperty(LogicAssemblerBlock.ACTIVE) && state.getValue(LogicAssemblerBlock.ACTIVE) != active) {
             level.setBlock(pos, state.setValue(LogicAssemblerBlock.ACTIVE, active), 3);
         }
+    }
+
+    public int getPotentialOrActiveChance() {
+        if (!this.rolledResult.isEmpty()) return this.activeRecipeChance;
+        if (this.level != null) {
+            var top = this.getItem(0);
+            var bottom = this.getItem(1);
+            if (!top.isEmpty() && !bottom.isEmpty()) {
+                if (!ItemStack.isSameItemSameComponents(top, this.lastCheckedTop)
+                        || !ItemStack.isSameItemSameComponents(bottom, this.lastCheckedBottom)) {
+
+                    this.lastCheckedTop = top.copy();
+                    this.lastCheckedBottom = bottom.copy();
+
+                    var input = new LogicAssemblerRecipe.LogicAssemblerInput(top, bottom);
+                    this.cachedRecipe = this.level.getRecipeManager()
+                            .getRecipeFor(ModRecipeTypes.LOGIC_ASSEMBLING_TYPE.get(), input, this.level)
+                            .orElse(null);
+                }
+
+                if (this.cachedRecipe != null) {
+                    var recipe = this.cachedRecipe.value();
+                    float recipeBonus = this.calculateRecipeBonus(recipe);
+                    int speedCards = this.getSpeedCardsCount();
+                    float penalty = speedCards * 0.01f;
+                    float finalChance = Math.clamp(recipe.getChance() + recipeBonus - penalty, 0.0f, 1.0f);
+                    return Math.round(finalChance * 100);
+                }
+            } else {
+                if (!this.lastCheckedTop.isEmpty() || !this.lastCheckedBottom.isEmpty()) {
+                    this.lastCheckedTop = ItemStack.EMPTY;
+                    this.lastCheckedBottom = ItemStack.EMPTY;
+                    this.cachedRecipe = null;
+                }
+            }
+        }
+        return 0;
+    }
+
+    public ItemStack getRolledResult() {
+        return this.rolledResult;
+    }
+
+    @Override
+    public InternalInventory getInternalInventory() {
+        return this.inv;
+    }
+
+    @Override
+    public AECableType getCableConnectionType(Direction dir) {
+        return AECableType.COVERED;
+    }
+
+    @Override
+    public Set<Direction> getGridConnectableSides(BlockOrientation orientation) {
+        return EnumSet.complementOf(EnumSet.of(orientation.getSide(appeng.api.orientation.RelativeSide.FRONT)));
+    }
+
+    @Override
+    protected void onOrientationChanged(BlockOrientation orientation) {
+        super.onOrientationChanged(orientation);
+        this.setPowerSides(getGridConnectableSides(orientation));
+    }
+
+    public int getSpeedCardsCount() {
+        int count = 0;
+        for (int i = 3; i < 7; i++) {
+            var stack = this.getItem(i);
+            if (!stack.isEmpty() && SPEED_CARD.is(stack)) count += stack.getCount();
+        }
+        return Math.min(4, count);
+    }
+
+    private double extractPower(double amount) {
+        double extracted = this.extractAEPower(amount, Actionable.MODULATE, PowerMultiplier.CONFIG);
+        if (extracted >= amount - 0.01) return extracted;
+
+        double missing = amount - extracted;
+        var grid = this.getMainNode().getGrid();
+        if (grid != null) {
+            double gridExtracted = grid.getEnergyService().extractAEPower(missing, Actionable.MODULATE, PowerMultiplier.ONE);
+            extracted += gridExtracted;
+        }
+        return extracted;
+    }
+
+    private void chargeInternalBuffer() {
+        if (this.getInternalCurrentPower() < this.getInternalMaxPower() - 1) this.getMainNode().ifPresent(grid -> {
+            double toExtract = Math.min(80.0, this.getInternalMaxPower() - this.getInternalCurrentPower());
+            double extracted = grid.getEnergyService().extractAEPower(toExtract, Actionable.MODULATE, PowerMultiplier.ONE);
+            this.injectExternalPower(PowerUnit.AE, extracted, Actionable.MODULATE);
+        });
+    }
+
+    public float calculateRecipeBonus(LogicAssemblerRecipe recipe) {
+        float bonus = 0.0f;
+        for (var upgrade : recipe.getUpgrades()) if (hasUpgradeCard(upgrade.card())) bonus += upgrade.chanceBonus();
+        return bonus;
+    }
+
+    private boolean hasUpgradeCard(Item cardItem) {
+        for (int i = 3; i < 7; i++) {
+            var stack = this.getItem(i);
+            if (!stack.isEmpty() && stack.is(cardItem)) return true;
+        }
+        return false;
     }
 
     public boolean isValidInput(int slot, @NotNull ItemStack stack) {
@@ -459,12 +456,6 @@ public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity imp
         return this.getBlockState().getBlock().asItem();
     }
 
-    private static final String PROGRESSDOUBLE = "PD";
-    private static final String PROGRESS = "P";
-    private static final String MAXPROGRESS = "MP";
-    private static final String ACTIVERECIPECHANCE = "ARC";
-    private static final String ROLLEDRESULT = "RR";
-
     @Override
     public void saveAdditional(@NotNull CompoundTag tag, HolderLookup.@NotNull Provider registries) {
         super.saveAdditional(tag, registries);
@@ -491,4 +482,10 @@ public class LogicAssemblerBlockEntity extends AENetworkedPoweredBlockEntity imp
             this.rolledResult = ItemStack.EMPTY;
         }
     }
+
+
+
+
+
+
 }

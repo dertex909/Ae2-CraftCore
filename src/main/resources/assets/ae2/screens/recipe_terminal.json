@@ -1,4 +1,7 @@
 {
+  "includes": [
+    "common/common.json"
+  ],
   "palette": {
     "DEFAULT_TEXT_COLOR": "#FF413F54",
     "MUTED_TEXT_COLOR": "#FF878FA5",

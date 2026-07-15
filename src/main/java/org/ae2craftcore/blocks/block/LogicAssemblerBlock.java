@@ -50,11 +50,10 @@ import org.jetbrains.annotations.Nullable;
 @RegisterBlock(name = "logic_assembler", strength = 2.2f, resistance = 11.0f, requiresCorrectTool = true)
 public class LogicAssemblerBlock extends BaseEntityBlock implements IOrientableBlock {
 
-    public static DeferredHolder<Block, LogicAssemblerBlock> HOLDER;
-
     public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
     public static final BooleanProperty ACTIVE = BooleanProperty.create("active");
     public static final MapCodec<LogicAssemblerBlock> CODEC = simpleCodec(LogicAssemblerBlock::new);
+    public static DeferredHolder<Block, LogicAssemblerBlock> HOLDER;
 
     public LogicAssemblerBlock(Properties properties) {
         super(properties);

@@ -62,11 +62,6 @@ public record RecipeTerminalSavePacket(String groupName, String modeName, String
 
     public static final Type<RecipeTerminalSavePacket> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(Ae2craftcore.MODID, "recipe_terminal_save"));
     public static final String RECIPEMACHINEGROUP = "RecMacG";
-
-    public RecipeTerminalSavePacket(String groupName, EncodingMode mode, @Nullable ResourceLocation stonecuttingRecipeId, boolean substitutionsEnabled, boolean fluidSubstitutionsEnabled) {
-        this(groupName, mode.name(), stonecuttingRecipeId != null ? stonecuttingRecipeId.toString() : "", substitutionsEnabled, fluidSubstitutionsEnabled);
-    }
-
     @SuppressWarnings("unused")
     public static final StreamCodec<FriendlyByteBuf, RecipeTerminalSavePacket> STREAM_CODEC = StreamCodec.of((buf, value) -> {
         buf.writeUtf(value.groupName());
@@ -76,9 +71,8 @@ public record RecipeTerminalSavePacket(String groupName, String modeName, String
         buf.writeBoolean(value.fluidSubstitutionsEnabled());
     }, buf -> new RecipeTerminalSavePacket(buf.readUtf(), buf.readUtf(), buf.readUtf(), buf.readBoolean(), buf.readBoolean()));
 
-    @Override
-    public @NotNull Type<? extends CustomPacketPayload> type() {
-        return TYPE;
+    public RecipeTerminalSavePacket(String groupName, EncodingMode mode, @Nullable ResourceLocation stonecuttingRecipeId, boolean substitutionsEnabled, boolean fluidSubstitutionsEnabled) {
+        this(groupName, mode.name(), stonecuttingRecipeId != null ? stonecuttingRecipeId.toString() : "", substitutionsEnabled, fluidSubstitutionsEnabled);
     }
 
     @PacketHandler
@@ -303,5 +297,10 @@ public record RecipeTerminalSavePacket(String groupName, String modeName, String
         if (output == null) return null;
 
         return PatternDetailsHelper.encodeStonecuttingPattern(recipe, inputKey, output, false);
+    }
+
+    @Override
+    public @NotNull Type<? extends CustomPacketPayload> type() {
+        return TYPE;
     }
 }

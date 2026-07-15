@@ -38,9 +38,9 @@ Crafting processors in the Logic Assembler happens in stages. Each processor tie
 * **On success:** you receive the target processor of a higher tier.
 * **On failure:** the source processors are destroyed, and the Assembler
   outputs <ItemLink id="ae2craftcore:quantum_scrap" />.
-<ItemGrid>
+  <ItemGrid>
   <ItemIcon id="ae2craftcore:quantum_scrap" />
-</ItemGrid>
+  </ItemGrid>
 
 > 💡 *Don't throw away the scrap! Two pieces of Quantum Scrap can be used to attempt crafting a Quantum Processor Tier I
 with a 10% base chance in the Logic Assembler.*

@@ -19,22 +19,23 @@
 package org.ae2craftcore.blocks.menu;
 
 import appeng.api.upgrades.Upgrades;
+import appeng.menu.AEBaseMenu;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.Container;
-import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ContainerData;
 import net.minecraft.world.inventory.SimpleContainerData;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import org.ae2craftcore.blocks.block.LogicAssemblerBlock;
 import org.ae2craftcore.registry.ModMenuTypes;
 import org.ae2craftcore.registry.ModRecipeTypes;
 import org.jetbrains.annotations.NotNull;
 
-public class LogicAssemblerMenu extends AbstractContainerMenu {
+public class LogicAssemblerMenu extends AEBaseMenu {
     private final Container container;
     private final ContainerData data;
     private ItemStack lastCheckedSlot0 = ItemStack.EMPTY;
@@ -42,36 +43,12 @@ public class LogicAssemblerMenu extends AbstractContainerMenu {
     private boolean lastResultSlot0 = false;
     private boolean lastResultSlot1 = false;
 
-    public static boolean canInstallUpgradeCard(Container inv, int slot, ItemStack stack) {
-        int maxAllowed = Upgrades.getMaxInstallable(stack.getItem(), LogicAssemblerBlock.HOLDER.get());
-        if (maxAllowed <= 0) return false;
-        int currentCount = 0;
-
-        if (slot != 3) {
-            var installed = inv.getItem(3);
-            if (!installed.isEmpty() && installed.is(stack.getItem())) currentCount += installed.getCount();
-        }
-        if (slot != 4) {
-            var installed = inv.getItem(4);
-            if (!installed.isEmpty() && installed.is(stack.getItem())) currentCount += installed.getCount();
-        }
-        if (slot != 5) {
-            var installed = inv.getItem(5);
-            if (!installed.isEmpty() && installed.is(stack.getItem())) currentCount += installed.getCount();
-        }
-        if (slot != 6) {
-            var installed = inv.getItem(6);
-            if (!installed.isEmpty() && installed.is(stack.getItem())) currentCount += installed.getCount();
-        }
-        return currentCount < maxAllowed;
-    }
-
-    public LogicAssemblerMenu(int containerId, Inventory playerInventory) {
-        this(containerId, playerInventory, new SimpleContainer(7), new SimpleContainerData(3));
+    public LogicAssemblerMenu(int containerId, Inventory playerInventory, FriendlyByteBuf buf) {
+        this(containerId, playerInventory, (Container) playerInventory.player.level().getBlockEntity(buf.readBlockPos()), new SimpleContainerData(3));
     }
 
     public LogicAssemblerMenu(int containerId, Inventory playerInventory, Container container, ContainerData data) {
-        super(ModMenuTypes.LOGIC_ASSEMBLER.get(), containerId);
+        super(ModMenuTypes.LOGIC_ASSEMBLER.get(), containerId, playerInventory, container instanceof BlockEntity ? container : null);
         checkContainerSize(container, 7);
         this.container = container;
         this.data = data;
@@ -125,6 +102,30 @@ public class LogicAssemblerMenu extends AbstractContainerMenu {
         }
 
         this.addDataSlots(data);
+    }
+
+    public static boolean canInstallUpgradeCard(Container inv, int slot, ItemStack stack) {
+        int maxAllowed = Upgrades.getMaxInstallable(stack.getItem(), LogicAssemblerBlock.HOLDER.get());
+        if (maxAllowed <= 0) return false;
+        int currentCount = 0;
+
+        if (slot != 3) {
+            var installed = inv.getItem(3);
+            if (!installed.isEmpty() && installed.is(stack.getItem())) currentCount += installed.getCount();
+        }
+        if (slot != 4) {
+            var installed = inv.getItem(4);
+            if (!installed.isEmpty() && installed.is(stack.getItem())) currentCount += installed.getCount();
+        }
+        if (slot != 5) {
+            var installed = inv.getItem(5);
+            if (!installed.isEmpty() && installed.is(stack.getItem())) currentCount += installed.getCount();
+        }
+        if (slot != 6) {
+            var installed = inv.getItem(6);
+            if (!installed.isEmpty() && installed.is(stack.getItem())) currentCount += installed.getCount();
+        }
+        return currentCount < maxAllowed;
     }
 
     private boolean isValidInputForSlot(Level level, int slot, ItemStack stack) {
