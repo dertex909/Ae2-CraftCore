@@ -1,35 +1,36 @@
 ---
 navigation:
   parent: index.md
-  title: "Терминал Рецептов"
+  title: "Recipe Terminal"
   icon: ae2craftcore:recipe_terminal
 item_ids:
   - ae2craftcore:recipe_terminal
 ---
 
-# МЭ Терминал Рецептов
+# ME Recipe Terminal
 
 <Row>
     <ItemImage id="ae2craftcore:recipe_terminal" scale="4" />
 </Row>
 
-<ItemLink id="ae2craftcore:recipe_terminal" /> — венец технологий автоматизации аддона. Данное устройство объединяет возможности кодирования шаблонов и управления всей библиотекой автоматизации сети.
+The <ItemLink id="ae2craftcore:recipe_terminal" /> is the pinnacle of automation technology in this addon. This device
+combines pattern encoding capabilities and management of the network's entire automation library.
 
-### Рецепт создания Терминала:
+### Crafting Recipe for the Terminal:
 
-Это самый дорогой прибор мода. Для его сборки требуется
-объединить  <ItemLink id="ae2:pattern_encoding_terminal" />, <ItemLink id="ae2:pattern_access_terminal" />, <ItemLink id="ae2:pattern_provider" />,
-а также редчайший <ItemLink id="ae2craftcore:quantum_processor_5" /> (базовый шанс крафта которого составляет всего 5%):
+This is the most expensive machine in the mod. To craft it, you need to combine
+an <ItemLink id="ae2:pattern_encoding_terminal" />, <ItemLink id="ae2:pattern_access_terminal" />, <ItemLink id="ae2:pattern_provider" />,
+and the rarest <ItemLink id="ae2craftcore:quantum_processor_5" /> (which has a base crafting chance of only 5%):
 <RecipeFor id="ae2craftcore:recipe_terminal" />
 
 ---
 
-### 🖥 Возможности интерфейса
+### 🖥 Interface Capabilities
 
-1. **Запись без шаблонов:** Вам больше не нужны пустые физические шаблоны AE2. Вы создаете рецепты виртуально и
-   записываете их в установленные в сеть рецептурные ячейки памяти.
-2. **Интерфейс групп и машин:** В левой части экрана отображается список всех подключенных к МЭ-сети Интерфейсов Машин.
-   Вы можете выбрать конкретный интерфейс и кодировать рецепты прямо в его категорию.
-3. **Поддерживаемые режимы кодирования:** Crafting, Processing, Smithing Table, Stonecutting
-4. **Быстрое управление:** Вы можете мгновенно очистить поле ввода, временно отключить замены, загрузить уже
-   существующий рецепт обратно в сетку терминала для редактирования или удалить его навсегда прямо из списка группы.
+1. **Pattern-free Encoding:** You no longer need empty physical AE2 patterns. You create recipes virtually and write
+   them directly into the recipe storage cells installed in the network.
+2. **Group and Machine Interface:** The left side of the screen displays a list of all Machine Interfaces connected to
+   the ME network. You can select a specific interface and encode recipes directly into its category.
+3. **Supported Encoding Modes:** Crafting, Processing, Smithing Table, Stonecutting
+4. **Quick Management:** You can instantly clear the input field, temporarily disable substitutions, load an existing
+   recipe back into the terminal grid for editing, or delete it permanently directly from the group list.

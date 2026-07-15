@@ -1,7 +1,7 @@
 ---
 navigation:
   parent: index.md
-  title: "Карты Коррекции Ошибок"
+  title: "Error Correction Cards"
   icon: ae2craftcore:luck_card_1
 item_ids:
   - ae2craftcore:luck_card_1
@@ -10,7 +10,7 @@ item_ids:
   - ae2craftcore:luck_card_4
 ---
 
-# Карты Коррекции Ошибок (Удачи)
+# Error Correction (Luck) Cards
 
 <Row>
   <ItemImage id="ae2craftcore:luck_card_1" scale="4" />
@@ -19,12 +19,12 @@ item_ids:
   <ItemImage id="ae2craftcore:luck_card_4" scale="4" />
 </Row>
 
-Чтобы автоматизация в Сборщике Логики не превратилась в бесконечную потерю ресурсов, используются **Карты Коррекции
-Ошибок** (также известные как Карты Удачи). Они устанавливаются в слоты расширений Сборщика и повышают вероятность
-успешного создания процессоров.
+To prevent automation in the Logic Assembler from turning into endless resource loss, **Error Correction Cards** (also
+known as Luck Cards) are used. They are installed in the expansion slots of the Logic Assembler and increase the success
+rate of crafting processors.
 
-Каждая карта создается без сетки (бесформенный крафт) путём объединения улучшенной карты AE2 и квантового процессора
-соответствующего тира:
+Each card is created without a grid (shapeless craft) by combining an upgraded AE2 card and a quantum processor of the
+corresponding tier:
 
 <Row>
   <RecipeFor id="ae2craftcore:luck_card_1" />
@@ -35,23 +35,23 @@ item_ids:
 
 ---
 
-### 📈 Влияние Карт Коррекции на шанс успеха
+### 📈 Impact of Correction Cards on Success Rate
 
-Каждая установленная карта добавляет фиксированный бонус к вероятности успеха, зависящий от уровня создаваемого
-процессора. Обратите внимание, что высокоуровневые рецепты не поддерживают примитивные карты улучшения.
+Each installed card adds a fixed bonus to the success probability, depending on the tier of the processor being crafted.
+Note that high-level recipes do not support basic improvement cards.
 
-|    Процессор на выходе    |    Бонус карты I    |   Бонус карты II    |   Бонус карты III   |      Бонус карты IV      |
-|:-------------------------:|:-------------------:|:-------------------:|:-------------------:|:------------------------:|
-| **I уровень** *(из лома)* |      **+10%**       |      **+30%**       |      **+60%**       | **+90%** *(Итого: 100%)* |
-|      **II уровень**       |      **+20%**       |      **+30%**       |      **+40%**       | **+50%** *(Итого: 80%)*  |
-|      **III уровень**      |      **+10%**       |      **+20%**       |      **+30%**       | **+40%** *(Итого: 60%)*  |
-|      **IV уровень**       | *Не поддерживается* |      **+10%**       |      **+20%**       | **+30%** *(Итого: 40%)*  |
-|       **V уровень**       | *Не поддерживается* | *Не поддерживается* |      **+10%**       | **+20%** *(Итого: 30%)*  |
-|      **VI уровень**       | *Не поддерживается* | *Не поддерживается* | *Не поддерживается* | **+10%** *(Итого: 15%)*  |
+|     Output Processor      | Tier I Card Bonus | Tier II Card Bonus | Tier III Card Bonus |    Tier IV Card Bonus    |
+|:-------------------------:|:-----------------:|:------------------:|:-------------------:|:------------------------:|
+| **Tier I** *(from scrap)* |     **+10%**      |      **+30%**      |      **+60%**       | **+90%** *(Total: 100%)* |
+|        **Tier II**        |     **+20%**      |      **+30%**      |      **+40%**       | **+50%** *(Total: 80%)*  |
+|       **Tier III**        |     **+10%**      |      **+20%**      |      **+30%**       | **+40%** *(Total: 60%)*  |
+|        **Tier IV**        |  *Not supported*  |      **+10%**      |      **+20%**       | **+30%** *(Total: 40%)*  |
+|        **Tier V**         |  *Not supported*  |  *Not supported*   |      **+10%**       | **+20%** *(Total: 30%)*  |
+|        **Tier VI**        |  *Not supported*  |  *Not supported*   |   *Not supported*   | **+10%** *(Total: 15%)*  |
 
 ---
 
-### ⚠ Штрафы Карт Скорости
+### ⚠ Speed Card Penalties
 
-Вы можете ускорить сборку процессоров с помощью <ItemLink id="ae2:speed_card" />, однако каждая установленная Карта
-Скорости накладывает **штраф в размере -1% к итоговому шансу успеха**.
+You can speed up processor assembly using a <ItemLink id="ae2:speed_card" />, but each installed Speed Card imposes a *
+*penalty of -1% to the final success rate**.

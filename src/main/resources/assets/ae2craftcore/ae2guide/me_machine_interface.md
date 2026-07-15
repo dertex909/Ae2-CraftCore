@@ -1,35 +1,35 @@
 ---
 navigation:
   parent: index.md
-  title: "МЭ Интерфейс Механизмов"
+  title: "ME Machine Interface"
   icon: ae2craftcore:me_machine_interface
 item_ids:
   - ae2craftcore:me_machine_interface
 ---
 
-# МЭ Интерфейс Механизмов
+# ME Machine Interface
 
 <Row>
   <BlockImage id="ae2craftcore:me_machine_interface" scale="4" />
 </Row>
 
-<ItemLink id="ae2craftcore:me_machine_interface" /> — специальный блок, выступающий в роли «умного» моста между МЭ-сетью автоматического крафта и сторонними приборами.
+The <ItemLink id="ae2craftcore:me_machine_interface" /> is a special block that acts as a "smart" bridge between the ME
+auto-crafting network and external machinery.
 
-### Рецепт создания Интерфейса:
+### Crafting Recipe for the Interface:
 
-Для создания прибора вам потребуются кристаллы изменчивого кварца (флюикса), жемчуг флюикса, МЭ шаблонизатор, а также
-Квантовый процессор III уровня:
+To craft this machine, you will need fluix crystals, fluix pearls, an ME Pattern Provider, and a Quantum Processor Tier
+III:
 <RecipeFor id="ae2craftcore:me_machine_interface" />
 
 ---
 
-### ⚙ Принципы интеграции и настройки
+### ⚙ Integration and Configuration Principles
 
-1. **Монтаж блока:** Установите Интерфейс вплотную к любому принимающему инвентарю механизма (из любого технического
-   мода).
-2. **Виртуальные рецепты:** Данный блок не имеет физических слотов под классические шаблоны. Он считывает все доступные
-   рецепты из установленных в дисководы <ItemLink id="ae2craftcore:recipe_storage_cell_1k" />, если название группы
-   рецепта совпадает с назначенным именем интерфейса.
-3. **Блокирующий режим:** Предотвращает переполнение инвентаря подключенного прибора. МЭ-сеть не отправит следующую
-   партию ресурсов для крафта, пока прибор полностью не закончит обработку предыдущей.
-4. **Режимы блокировки:** Позволяют приостанавливать крафт в зависимости от подаваемого редстоун-сигнала.
+1. **Block Mounting:** Install the Interface adjacent to any receiving inventory of a machine (from any technical mod).
+2. **Virtual Recipes:** This block does not have physical slots for classic patterns. It reads all available recipes
+   from <ItemLink id="ae2craftcore:recipe_storage_cell_1k" /> installed in drives, provided the recipe group name
+   matches the assigned name of the interface.
+3. **Blocking Mode:** Prevents overflowing the connected machine's inventory. The ME network will not send the next
+   batch of crafting resources until the machine has finished processing the previous one.
+4. **Locking Modes:** Allow pausing the craft depending on the supplied redstone signal.

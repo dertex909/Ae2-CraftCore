@@ -1,7 +1,7 @@
 ---
 navigation:
   parent: index.md
-  title: "Сборщик Логики"
+  title: "Logic Assembler"
   icon: ae2craftcore:logic_assembler
 item_ids:
   - ae2craftcore:logic_assembler
@@ -14,43 +14,50 @@ item_ids:
   - ae2craftcore:quantum_scrap
 ---
 
-# Сборщик Логики и Квантовые Процессоры
+# Logic Assembler and Quantum Processors
 
 <Row>
   <BlockImage id="ae2craftcore:logic_assembler" scale="4" />
 </Row>
 
-<ItemLink id="ae2craftcore:logic_assembler" /> — центральный механизм модификации, предназначенный для поэтапного синтеза высокотехнологичных логических схем: от Квантового процессора I до Квантового процессора VI.
+The <ItemLink id="ae2craftcore:logic_assembler" /> is the central machine of the addon, designed for the step-by-step
+synthesis of high-tech logic circuits: from Quantum Processor I to Quantum Processor VI.
 
-### Рецепт создания Сборщика:
-Для сборки этого прибора вам понадобятся медные и железные слитки, жемчуг флюикса, сингулярность, а также один Квантовый процессор I уровня:
+### Crafting Recipe for the Assembler:
+
+To assemble this machine, you will need copper and iron ingots, fluix pearls, singularity, and one Quantum Processor
+Tier I:
 <RecipeFor id="ae2craftcore:logic_assembler" />
 
 ---
 
-### ⚙ Механика создания процессоров
+### ⚙ Processor Crafting Mechanics
 
-Создание процессоров в Сборщике Логики происходит поэтапно. Каждому уровню процессора соответствует свой базовый шанс успеха.
+Crafting processors in the Logic Assembler happens in stages. Each processor tier has its own base success rate.
 
-* **В случае успеха:** вы получаете целевой процессор более высокого уровня.
-* **В случае неудачи:** исходные процессоры разрушаются, а на выходе Сборщик выдаёт <ItemLink id="ae2craftcore:quantum_scrap" />.
+* **On success:** you receive the target processor of a higher tier.
+* **On failure:** the source processors are destroyed, and the Assembler
+  outputs <ItemLink id="ae2craftcore:quantum_scrap" />.
 <ItemGrid>
   <ItemIcon id="ae2craftcore:quantum_scrap" />
 </ItemGrid>
-> 💡 *Не выбрасывайте металлолом! Из двух единиц Квантового металлолома можно снова попытаться собрать Квантовый процессор I уровня с базовым шансом 10% в самом Сборщике.*
+
+> 💡 *Don't throw away the scrap! Two pieces of Quantum Scrap can be used to attempt crafting a Quantum Processor Tier I
+with a 10% base chance in the Logic Assembler.*
 
 ---
 
-### 📊 Таблица базовых рецептов и шансов сборки
+### 📊 Base Recipe and Assembly Chance Table
 
-| Результат сборки            | Компонент (2 штуки)                                | Базовый шанс успеха |
-|:----------------------------|:---------------------------------------------------|:--------------------|
-| **Квантовый процессор I**   | <ItemLink id="ae2craftcore:quantum_scrap" />       | **10%** (0.10)      |
-| **Квантовый процессор II**  | <ItemLink id="ae2craftcore:quantum_processor_1" /> | **30%** (0.30)      |
-| **Квантовый процессор III** | <ItemLink id="ae2craftcore:quantum_processor_2" /> | **20%** (0.20)      |
-| **Квантовый процессор IV**  | <ItemLink id="ae2craftcore:quantum_processor_3" /> | **10%** (0.10)      |
-| **Квантовый процессор V**   | <ItemLink id="ae2craftcore:quantum_processor_4" /> | **10%** (0.10)      |
-| **Квантовый процессор VI**  | <ItemLink id="ae2craftcore:quantum_processor_5" /> | **5%** (0.05)       |
+| Assembly Result           | Component (2 pieces)                               | Base Success Chance |
+|:--------------------------|:---------------------------------------------------|:--------------------|
+| **Quantum Processor I**   | <ItemLink id="ae2craftcore:quantum_scrap" />       | **10%** (0.10)      |
+| **Quantum Processor II**  | <ItemLink id="ae2craftcore:quantum_processor_1" /> | **30%** (0.30)      |
+| **Quantum Processor III** | <ItemLink id="ae2craftcore:quantum_processor_2" /> | **20%** (0.20)      |
+| **Quantum Processor IV**  | <ItemLink id="ae2craftcore:quantum_processor_3" /> | **10%** (0.10)      |
+| **Quantum Processor V**   | <ItemLink id="ae2craftcore:quantum_processor_4" /> | **10%** (0.10)      |
+| **Quantum Processor VI**  | <ItemLink id="ae2craftcore:quantum_processor_5" /> | **5%** (0.05)       |
 
-*Альтернативный способ получения процессора I уровня:* вы можете изготовить Квантовый процессор I со 100% вероятностью в обычном высекателе, объединив три стандартных процессора: инженерный, логический и вычислительный.
+*Alternative method to obtain a Tier I processor:* you can craft Quantum Processor I with a 100% chance in a standard
+Inscriber by combining three basic processors: Engineering, Logic, and Calculation.
 <RecipeFor id="ae2craftcore:quantum_processor_1" />

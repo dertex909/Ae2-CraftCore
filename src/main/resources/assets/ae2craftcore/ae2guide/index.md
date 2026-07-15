@@ -1,17 +1,17 @@
 ---
 navigation:
-  title: "Аддон: Ae2 CraftCore"
+  title: "Addon: Ae2 CraftCore"
   icon: ae2craftcore:recipe_terminal
   position: 1100
 ---
 
 # Ae2 CraftCore
 
-Добро пожаловать в руководство по **Ae2 CraftCore**!
+Welcome to the **Ae2 CraftCore** guide!
 
-Этот аддон полностью переосмысляет подход к автоматизации сторонних механизмов и созданию высокотехнологичных
-компонентов в Applied Energistics 2. Больше никаких гигантских стен из шаблонов и запутанных кабелей — управляйте
-рецептами виртуально и оптимизируйте свои фабрики с умом.
+This addon completely reimagines the approach to automating external machinery and crafting high-tech components in
+Applied Energistics 2. No more giant walls of patterns and tangled cables—manage recipes virtually and optimize your
+factories smart.
 
 <ItemGrid>
   <ItemIcon id="ae2craftcore:logic_assembler" />
@@ -23,39 +23,38 @@ navigation:
 
 ---
 
-### 🚀 Быстрый старт: С чего начать?
+### 🚀 Quick Start: Where to Begin?
 
-Если вы впервые установили мод, следуйте этой базовой цепочке развития для автоматизации ваших первых процессов:
+If you have installed the mod for the first time, follow this basic progression line to automate your first processes:
 
-1. **Создайте Сборщик Логики:** Скрафтите прибор <ItemLink id="ae2craftcore:logic_assembler" />. Он понадобится вам для
-   производства продвинутых Квантовых процессоров.
-2. **Используйте Карты Коррекции Ошибок:** Производство в сборщике имеет шанс неудачи.
-   Скрафтите <ItemLink id="ae2craftcore:luck_card_1" />, чтобы минимизировать риски и повысить шанс успешного крафта.
-3. **Подготовьте МЭ Дисковод:** Создайте и поместите в дисковод одну или
-   несколько <ItemLink id="ae2craftcore:recipe_storage_cell_1k" />. Они станут вашим виртуальным жёстким диском для
-   хранения рецептов.
-4. **Установите Терминал Рецептов:** Подключите к вашей МЭ-сети <ItemLink id="ae2craftcore:recipe_terminal" />. Открыв
-   его, вы сможете создавать шаблоны для верстака, печей или кастомных машин напрямую в ячейки памяти.
-5. **Автоматизируйте внешние машины:** Установите <ItemLink id="ae2craftcore:me_machine_interface" /> вплотную к любому
-   механизму (например, печи из другого мода). Теперь все закодированные в Терминале рецепты для этой машины будут
-   выполняться автоматически без физических шаблонов!
+1. **Create a Logic Assembler:** Craft the <ItemLink id="ae2craftcore:logic_assembler" /> device. You will need it to
+   produce advanced Quantum processors.
+2. **Use Error Correction Cards:** Assembly in the logic assembler has a chance of failure.
+   Craft <ItemLink id="ae2craftcore:luck_card_1" /> to minimize risks and increase the success rate.
+3. **Prepare an ME Drive:** Create and place one or more <ItemLink id="ae2craftcore:recipe_storage_cell_1k" /> inside a
+   drive. They will act as your virtual hard drives for storing recipes.
+4. **Install a Recipe Terminal:** Connect a <ItemLink id="ae2craftcore:recipe_terminal" /> to your ME network. Open it
+   to write recipes for crafting tables, furnaces, or custom machines directly into the memory cells.
+5. **Automate External Machinery:** Place an <ItemLink id="ae2craftcore:me_machine_interface" /> adjacent to any
+   machine (e.g., a furnace from another mod). Now all recipes encoded in the Recipe Terminal for this machine will run
+   automatically without physical patterns!
 
 ---
 
-### 📖 Подробные разделы руководства
+### 📖 Detailed Guide Sections
 
-Нажмите на любой интересующий вас компонент ниже, чтобы изучить его подробные характеристики, режимы работы и рецепты
-создания:
+Click on any component below to read about its detailed specifications, operating modes, and crafting recipes:
 
-* ⚙ <ItemLink id="ae2craftcore:logic_assembler" /> — Подробное руководство по сборке процессоров, шансам успеха и
-  совместимым апгрейдам.
-* 🛠 <ItemLink id="ae2craftcore:luck_card_1" /> — Всё о картах коррекции ошибок (удачи), их тирах и расчёте шансов.
-* 💾 <ItemLink id="ae2craftcore:recipe_storage_cell_1k" /> — Таблица объёмов ячеек памяти, лимиты рецептов и правила
-  размещения в сети.
-* 🖥 <ItemLink id="ae2craftcore:recipe_terminal" /> — Обзор интерфейса терминала, работа со списками групп машин и режимы
-  кодирования.
-* 🔌 <ItemLink id="ae2craftcore:me_machine_interface" /> — Спецификация умного интерфейса машин, блокирующий режим и
-  работа с сигналом редстоуна.
+* ⚙ <ItemLink id="ae2craftcore:logic_assembler" /> — Detailed guide on assembling processors, success rates, and
+  compatible upgrades.
+* 🛠 <ItemLink id="ae2craftcore:luck_card_1" /> — Everything about error correction (luck) cards, their tiers, and
+  success rate calculations.
+* 💾 <ItemLink id="ae2craftcore:recipe_storage_cell_1k" /> — Memory capacity tables, recipe limits, and network placement
+  rules.
+* 🖥 <ItemLink id="ae2craftcore:recipe_terminal" /> — Terminal interface overview, working with machine group lists, and
+  encoding modes.
+* 🔌 <ItemLink id="ae2craftcore:me_machine_interface" /> — Specifications for the smart machine interface, blocking mode,
+  and redstone signal integration.
 
 ---
 
