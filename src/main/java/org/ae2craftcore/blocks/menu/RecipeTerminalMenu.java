@@ -90,11 +90,11 @@ public class RecipeTerminalMenu extends PatternEncodingTermMenu {
     public static final int HOTBAR_Y = 210;
     private static final ClientActionKey<ResourceKey<Recipe<?>>> SET_STONECUTTING_RECIPE = new ClientActionKey<>("setStonecuttingRecipeId");
     private final RecipeTerminalPart part;
-    private final List<Slot> processingInputSlots = new ArrayList<>(81);
-    private final List<Slot> processingOutputSlots = new ArrayList<>(27);
+    private final ArrayList<Slot> processingInputSlots = new ArrayList<>(81);
+    private final ArrayList<Slot> processingOutputSlots = new ArrayList<>(27);
     private final Slot[] craftingInputSlots = new Slot[9];
-    private final List<ItemStack> clientRecipes = new ArrayList<>();
-    private final List<RecipeTerminalSyncPacket.MachineGroupInfo> clientGroups = new ArrayList<>();
+    private final ArrayList<ItemStack> clientRecipes = new ArrayList<>();
+    private final ArrayList<RecipeTerminalSyncPacket.MachineGroupInfo> clientGroups = new ArrayList<>();
     @GuiSync(297)
     public EncodingMode mode = EncodingMode.PROCESSING;
     @GuiSync(296)

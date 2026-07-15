@@ -42,8 +42,12 @@ import org.ae2craftcore.registry.AttachmentRegistry;
 import org.ae2craftcore.registry.annotations.RegisterItem;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
 
+import static java.util.Locale.ROOT;
 import static net.minecraft.core.component.DataComponents.CUSTOM_DATA;
 import static org.ae2craftcore.network.packet.RecipeTerminalSavePacket.RECIPEMACHINEGROUP;
 
@@ -95,13 +99,12 @@ public class RecipeStorageCellItem extends Item {
         var customData = p.get(CUSTOM_DATA);
         if (customData != null) {
             var tag = customData.copyTag();
-            if (tag.contains(RECIPEMACHINEGROUP))
-                return tag.getStringOr(RECIPEMACHINEGROUP, "").toLowerCase(Locale.ROOT);
+            if (tag.contains(RECIPEMACHINEGROUP)) return tag.getStringOr(RECIPEMACHINEGROUP, "").toLowerCase(ROOT);
         }
         return "";
     }
 
-    public static void updateCellStats(ItemStack cellStack, List<ItemStack> patterns) {
+    public static void updateCellStats(ItemStack cellStack, ArrayList<ItemStack> patterns) {
         cellStack.set(AttachmentRegistry.STORED_PATTERNS.get(), List.copyOf(patterns));
         cellStack.set(AttachmentRegistry.RECIPE_COUNT.get(), patterns.size());
 
@@ -113,7 +116,7 @@ public class RecipeStorageCellItem extends Item {
                 var tag = customData.copyTag();
                 if (tag.contains(RECIPEMACHINEGROUP)) group = tag.getStringOr(RECIPEMACHINEGROUP, "");
             }
-            uniqueGroups.add(group.toLowerCase(Locale.ROOT));
+            uniqueGroups.add(group.toLowerCase(ROOT));
         }
         cellStack.set(AttachmentRegistry.MACHINE_COUNT.get(), uniqueGroups.size());
     }

@@ -40,6 +40,8 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Modifier;
 
+import static java.util.Locale.ROOT;
+
 public class AutoBlockRegistry {
     public static final DeferredRegister<Block> BLOCKS = DeferredRegister.create(BuiltInRegistries.BLOCK, Ae2craftcore.MODID);
     private static final Reference2ObjectOpenHashMap<Class<?>, ObjectArrayList<DeferredHolder<Block, Block>>> REGISTERED_BLOCKS = new Reference2ObjectOpenHashMap<>();
@@ -124,7 +126,7 @@ public class AutoBlockRegistry {
     }
 
     private static void injectHolder(Class<?> clazz, DeferredHolder<Block, ?> holder, RegisterBlock anno) {
-        String name = anno.name().toUpperCase();
+        String name = anno.name().toUpperCase(ROOT);
         String tierName = anno.tier() >= 0 ? "TIER_" + anno.tier() : "";
 
         for (var field : clazz.getDeclaredFields()) {
@@ -146,7 +148,7 @@ public class AutoBlockRegistry {
     }
 
     private static SoundType getSoundType(String sound) {
-        return switch (sound.toLowerCase()) {
+        return switch (sound.toLowerCase(ROOT)) {
             case "stone" -> SoundType.STONE;
             case "metal" -> SoundType.METAL;
             case "wood" -> SoundType.WOOD;
