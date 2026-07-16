@@ -48,6 +48,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import org.ae2craftcore.Ae2craftcore;
 import org.ae2craftcore.blocks.block.MeMachineInterfaceBlock;
 import org.ae2craftcore.blocks.blockentity.MeMachineInterfaceBlockEntity;
+import org.ae2craftcore.compat.extendedAE.ExtendedAeCompat;
 import org.ae2craftcore.items.RecipeStorageCellItem;
 import org.ae2craftcore.mixin.SlotAccessor;
 import org.ae2craftcore.network.packet.RecipeTerminalSyncPacket;
@@ -58,7 +59,10 @@ import org.jetbrains.annotations.Nullable;
 import java.lang.reflect.Proxy;
 import java.util.*;
 
+import static net.minecraft.core.component.DataComponents.CUSTOM_DATA;
 import static net.minecraft.world.item.Items.AIR;
+import static net.minecraft.world.item.Items.BARRIER;
+import static org.ae2craftcore.network.packet.RecipeTerminalSavePacket.RECIPEMACHINEGROUP;
 import static org.ae2craftcore.registry.ModMenuTypes.RECIPE_TERMINAL;
 
 public class RecipeTerminalMenu extends PatternEncodingTermMenu {
@@ -242,9 +246,49 @@ public class RecipeTerminalMenu extends PatternEncodingTermMenu {
                         }
                     }
                 }
+                ExtendedAeCompat.addMatrixAssemblerGroups(grid, groups, addedNames, groupCounts);
             }
         } catch (Exception e) {
             Ae2craftcore.LOGGER.error("Failed to query ME Machine Interfaces on grid: ", e);
+        }
+
+        try {
+            var phantomCounts = new HashMap<String, Integer>();
+            for (var patternStack : list) {
+                var customData = patternStack.get(CUSTOM_DATA);
+                if (customData != null) {
+                    var tag = customData.copyTag();
+                    if (tag.contains(RECIPEMACHINEGROUP)) {
+                        String groupName = tag.getString(RECIPEMACHINEGROUP);
+                        if (!groupName.isEmpty()) {
+                            String lower = groupName.toLowerCase(Locale.ROOT);
+                            phantomCounts.put(lower, phantomCounts.getOrDefault(lower, 0) + 1);
+                        }
+                    }
+                }
+            }
+            for (var entry : phantomCounts.entrySet()) {
+                String lower = entry.getKey();
+                if (addedNames.add(lower)) {
+                    String displayName = lower;
+                    for (var patternStack : list) {
+                        var customData = patternStack.get(CUSTOM_DATA);
+                        if (customData != null) {
+                            var tag = customData.copyTag();
+                            if (tag.contains(RECIPEMACHINEGROUP)) {
+                                String gn = tag.getString(RECIPEMACHINEGROUP);
+                                if (gn.toLowerCase(Locale.ROOT).equals(lower)) {
+                                    displayName = gn;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    groups.add(new RecipeTerminalSyncPacket.MachineGroupInfo(displayName, new ItemStack(BARRIER), entry.getValue()));
+                }
+            }
+        } catch (Exception e) {
+            Ae2craftcore.LOGGER.error("Failed to add phantom machine groups: ", e);
         }
 
         if (this.getPlayer() instanceof ServerPlayer serverPlayer) {

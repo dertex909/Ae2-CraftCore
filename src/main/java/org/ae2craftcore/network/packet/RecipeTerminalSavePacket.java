@@ -42,6 +42,7 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 import org.ae2craftcore.Ae2craftcore;
 import org.ae2craftcore.blocks.blockentity.MeMachineInterfaceBlockEntity;
 import org.ae2craftcore.blocks.menu.RecipeTerminalMenu;
+import org.ae2craftcore.compat.extendedAE.ExtendedAeCompat;
 import org.ae2craftcore.items.RecipeStorageCellItem;
 import org.ae2craftcore.registry.annotations.NetworkPayload;
 import org.ae2craftcore.registry.annotations.PacketHandler;
@@ -155,6 +156,7 @@ public record RecipeTerminalSavePacket(String groupName, String modeName, String
                 for (var machine : grid.getMachines(MeMachineInterfaceBlockEntity.class)) {
                     ICraftingProvider.requestUpdate(machine.getMainNode());
                 }
+                ExtendedAeCompat.requestUpdateForMatrixAssemblers(grid);
 
                 menu.syncRecipesToClient();
             } catch (Exception e) {

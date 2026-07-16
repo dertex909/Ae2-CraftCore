@@ -95,11 +95,11 @@ dependencies {
 
     // Extended AE 1.21-2.2.29-neoforge
     compileOnly "maven.modrinth:JiOqfoFM:4BXqcY77"
-    runtimeOnly "maven.modrinth:JiOqfoFM:4BXqcY77"
+    //runtimeOnly "maven.modrinth:JiOqfoFM:4BXqcY77"
 
     // Glodium 1.21-2.2-neoforge
     compileOnly "maven.modrinth:UhW5uCKw:pfbmdJ3b"
-    runtimeOnly "maven.modrinth:UhW5uCKw:pfbmdJ3b"
+    //runtimeOnly "maven.modrinth:UhW5uCKw:pfbmdJ3b"
 
 
     // JEI

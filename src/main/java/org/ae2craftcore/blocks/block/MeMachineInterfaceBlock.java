@@ -113,10 +113,4 @@ public class MeMachineInterfaceBlock extends BaseEntityBlock {
             super.onRemove(state, level, pos, newState, isMoving);
         }
     }
-
-    @Nullable
-    @Override
-    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(@NotNull Level level, @NotNull BlockState state, @NotNull BlockEntityType<T> type) {
-        return createTickerHelper(type, MeMachineInterfaceBlockEntity.TYPE, MeMachineInterfaceBlockEntity::tick);
-    }
 }

@@ -56,7 +56,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.capabilities.Capabilities;
@@ -64,7 +63,6 @@ import org.ae2craftcore.blocks.block.MeMachineInterfaceBlock;
 import org.ae2craftcore.blocks.menu.MeMachineInterfaceMenu;
 import org.ae2craftcore.registry.annotations.RegisterBlockEntity;
 import org.ae2craftcore.services.IRecipeCacheService;
-import org.ae2craftcore.services.RecipeCacheService;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -88,8 +86,6 @@ public class MeMachineInterfaceBlockEntity extends AENetworkedPoweredBlockEntity
     private Direction machineDirection = Direction.NORTH;
     private String customName = "Unknown recipe";
     private int priority = 0;
-    private int updateCooldown = 0;
-    private long lastSignature = -1;
 
     public MeMachineInterfaceBlockEntity(BlockPos pos, BlockState state) {
         super(TYPE, pos, state);
@@ -99,27 +95,6 @@ public class MeMachineInterfaceBlockEntity extends AENetworkedPoweredBlockEntity
         this.getMainNode().addService(ICraftingProvider.class, this).setFlags(GridFlags.REQUIRE_CHANNEL).setIdlePowerUsage(1000);
         this.setInternalMaxPower(10000);
         this.setPowerSides(getGridConnectableSides(getOrientation()));
-    }
-
-    public static void tick(Level level, BlockPos pos, BlockState state, MeMachineInterfaceBlockEntity blockEntity) {
-        if (level.isClientSide) return;
-
-        if (blockEntity.updateCooldown-- <= 0) {
-            blockEntity.updateCooldown = 20;
-
-            var grid = blockEntity.getMainNode().getGrid();
-            if (grid != null) {
-                var cacheService = grid.getService(IRecipeCacheService.class);
-                if (cacheService instanceof RecipeCacheService recipeCache) {
-                    long currentSignature = recipeCache.calculateGridSignature();
-                    if (currentSignature != blockEntity.lastSignature) {
-                        blockEntity.lastSignature = currentSignature;
-                        recipeCache.invalidate();
-                        ICraftingProvider.requestUpdate(blockEntity.getMainNode());
-                    }
-                }
-            }
-        }
     }
 
     public void updateAdjacentMachine() {
