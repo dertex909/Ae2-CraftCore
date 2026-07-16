@@ -3,9 +3,11 @@
   "minVersion": "0.8",
   "package": "org.ae2craftcore.mixin",
   "compatibilityLevel": "JAVA_25",
+  "plugin": "org.ae2craftcore.mixin.Ae2CraftCoreMixinPlugin",
   "mixins": [
     "SlotAccessor",
-    "compat.MixinJeiTransfer"
+    "compat.MixinJeiTransfer",
+    "extendedae.MixinTileAssemblerMatrixPattern"
   ],
   "client": [
     "AbstractContainerScreenAccessor"

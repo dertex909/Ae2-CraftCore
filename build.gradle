@@ -35,6 +35,9 @@ repositories {
         name = "shedaniel"
         url = "https://maven.shedaniel.me/"
     }
+    maven {
+        url "https://cursemaven.com"
+    }
 }
 
 base {

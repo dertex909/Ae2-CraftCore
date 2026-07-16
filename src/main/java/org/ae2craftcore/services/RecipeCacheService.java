@@ -23,27 +23,49 @@ import appeng.api.inventories.InternalInventory;
 import appeng.api.networking.IGrid;
 import appeng.api.networking.IGridNode;
 import appeng.api.networking.IGridServiceProvider;
+import appeng.api.networking.crafting.ICraftingProvider;
 import appeng.api.stacks.AEItemKey;
 import appeng.blockentity.storage.DriveBlockEntity;
 import appeng.blockentity.storage.MEChestBlockEntity;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.Level;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
+import org.ae2craftcore.blocks.blockentity.MeMachineInterfaceBlockEntity;
+import org.ae2craftcore.compat.extendedAE.ExtendedAeCompat;
 import org.ae2craftcore.items.RecipeStorageCellItem;
 import org.ae2craftcore.registry.AttachmentRegistry;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 import static appeng.crafting.pattern.AEPatternDecoder.INSTANCE;
+import static org.ae2craftcore.Ae2craftcore.MODID;
 
 public class RecipeCacheService implements IRecipeCacheService, IGridServiceProvider {
+    private static final Set<RecipeCacheService> ALL_SERVICES = Collections.newSetFromMap(new WeakHashMap<>());
     private final IGrid grid;
     private List<IPatternDetails> cachedPatterns = Collections.emptyList();
     private long lastSignature = -1;
+    private int updateCooldown = 20;
 
     public RecipeCacheService(IGrid grid) {
         this.grid = grid;
+        ALL_SERVICES.add(this);
+    }
+
+    public void tick() {
+        if (updateCooldown-- <= 0) {
+            updateCooldown = 20;
+            long currentSignature = calculateGridSignature();
+            if (lastSignature != -1 && currentSignature != lastSignature) {
+                invalidate();
+                for (var machine : grid.getMachines(MeMachineInterfaceBlockEntity.class)) {
+                    ICraftingProvider.requestUpdate(machine.getMainNode());
+                }
+                ExtendedAeCompat.requestUpdateForMatrixAssemblers(grid);
+            }
+        }
     }
 
     @Override
@@ -105,5 +127,13 @@ public class RecipeCacheService implements IRecipeCacheService, IGridServiceProv
 
     @Override
     public void addNode(IGridNode gridNode, CompoundTag savedData) {
+    }
+
+    @EventBusSubscriber(modid = MODID)
+    public static class TickHandler {
+        @SubscribeEvent
+        public static void onServerTick(ServerTickEvent.Post event) {
+            for (RecipeCacheService service : ALL_SERVICES) if (service != null) service.tick();
+        }
     }
 }
