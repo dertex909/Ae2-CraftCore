@@ -88,9 +88,20 @@ dependencies {
     // AE2
     compileOnly "org.appliedenergistics:appliedenergistics2:${ae2_version}"
     runtimeOnly "org.appliedenergistics:appliedenergistics2:${ae2_version}"
+
     // guideme
     compileOnly "org.appliedenergistics:guideme:21.1.17"
     runtimeOnly "org.appliedenergistics:guideme:21.1.17"
+
+    // Extended AE 1.21-2.2.29-neoforge
+    compileOnly "maven.modrinth:JiOqfoFM:4BXqcY77"
+    runtimeOnly "maven.modrinth:JiOqfoFM:4BXqcY77"
+
+    // Glodium 1.21-2.2-neoforge
+    compileOnly "maven.modrinth:UhW5uCKw:pfbmdJ3b"
+    runtimeOnly "maven.modrinth:UhW5uCKw:pfbmdJ3b"
+
+
     // JEI
     compileOnly "mezz.jei:jei-${minecraft_version}-neoforge:19.25.0.325"
     // EMI
@@ -99,7 +110,6 @@ dependencies {
     compileOnly "me.shedaniel:RoughlyEnoughItems-neoforge:16.0.729"
 
     runtimeOnly "dev.emi:emi-neoforge:1.1.22+${minecraft_version}"
-
 
 //    runtimeOnly "me.shedaniel:RoughlyEnoughItems-neoforge:16.0.729"
 //    runtimeOnly "dev.architectury:architectury-neoforge:13.0.6"
