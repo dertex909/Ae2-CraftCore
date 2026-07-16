@@ -88,9 +88,19 @@ dependencies {
     // AE2
     compileOnly "org.appliedenergistics:appliedenergistics2:${ae2_version}"
     runtimeOnly "org.appliedenergistics:appliedenergistics2:${ae2_version}"
+
     // guideme
     compileOnly "org.appliedenergistics:guideme:26.1.12-beta"
     runtimeOnly "org.appliedenergistics:guideme:26.1.12-beta"
+
+    // Extended AE 1.21-2.2.29-neoforge
+    compileOnly "curse.maven:ex-pattern-provider-892005:8284338"
+    runtimeOnly "curse.maven:ex-pattern-provider-892005:8284338"
+
+    // Glodium 1.21-2.2-neoforge
+    compileOnly "curse.maven:glodium-957920:8196173"
+    runtimeOnly "curse.maven:glodium-957920:8196173"
+
     // JEI
     compileOnly "mezz.jei:jei-${minecraft_version}-neoforge:29.16.0.46"
     // EMI
