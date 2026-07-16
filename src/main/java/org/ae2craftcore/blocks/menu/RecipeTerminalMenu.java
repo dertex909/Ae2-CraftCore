@@ -39,6 +39,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.CraftingInput;
 import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.item.crafting.SmithingRecipeInput;
@@ -60,8 +61,6 @@ import java.lang.reflect.Proxy;
 import java.util.*;
 
 import static net.minecraft.core.component.DataComponents.CUSTOM_DATA;
-import static net.minecraft.world.item.Items.AIR;
-import static net.minecraft.world.item.Items.BARRIER;
 import static org.ae2craftcore.network.packet.RecipeTerminalSavePacket.RECIPEMACHINEGROUP;
 import static org.ae2craftcore.registry.ModMenuTypes.RECIPE_TERMINAL;
 
@@ -197,7 +196,7 @@ public class RecipeTerminalMenu extends PatternEncodingTermMenu {
         if (isValidMachine(level, pos, side)) {
             var state = level.getBlockState(pos);
             var item = state.getBlock().asItem();
-            if (item != AIR) return new ItemStack(item);
+            if (item != Items.AIR) return new ItemStack(item);
         }
         return ItemStack.EMPTY;
     }
@@ -284,7 +283,7 @@ public class RecipeTerminalMenu extends PatternEncodingTermMenu {
                             }
                         }
                     }
-                    groups.add(new RecipeTerminalSyncPacket.MachineGroupInfo(displayName, new ItemStack(BARRIER), entry.getValue()));
+                    groups.add(new RecipeTerminalSyncPacket.MachineGroupInfo(displayName, new ItemStack(Items.BARRIER), entry.getValue()));
                 }
             }
         } catch (Exception e) {
