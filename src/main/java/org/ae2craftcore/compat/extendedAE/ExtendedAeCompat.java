@@ -47,14 +47,6 @@ public class ExtendedAeCompat {
         }
     }
 
-    /*    private static void checkLoaded() {
-        if (!init) {
-            isLoaded = ExtendedAeCompat.class.getClassLoader()
-                    .getResource("com/glodblock/github/extendedae/common/tileentities/matrix/TileAssemblerMatrixPattern.class") != null;
-            init = true;
-        }
-    }*/
-
     public static void addMatrixAssemblerGroups(IGrid grid, List<RecipeTerminalSyncPacket.MachineGroupInfo> groups, HashSet<String> addedNames, HashMap<String, Integer> groupCounts) {
         checkLoaded();
         if (isLoaded) Internal.addGroups(grid, groups, addedNames, groupCounts);

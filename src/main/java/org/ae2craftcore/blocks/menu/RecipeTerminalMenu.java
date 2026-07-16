@@ -52,6 +52,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import org.ae2craftcore.Ae2craftcore;
 import org.ae2craftcore.blocks.block.MeMachineInterfaceBlock;
 import org.ae2craftcore.blocks.blockentity.MeMachineInterfaceBlockEntity;
+import org.ae2craftcore.compat.extendedAE.ExtendedAeCompat;
 import org.ae2craftcore.items.RecipeStorageCellItem;
 import org.ae2craftcore.mixin.SlotAccessor;
 import org.ae2craftcore.network.packet.RecipeTerminalSyncPacket;
@@ -245,6 +246,7 @@ public class RecipeTerminalMenu extends PatternEncodingTermMenu {
                         }
                     }
                 }
+                ExtendedAeCompat.addMatrixAssemblerGroups(grid, groups, addedNames, groupCounts);
             }
         } catch (Exception e) {
             Ae2craftcore.LOGGER.error("Failed to query ME Machine Interfaces on grid: ", e);
