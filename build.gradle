@@ -93,11 +93,11 @@ dependencies {
     compileOnly "org.appliedenergistics:guideme:26.1.12-beta"
     runtimeOnly "org.appliedenergistics:guideme:26.1.12-beta"
 
-    // Extended AE 1.21-2.2.29-neoforge
+    // ExtendedAE-26.1-1.0.2-neoforge
     compileOnly "curse.maven:ex-pattern-provider-892005:8284338"
     runtimeOnly "curse.maven:ex-pattern-provider-892005:8284338"
 
-    // Glodium 1.21-2.2-neoforge
+    // Glodium-26.1-1.2-neoforge
     compileOnly "curse.maven:glodium-957920:8196173"
     runtimeOnly "curse.maven:glodium-957920:8196173"
 
