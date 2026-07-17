@@ -20,19 +20,17 @@ package org.ae2craftcore.compat.extendedAE;
 
 import appeng.api.networking.IGrid;
 import appeng.api.networking.crafting.ICraftingProvider;
-import com.glodblock.github.extendedae.common.EAESingletons;
 import com.glodblock.github.extendedae.common.tileentities.matrix.TileAssemblerMatrixPattern;
-import net.minecraft.world.item.ItemStack;
 import org.ae2craftcore.network.packet.RecipeTerminalSyncPacket;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 
 import static java.util.Locale.ROOT;
+import static net.minecraft.world.item.ItemStack.EMPTY;
 
 public class ExtendedAeCompat {
     private static boolean isLoaded = false;
+    private static boolean isPlusLoaded = false;
     private static boolean init = false;
 
     private static void checkLoaded() {
@@ -40,8 +38,14 @@ public class ExtendedAeCompat {
             try {
                 Class.forName("com.glodblock.github.extendedae.common.tileentities.matrix.TileAssemblerMatrixPattern");
                 isLoaded = true;
-            } catch (Throwable e) {
+            } catch (Throwable t) {
                 isLoaded = false;
+            }
+            try {
+                Class.forName("com.extendedae_plus.content.matrix.PatternCorePlusBlockEntity");
+                isPlusLoaded = true;
+            } catch (Throwable t) {
+                isPlusLoaded = false;
             }
             init = true;
         }
@@ -49,34 +53,58 @@ public class ExtendedAeCompat {
 
     public static void addMatrixAssemblerGroups(IGrid grid, List<RecipeTerminalSyncPacket.MachineGroupInfo> groups, HashSet<String> addedNames, HashMap<String, Integer> groupCounts) {
         checkLoaded();
-        if (isLoaded) Internal.addGroups(grid, groups, addedNames, groupCounts);
+        if (isLoaded || isPlusLoaded) Internal.addGroups(grid, groups, addedNames, groupCounts);
     }
 
     public static void requestUpdateForMatrixAssemblers(IGrid grid) {
         checkLoaded();
-        if (isLoaded) Internal.requestUpdate(grid);
+        if (isLoaded || isPlusLoaded) Internal.requestUpdate(grid);
     }
 
     private static class Internal {
         static void addGroups(IGrid grid, List<RecipeTerminalSyncPacket.MachineGroupInfo> groups, HashSet<String> addedNames, HashMap<String, Integer> groupCounts) {
             try {
-                var matrixPatterns = grid.getMachines(TileAssemblerMatrixPattern.class);
-                if (matrixPatterns != null) {
-                    for (var pattern : matrixPatterns) {
-                        var component = pattern.getCustomName();
-                        String name = component != null ? component.getString() : "Assembler Matrix";
+                var allMachines = new ArrayList<TileAssemblerMatrixPattern>();
+
+                if (isLoaded) {
+                    var matrixPatterns = grid.getMachines(TileAssemblerMatrixPattern.class);
+                    if (matrixPatterns != null) allMachines.addAll(matrixPatterns);
+                }
+
+                if (isPlusLoaded) {
+                    try {
+                        var plusClass = Class.forName("com.extendedae_plus.content.matrix.PatternCorePlusBlockEntity");
+                        @SuppressWarnings({"unchecked", "rawtypes"})
+                        Collection<?> plusMachines = grid.getMachines((Class) plusClass);
+                        if (plusMachines != null) for (var machine : plusMachines) {
+                            if (machine instanceof TileAssemblerMatrixPattern pattern && !allMachines.contains(pattern)) {
+                                allMachines.add(pattern);
+                            }
+                        }
+                    } catch (Exception ignored) {
+                    }
+                }
+
+                for (var pattern : allMachines) {
+                    var group = pattern.getTerminalGroup();
+                    if (group != null && group.name() != null) {
+                        String name = group.name().getString();
                         if (!name.isEmpty()) {
                             String lower = name.toLowerCase(ROOT);
                             groupCounts.put(lower, groupCounts.getOrDefault(lower, 0) + 1);
                         }
                     }
-                    for (var pattern : matrixPatterns) {
-                        var component = pattern.getCustomName();
-                        String name = component != null ? component.getString() : "Assembler Matrix";
+                }
+
+                for (var pattern : allMachines) {
+                    var group = pattern.getTerminalGroup();
+                    if (group != null && group.name() != null) {
+                        String name = group.name().getString();
                         if (!name.isEmpty()) {
                             String lower = name.toLowerCase(ROOT);
                             if (addedNames.add(lower)) {
-                                var icon = new ItemStack(EAESingletons.ASSEMBLER_MATRIX_PATTERN.asItem());
+                                var iconKey = group.icon();
+                                var icon = iconKey != null ? iconKey.toStack() : EMPTY;
                                 int count = groupCounts.getOrDefault(lower, 0);
                                 groups.add(new RecipeTerminalSyncPacket.MachineGroupInfo(name, icon, count));
                             }
@@ -89,10 +117,28 @@ public class ExtendedAeCompat {
 
         static void requestUpdate(IGrid grid) {
             try {
-                var matrixPatterns = grid.getMachines(TileAssemblerMatrixPattern.class);
-                if (matrixPatterns != null) for (var pattern : matrixPatterns) {
-                    ICraftingProvider.requestUpdate(pattern.getMainNode());
+                var allMachines = new ArrayList<TileAssemblerMatrixPattern>();
+
+                if (isLoaded) {
+                    var matrixPatterns = grid.getMachines(TileAssemblerMatrixPattern.class);
+                    if (matrixPatterns != null) allMachines.addAll(matrixPatterns);
                 }
+
+                if (isPlusLoaded) {
+                    try {
+                        var plusClass = Class.forName("com.extendedae_plus.content.matrix.PatternCorePlusBlockEntity");
+                        @SuppressWarnings({"unchecked", "rawtypes"})
+                        var plusMachines = grid.getMachines((Class) plusClass);
+                        if (plusMachines != null) for (var machine : plusMachines) {
+                            if (machine instanceof TileAssemblerMatrixPattern pattern && !allMachines.contains(pattern)) {
+                                allMachines.add(pattern);
+                            }
+                        }
+                    } catch (Exception ignored) {
+                    }
+                }
+
+                for (var pattern : allMachines) ICraftingProvider.requestUpdate(pattern.getMainNode());
             } catch (Exception ignored) {
             }
         }
