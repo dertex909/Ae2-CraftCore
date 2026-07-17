@@ -103,7 +103,6 @@ dependencies {
 
     // ExtendedAE-Plus 1.5.5
     compileOnly "maven.modrinth:xr109llC:BdDOfMzg"
-    runtimeOnly "maven.modrinth:xr109llC:BdDOfMzg"
 
 
     // JEI

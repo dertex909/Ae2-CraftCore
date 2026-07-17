@@ -19,6 +19,7 @@
 package org.ae2craftcore.mixin.extendedae;
 
 import appeng.api.crafting.IPatternDetails;
+import appeng.api.implementations.blockentities.PatternContainerGroup;
 import appeng.api.stacks.KeyCounter;
 import com.glodblock.github.extendedae.common.tileentities.matrix.TileAssemblerMatrixFunction;
 import com.glodblock.github.extendedae.common.tileentities.matrix.TileAssemblerMatrixPattern;
@@ -43,6 +44,9 @@ public abstract class MixinTileAssemblerMatrixPattern extends TileAssemblerMatri
     @Shadow
     private List<IPatternDetails> patterns;
 
+    @Shadow
+    public abstract PatternContainerGroup getTerminalGroup();
+
     @SuppressWarnings("DataFlowIssue")
     public MixinTileAssemblerMatrixPattern() {
         super(null, null, null);
@@ -62,8 +66,15 @@ public abstract class MixinTileAssemblerMatrixPattern extends TileAssemblerMatri
         if (allPatterns.isEmpty()) return;
 
         var combined = new ArrayList<>(this.patterns);
-        var component = this.getCustomName();
-        String myName = component != null ? component.getString() : "Assembler Matrix";
+
+        String myName = "Assembler Matrix";
+        try {
+            var group = this.getTerminalGroup();
+            if (group != null && group.name() != null) myName = group.name().getString();
+        } catch (Exception ignored) {
+            var component = this.getCustomName();
+            if (component != null) myName = component.getString();
+        }
 
         for (var pattern : allPatterns) {
             var definition = pattern.getDefinition();

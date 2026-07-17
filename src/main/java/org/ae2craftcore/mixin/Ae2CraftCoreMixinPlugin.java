@@ -44,7 +44,7 @@ public class Ae2CraftCoreMixinPlugin implements IMixinConfigPlugin {
 
     @Override
     public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {
-        if (mixinClassName.contains("extendedae")) return isExtendedAeLoaded;
+        if (mixinClassName.contains("MixinTileAssemblerMatrixPattern")) return isExtendedAeLoaded;
         return true;
     }
 
