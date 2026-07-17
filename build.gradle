@@ -101,6 +101,10 @@ dependencies {
     compileOnly "maven.modrinth:UhW5uCKw:pfbmdJ3b"
     runtimeOnly "maven.modrinth:UhW5uCKw:pfbmdJ3b"
 
+    // ExtendedAE-Plus 1.5.5
+    compileOnly "maven.modrinth:xr109llC:BdDOfMzg"
+    runtimeOnly "maven.modrinth:xr109llC:BdDOfMzg"
+
 
     // JEI
     compileOnly "mezz.jei:jei-${minecraft_version}-neoforge:19.25.0.325"
