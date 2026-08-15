@@ -62,8 +62,6 @@ public record RecipeTerminalSavePacket(String groupName, String modeName, String
 
     public static final Type<RecipeTerminalSavePacket> TYPE = new Type<>(Identifier.fromNamespaceAndPath(Ae2craftcore.MODID, "recipe_terminal_save"));
     public static final String RECIPEMACHINEGROUP = "RecMacG";
-    private static final Component NO_SPACE_MESSAGE = Component.literal("No active Recipe Storage Cells with available space found in the network!").withStyle(ChatFormatting.RED);
-
     public static final StreamCodec<FriendlyByteBuf, RecipeTerminalSavePacket> STREAM_CODEC = StreamCodec.of((buf, value) -> {
         buf.writeUtf(value.groupName());
         buf.writeUtf(value.modeName());
@@ -71,6 +69,7 @@ public record RecipeTerminalSavePacket(String groupName, String modeName, String
         buf.writeBoolean(value.substitutionsEnabled());
         buf.writeBoolean(value.fluidSubstitutionsEnabled());
     }, buf -> new RecipeTerminalSavePacket(buf.readUtf(), buf.readUtf(), buf.readUtf(), buf.readBoolean(), buf.readBoolean()));
+    private static final Component NO_SPACE_MESSAGE = Component.literal("No active Recipe Storage Cells with available space found in the network!").withStyle(ChatFormatting.RED);
 
     public RecipeTerminalSavePacket(String groupName, EncodingMode mode, @Nullable ResourceKey<Recipe<?>> stonecuttingRecipeId, boolean substitutionsEnabled, boolean fluidSubstitutionsEnabled) {
         this(groupName, mode.name(), stonecuttingRecipeId != null ? stonecuttingRecipeId.identifier().toString() : "", substitutionsEnabled, fluidSubstitutionsEnabled);
