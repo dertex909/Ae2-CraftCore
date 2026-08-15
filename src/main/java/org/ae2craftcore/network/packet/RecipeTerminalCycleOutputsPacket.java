@@ -32,10 +32,10 @@ import org.jetbrains.annotations.NotNull;
 
 @NetworkPayload(direction = PayloadDirection.TO_SERVER)
 public record RecipeTerminalCycleOutputsPacket() implements CustomPacketPayload {
+    public static final RecipeTerminalCycleOutputsPacket INSTANCE = new RecipeTerminalCycleOutputsPacket();
     public static final Type<RecipeTerminalCycleOutputsPacket> TYPE = new Type<>(Identifier.fromNamespaceAndPath(Ae2craftcore.MODID, "recipe_terminal_cycle_outputs"));
 
-    @SuppressWarnings("unused")
-    public static final StreamCodec<FriendlyByteBuf, RecipeTerminalCycleOutputsPacket> STREAM_CODEC = StreamCodec.unit(new RecipeTerminalCycleOutputsPacket());
+    public static final StreamCodec<FriendlyByteBuf, RecipeTerminalCycleOutputsPacket> STREAM_CODEC = StreamCodec.unit(INSTANCE);
 
     @PacketHandler
     public static void handle(RecipeTerminalCycleOutputsPacket packet, IPayloadContext context) {

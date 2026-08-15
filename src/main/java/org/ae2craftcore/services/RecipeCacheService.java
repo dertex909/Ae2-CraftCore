@@ -19,102 +19,81 @@
 package org.ae2craftcore.services;
 
 import appeng.api.crafting.IPatternDetails;
-import appeng.api.inventories.InternalInventory;
+import appeng.api.implementations.blockentities.IChestOrDrive;
 import appeng.api.networking.IGrid;
 import appeng.api.networking.IGridNode;
 import appeng.api.networking.IGridServiceProvider;
-import appeng.api.networking.crafting.ICraftingProvider;
 import appeng.api.stacks.AEItemKey;
-import appeng.blockentity.storage.DriveBlockEntity;
-import appeng.blockentity.storage.MEChestBlockEntity;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.event.tick.ServerTickEvent;
-import org.ae2craftcore.blocks.blockentity.MeMachineInterfaceBlockEntity;
-import org.ae2craftcore.compat.extendedAE.ExtendedAeCompat;
 import org.ae2craftcore.items.RecipeStorageCellItem;
-import org.ae2craftcore.registry.AttachmentRegistry;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 import static appeng.crafting.pattern.AEPatternDecoder.INSTANCE;
-import static org.ae2craftcore.Ae2craftcore.MODID;
 
 public class RecipeCacheService implements IRecipeCacheService, IGridServiceProvider {
-    private static final Set<RecipeCacheService> ALL_SERVICES = Collections.newSetFromMap(new WeakHashMap<>());
+    private static final long UNINITIALIZED_SIGNATURE = -1L;
+
     private final IGrid grid;
     private List<IPatternDetails> cachedPatterns = Collections.emptyList();
-    private long lastSignature = -1;
-    private int updateCooldown = 20;
+    private long lastSignature = UNINITIALIZED_SIGNATURE;
 
     public RecipeCacheService(IGrid grid) {
         this.grid = grid;
-        ALL_SERVICES.add(this);
-    }
-
-    public void tick() {
-        if (updateCooldown-- <= 0) {
-            updateCooldown = 20;
-            long currentSignature = calculateGridSignature();
-            if (lastSignature != -1 && currentSignature != lastSignature) {
-                invalidate();
-                for (var machine : grid.getMachines(MeMachineInterfaceBlockEntity.class)) {
-                    ICraftingProvider.requestUpdate(machine.getMainNode());
-                }
-                ExtendedAeCompat.requestUpdateForMatrixAssemblers(grid);
-            }
-        }
     }
 
     @Override
     public List<IPatternDetails> getCachedPatterns(Level level) {
         long currentSignature = calculateGridSignature();
-        if (currentSignature == lastSignature) return this.cachedPatterns;
-        this.cachedPatterns = rebuildCache(level);
-        this.lastSignature = currentSignature;
+
+        if (currentSignature != this.lastSignature) {
+            this.cachedPatterns = rebuildCache(level);
+            this.lastSignature = currentSignature;
+        }
+
         return this.cachedPatterns;
     }
 
     @Override
     public void invalidate() {
-        this.lastSignature = -1;
+        this.lastSignature = UNINITIALIZED_SIGNATURE;
+        this.cachedPatterns = Collections.emptyList();
     }
 
     public long calculateGridSignature() {
         long signature = 17;
-
-        for (var drive : grid.getMachines(DriveBlockEntity.class)) {
-            var inv = drive.getInternalInventory();
-            if (inv != null) signature = 31 * signature + scanInventorySignature(inv);
+        for (var drive : RecipeStorageCellItem.getDrives(this.grid)) {
+            signature = 31 * signature + scanDriveSignature(drive);
         }
-
-        for (var chest : grid.getMachines(MEChestBlockEntity.class)) {
-            var inv = chest.getInternalInventory();
-            if (inv != null) signature = 31 * signature + scanInventorySignature(inv);
-        }
-
         return signature;
     }
 
-    private long scanInventorySignature(InternalInventory inv) {
-        long invSig = 0;
-        for (int i = 0; i < inv.size(); i++) {
-            var stack = inv.getStackInSlot(i);
-            if (!stack.isEmpty() && stack.getItem() instanceof RecipeStorageCellItem) {
-                int count = stack.getOrDefault(AttachmentRegistry.RECIPE_COUNT.get(), 0);
-                int machineCount = stack.getOrDefault(AttachmentRegistry.MACHINE_COUNT.get(), 0);
-                invSig = 31 * invSig + i + count * 1000L + machineCount * 100000L + System.identityHashCode(stack);
+    private long scanDriveSignature(IChestOrDrive drive) {
+        long driveSig = 0;
+        int cellCount = drive.getCellCount();
+
+        for (int i = 0; i < cellCount; i++) {
+            var recipeCell = RecipeStorageCellItem.getRecipeCell(drive, i);
+            if (recipeCell != null) {
+                int count = recipeCell.getRecipeCount();
+                int machineCount = recipeCell.getMachineCount();
+                var stack = recipeCell.getCellStack();
+                int stackHash = stack.isEmpty() ? 0 : ItemStack.hashItemAndComponents(stack);
+                driveSig = 31 * driveSig + i + count * 1000L + machineCount * 100000L + stackHash;
             } else {
-                invSig = 31 * invSig + i;
+                driveSig = 31 * driveSig + i;
             }
         }
-        return invSig;
+
+        return driveSig;
     }
 
     private List<IPatternDetails> rebuildCache(Level level) {
-        var patterns = RecipeStorageCellItem.getAllPatternsForGrid(grid);
+        var patterns = RecipeStorageCellItem.getAllPatternsForGrid(this.grid);
         if (patterns.isEmpty()) return Collections.emptyList();
 
         var list = new ArrayList<IPatternDetails>(patterns.size());
@@ -127,13 +106,5 @@ public class RecipeCacheService implements IRecipeCacheService, IGridServiceProv
 
     @Override
     public void addNode(IGridNode gridNode, CompoundTag savedData) {
-    }
-
-    @EventBusSubscriber(modid = MODID)
-    public static class TickHandler {
-        @SubscribeEvent
-        public static void onServerTick(ServerTickEvent.Post event) {
-            for (RecipeCacheService service : ALL_SERVICES) if (service != null) service.tick();
-        }
     }
 }

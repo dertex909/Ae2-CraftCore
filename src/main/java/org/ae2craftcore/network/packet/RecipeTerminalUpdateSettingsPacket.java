@@ -19,6 +19,7 @@
 package org.ae2craftcore.network.packet;
 
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.Identifier;
@@ -36,21 +37,23 @@ public record RecipeTerminalUpdateSettingsPacket(boolean substitute, boolean sub
 
     public static final Type<RecipeTerminalUpdateSettingsPacket> TYPE = new Type<>(Identifier.fromNamespaceAndPath(Ae2craftcore.MODID, "recipe_terminal_update_settings"));
 
-    public static final StreamCodec<FriendlyByteBuf, RecipeTerminalUpdateSettingsPacket> STREAM_CODEC = StreamCodec.of((buf, value) -> {
-        buf.writeBoolean(value.substitute());
-        buf.writeBoolean(value.substituteFluids());
-    }, buf -> new RecipeTerminalUpdateSettingsPacket(buf.readBoolean(), buf.readBoolean()));
+    public static final StreamCodec<FriendlyByteBuf, RecipeTerminalUpdateSettingsPacket> STREAM_CODEC = StreamCodec.composite(
+            ByteBufCodecs.BOOL, RecipeTerminalUpdateSettingsPacket::substitute,
+            ByteBufCodecs.BOOL, RecipeTerminalUpdateSettingsPacket::substituteFluids,
+            RecipeTerminalUpdateSettingsPacket::new
+    );
 
     @PacketHandler
     public static void handle(RecipeTerminalUpdateSettingsPacket packet, IPayloadContext context) {
         context.enqueueWork(() -> {
             var player = context.player();
-            if (player.containerMenu instanceof RecipeTerminalMenu menu) {
-                var part = menu.getPart();
-                if (part != null) {
-                    part.getLogic().setSubstitution(packet.substitute());
-                    part.getLogic().setFluidSubstitution(packet.substituteFluids());
-                }
+            if (!(player.containerMenu instanceof RecipeTerminalMenu menu)) return;
+            var part = menu.getPart();
+            if (part == null) return;
+            var logic = part.getLogic();
+            if (logic != null) {
+                logic.setSubstitution(packet.substitute());
+                logic.setFluidSubstitution(packet.substituteFluids());
             }
         });
     }

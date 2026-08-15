@@ -18,7 +18,8 @@
 
 package org.ae2craftcore.network.packet;
 
-import net.minecraft.network.FriendlyByteBuf;
+import io.netty.buffer.ByteBuf;
+import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.Identifier;
@@ -35,8 +36,8 @@ public record RecipeTerminalSelectGroupPacket(String groupName) implements Custo
 
     public static final Type<RecipeTerminalSelectGroupPacket> TYPE = new Type<>(Identifier.fromNamespaceAndPath(Ae2craftcore.MODID, "recipe_terminal_select_group"));
 
-    public static final StreamCodec<FriendlyByteBuf, RecipeTerminalSelectGroupPacket> STREAM_CODEC = StreamCodec.of((buf, value) ->
-            buf.writeUtf(value.groupName()), buf -> new RecipeTerminalSelectGroupPacket(buf.readUtf()));
+    public static final StreamCodec<ByteBuf, RecipeTerminalSelectGroupPacket> STREAM_CODEC =
+            ByteBufCodecs.STRING_UTF8.map(RecipeTerminalSelectGroupPacket::new, RecipeTerminalSelectGroupPacket::groupName);
 
     @PacketHandler
     public static void handle(RecipeTerminalSelectGroupPacket packet, IPayloadContext context) {

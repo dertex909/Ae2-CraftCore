@@ -20,6 +20,7 @@ package org.ae2craftcore.network.packet;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.Identifier;
@@ -36,19 +37,25 @@ public record MeMachineInterfaceSyncPacket(BlockPos pos, String customName) impl
 
     public static final Type<MeMachineInterfaceSyncPacket> TYPE = new Type<>(Identifier.fromNamespaceAndPath(Ae2craftcore.MODID, "me_machine_interface_sync"));
 
-    @SuppressWarnings("unused")
-    public static final StreamCodec<FriendlyByteBuf, MeMachineInterfaceSyncPacket> STREAM_CODEC = StreamCodec.of((buf, value) -> {
-        buf.writeBlockPos(value.pos());
-        buf.writeUtf(value.customName());
-    }, buf -> new MeMachineInterfaceSyncPacket(buf.readBlockPos(), buf.readUtf()));
+    public static final StreamCodec<FriendlyByteBuf, MeMachineInterfaceSyncPacket> STREAM_CODEC = StreamCodec.composite(
+            BlockPos.STREAM_CODEC, MeMachineInterfaceSyncPacket::pos,
+            ByteBufCodecs.STRING_UTF8, MeMachineInterfaceSyncPacket::customName,
+            MeMachineInterfaceSyncPacket::new
+    );
 
     @PacketHandler
     public static void handle(MeMachineInterfaceSyncPacket packet, IPayloadContext context) {
         context.enqueueWork(() -> {
-            var level = context.player().level();
-            if (level.isLoaded(packet.pos())) {
-                var be = level.getBlockEntity(packet.pos());
-                if (be instanceof MeMachineInterfaceBlockEntity inter) inter.setCustomName(packet.customName());
+            var player = context.player();
+            var level = player.level();
+            var pos = packet.pos();
+
+            if (!level.isLoaded(pos) || player.distanceToSqr(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5) > 64.0) {
+                return;
+            }
+
+            if (level.getBlockEntity(pos) instanceof MeMachineInterfaceBlockEntity machineInterface) {
+                machineInterface.setCustomName(packet.customName());
             }
         });
     }

@@ -26,7 +26,6 @@ import appeng.crafting.pattern.AESmithingTablePattern;
 import appeng.crafting.pattern.AEStonecuttingPattern;
 import appeng.parts.encoding.EncodingMode;
 import appeng.util.ConfigInventory;
-import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -47,66 +46,61 @@ public record RecipeTerminalLoadRecipePacket(ItemStack patternToLoad) implements
 
     public static final Type<RecipeTerminalLoadRecipePacket> TYPE = new Type<>(Identifier.fromNamespaceAndPath(Ae2craftcore.MODID, "recipe_terminal_load_recipe"));
 
-    @SuppressWarnings("unused")
-    public static final StreamCodec<FriendlyByteBuf, RecipeTerminalLoadRecipePacket> STREAM_CODEC = StreamCodec.of((buf, value) -> {
-        var registryBuf = (RegistryFriendlyByteBuf) buf;
-        ItemStack.OPTIONAL_STREAM_CODEC.encode(registryBuf, value.patternToLoad());
-    }, buf -> {
-        var registryBuf = (RegistryFriendlyByteBuf) buf;
-        return new RecipeTerminalLoadRecipePacket(ItemStack.OPTIONAL_STREAM_CODEC.decode(registryBuf));
-    });
+    public static final StreamCodec<RegistryFriendlyByteBuf, RecipeTerminalLoadRecipePacket> STREAM_CODEC =
+            ItemStack.OPTIONAL_STREAM_CODEC.map(RecipeTerminalLoadRecipePacket::new, RecipeTerminalLoadRecipePacket::patternToLoad);
 
     @PacketHandler
     public static void handle(RecipeTerminalLoadRecipePacket packet, IPayloadContext context) {
         context.enqueueWork(() -> {
             var player = context.player();
-            if (player.containerMenu instanceof RecipeTerminalMenu menu) {
-                var part = menu.getPart();
-                if (part == null) return;
-                var logic = part.getLogic();
-                if (logic == null) return;
+            if (!(player.containerMenu instanceof RecipeTerminalMenu menu)) return;
 
-                var details = PatternDetailsHelper.decodePattern(packet.patternToLoad(), player.level());
-                switch (details) {
-                    case null -> {
-                        return;
-                    }
-                    case AECraftingPattern craftingPattern -> {
-                        logic.setMode(EncodingMode.CRAFTING);
-                        logic.setSubstitution(craftingPattern.canSubstitute());
-                        logic.setFluidSubstitution(craftingPattern.canSubstituteFluids());
-                        fillInventoryFromSparseStacks(logic.getEncodedInputInv(), craftingPattern.getSparseInputs());
-                        fillInventoryFromSparseStacks(logic.getEncodedOutputInv(), craftingPattern.getSparseOutputs());
-                    }
-                    case AEProcessingPattern processingPattern -> {
-                        logic.setMode(EncodingMode.PROCESSING);
-                        fillInventoryFromSparseStacks(logic.getEncodedInputInv(), processingPattern.getSparseInputs());
-                        fillInventoryFromSparseStacks(logic.getEncodedOutputInv(), processingPattern.getSparseOutputs());
-                    }
-                    case AESmithingTablePattern smithingTablePattern -> {
-                        logic.setMode(EncodingMode.SMITHING_TABLE);
-                        logic.setSubstitution(smithingTablePattern.canSubstitute());
-                        logic.getEncodedInputInv().clear();
-                        logic.getEncodedInputInv().setStack(0, new GenericStack(smithingTablePattern.getTemplate(), 1));
-                        logic.getEncodedInputInv().setStack(1, new GenericStack(smithingTablePattern.getBase(), 1));
-                        logic.getEncodedInputInv().setStack(2, new GenericStack(smithingTablePattern.getAddition(), 1));
-                        logic.getEncodedOutputInv().clear();
-                    }
-                    case AEStonecuttingPattern stonecuttingPattern -> {
-                        logic.setMode(EncodingMode.STONECUTTING);
-                        logic.setStonecuttingRecipeId(stonecuttingPattern.getRecipeId());
-                        logic.setSubstitution(stonecuttingPattern.canSubstitute());
-                        logic.getEncodedInputInv().clear();
-                        logic.getEncodedInputInv().setStack(0, new GenericStack(stonecuttingPattern.getInput(), 1));
-                        logic.getEncodedOutputInv().clear();
-                    }
-                    default -> {
-                    }
+            var part = menu.getPart();
+            if (part == null) return;
+
+            var logic = part.getLogic();
+            if (logic == null) return;
+
+            var details = PatternDetailsHelper.decodePattern(packet.patternToLoad(), player.level());
+            if (details == null) return;
+
+            switch (details) {
+                case AECraftingPattern craftingPattern -> {
+                    logic.setMode(EncodingMode.CRAFTING);
+                    logic.setSubstitution(craftingPattern.canSubstitute());
+                    logic.setFluidSubstitution(craftingPattern.canSubstituteFluids());
+                    fillInventoryFromSparseStacks(logic.getEncodedInputInv(), craftingPattern.getSparseInputs());
+                    fillInventoryFromSparseStacks(logic.getEncodedOutputInv(), craftingPattern.getSparseOutputs());
                 }
-
-                menu.setProcessingScrollOffset(0);
-                menu.broadcastChanges();
+                case AEProcessingPattern processingPattern -> {
+                    logic.setMode(EncodingMode.PROCESSING);
+                    fillInventoryFromSparseStacks(logic.getEncodedInputInv(), processingPattern.getSparseInputs());
+                    fillInventoryFromSparseStacks(logic.getEncodedOutputInv(), processingPattern.getSparseOutputs());
+                }
+                case AESmithingTablePattern smithing -> {
+                    logic.setMode(EncodingMode.SMITHING_TABLE);
+                    logic.setSubstitution(smithing.canSubstitute());
+                    fillInventorySequential(logic.getEncodedInputInv(),
+                            new GenericStack(smithing.getTemplate(), 1),
+                            new GenericStack(smithing.getBase(), 1),
+                            new GenericStack(smithing.getAddition(), 1)
+                    );
+                    logic.getEncodedOutputInv().clear();
+                }
+                case AEStonecuttingPattern stonecutting -> {
+                    logic.setMode(EncodingMode.STONECUTTING);
+                    logic.setStonecuttingRecipeId(stonecutting.getRecipeId());
+                    logic.setSubstitution(stonecutting.canSubstitute());
+                    fillInventorySequential(logic.getEncodedInputInv(), new GenericStack(stonecutting.getInput(), 1));
+                    logic.getEncodedOutputInv().clear();
+                }
+                default -> {
+                    return;
+                }
             }
+
+            menu.setProcessingScrollOffset(0);
+            menu.broadcastChanges();
         });
     }
 
@@ -114,6 +108,16 @@ public record RecipeTerminalLoadRecipePacket(ItemStack patternToLoad) implements
         inv.beginBatch();
         try {
             for (int i = 0; i < inv.size(); i++) inv.setStack(i, i < stacks.size() ? stacks.get(i) : null);
+        } finally {
+            inv.endBatch();
+        }
+    }
+
+    private static void fillInventorySequential(ConfigInventory inv, GenericStack... stacks) {
+        inv.beginBatch();
+        try {
+            inv.clear();
+            for (int i = 0; i < stacks.length && i < inv.size(); i++) inv.setStack(i, stacks[i]);
         } finally {
             inv.endBatch();
         }

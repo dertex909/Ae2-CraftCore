@@ -2,19 +2,13 @@ plugins {
     id 'java-library'
     id 'maven-publish'
     id 'idea'
-    id 'net.neoforged.moddev' version '2.0.141'
+    id 'net.neoforged.moddev' version '2.0.143'
 }
 
 version = mod_version
 group = mod_group_id
 
 repositories {
-    mavenLocal()
-    mavenCentral()
-    maven {
-        name = "Jared's maven"
-        url = "https://maven.blamejared.com/"
-    }
     maven {
         name = "ModMaven"
         url = "https://modmaven.dev"
@@ -105,13 +99,13 @@ dependencies {
     runtimeOnly "curse.maven:glodium-957920:8196173"
 
     // JEI
-    compileOnly "mezz.jei:jei-${minecraft_version}-neoforge:29.16.0.46"
+    compileOnly "mezz.jei:jei-${minecraft_version}-neoforge:29.22.0.73"
     // EMI
     // compileOnly "dev.emi:emi-neoforge:1.1.22+${minecraft_version}"
     // REI
     compileOnly "me.shedaniel:RoughlyEnoughItems-neoforge:26.1.819"
 
-    runtimeOnly "mezz.jei:jei-${minecraft_version}-neoforge:29.16.0.46"
+    runtimeOnly "mezz.jei:jei-${minecraft_version}-neoforge:29.22.0.73"
 
 //    runtimeOnly "me.shedaniel:RoughlyEnoughItems-neoforge:16.0.729"
 //    runtimeOnly "dev.architectury:architectury-neoforge:13.0.6"
