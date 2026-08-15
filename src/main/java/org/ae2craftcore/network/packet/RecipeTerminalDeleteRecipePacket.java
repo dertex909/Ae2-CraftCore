@@ -20,7 +20,6 @@ package org.ae2craftcore.network.packet;
 
 import appeng.api.networking.crafting.ICraftingProvider;
 import appeng.blockentity.AEBaseBlockEntity;
-import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -43,20 +42,13 @@ public record RecipeTerminalDeleteRecipePacket(ItemStack patternToDelete) implem
 
     public static final Type<RecipeTerminalDeleteRecipePacket> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(Ae2craftcore.MODID, "recipe_terminal_delete_recipe"));
 
-    @SuppressWarnings("unused")
-    public static final StreamCodec<FriendlyByteBuf, RecipeTerminalDeleteRecipePacket> STREAM_CODEC = StreamCodec.of((buf, value) -> {
-        var registryBuf = (RegistryFriendlyByteBuf) buf;
-        ItemStack.OPTIONAL_STREAM_CODEC.encode(registryBuf, value.patternToDelete());
-    }, buf -> {
-        var registryBuf = (RegistryFriendlyByteBuf) buf;
-        return new RecipeTerminalDeleteRecipePacket(ItemStack.OPTIONAL_STREAM_CODEC.decode(registryBuf));
-    });
+    public static final StreamCodec<RegistryFriendlyByteBuf, RecipeTerminalDeleteRecipePacket> STREAM_CODEC =
+            ItemStack.OPTIONAL_STREAM_CODEC.map(RecipeTerminalDeleteRecipePacket::new, RecipeTerminalDeleteRecipePacket::patternToDelete);
 
     @PacketHandler
     public static void handle(RecipeTerminalDeleteRecipePacket packet, IPayloadContext context) {
         context.enqueueWork(() -> {
             var player = context.player();
-
             if (!(player.containerMenu instanceof RecipeTerminalMenu menu)) return;
 
             var part = menu.getPart();
@@ -68,26 +60,30 @@ public record RecipeTerminalDeleteRecipePacket(ItemStack patternToDelete) implem
             var grid = node.getGrid();
             if (grid == null) return;
 
-            var cacheService = grid.getService(IRecipeCacheService.class);
-            if (cacheService != null) cacheService.invalidate();
+            try {
+                var cacheService = grid.getService(IRecipeCacheService.class);
+                if (cacheService != null) cacheService.invalidate();
 
-            deletePattern:
-            for (var drive : RecipeStorageCellItem.getDrives(grid)) {
-                for (int i = 0; i < drive.getCellCount(); i++) {
-                    var recipeCell = RecipeStorageCellItem.getRecipeCell(drive, i);
-                    if (recipeCell != null && recipeCell.deletePattern(packet.patternToDelete())) {
-                        if (drive instanceof AEBaseBlockEntity be) be.markForUpdate();
-                        break deletePattern;
+                deletePattern:
+                for (var drive : RecipeStorageCellItem.getDrives(grid)) {
+                    for (int i = 0; i < drive.getCellCount(); i++) {
+                        var recipeCell = RecipeStorageCellItem.getRecipeCell(drive, i);
+                        if (recipeCell != null && recipeCell.deletePattern(packet.patternToDelete())) {
+                            if (drive instanceof AEBaseBlockEntity be) be.markForUpdate();
+                            break deletePattern;
+                        }
                     }
                 }
-            }
 
-            for (var machine : grid.getMachines(MeMachineInterfaceBlockEntity.class)) {
-                ICraftingProvider.requestUpdate(machine.getMainNode());
-            }
-            ExtendedAeCompat.requestUpdateForMatrixAssemblers(grid);
+                for (var machine : grid.getMachines(MeMachineInterfaceBlockEntity.class)) {
+                    ICraftingProvider.requestUpdate(machine.getMainNode());
+                }
+                ExtendedAeCompat.requestUpdateForMatrixAssemblers(grid);
 
-            menu.syncRecipesToClient();
+                menu.syncRecipesToClient();
+            } catch (Exception e) {
+                Ae2craftcore.LOGGER.error("Failed to delete recipe for player {}", player.getName().getString(), e);
+            }
         });
     }
 

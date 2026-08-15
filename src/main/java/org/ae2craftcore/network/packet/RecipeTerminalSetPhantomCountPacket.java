@@ -19,6 +19,7 @@
 package org.ae2craftcore.network.packet;
 
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
@@ -34,14 +35,18 @@ import org.jetbrains.annotations.NotNull;
 public record RecipeTerminalSetPhantomCountPacket(int slotId, int count) implements CustomPacketPayload {
 
     public static final Type<RecipeTerminalSetPhantomCountPacket> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(Ae2craftcore.MODID, "recipe_terminal_set_phantom_count"));
-    public static final StreamCodec<FriendlyByteBuf, RecipeTerminalSetPhantomCountPacket> STREAM_CODEC = StreamCodec.of((buf, value) -> {
-        buf.writeInt(value.slotId());
-        buf.writeInt(value.count());
-    }, buf -> new RecipeTerminalSetPhantomCountPacket(buf.readInt(), buf.readInt()));
+
+    public static final StreamCodec<FriendlyByteBuf, RecipeTerminalSetPhantomCountPacket> STREAM_CODEC = StreamCodec.composite(
+            ByteBufCodecs.VAR_INT, RecipeTerminalSetPhantomCountPacket::slotId,
+            ByteBufCodecs.VAR_INT, RecipeTerminalSetPhantomCountPacket::count,
+            RecipeTerminalSetPhantomCountPacket::new
+    );
 
     @PacketHandler
     public static void handle(RecipeTerminalSetPhantomCountPacket packet, IPayloadContext context) {
         context.enqueueWork(() -> {
+            if (packet.slotId() < 0 || packet.count() < 0) return;
+
             var player = context.player();
             if (player.containerMenu instanceof RecipeTerminalMenu menu) {
                 menu.setPhantomSlotCount(packet.slotId(), packet.count());

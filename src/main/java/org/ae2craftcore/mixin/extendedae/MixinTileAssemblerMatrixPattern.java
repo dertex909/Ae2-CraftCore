@@ -44,13 +44,13 @@ public abstract class MixinTileAssemblerMatrixPattern extends TileAssemblerMatri
     @Shadow
     private List<IPatternDetails> patterns;
 
-    @Shadow
-    public abstract PatternContainerGroup getTerminalGroup();
-
     @SuppressWarnings("DataFlowIssue")
     public MixinTileAssemblerMatrixPattern() {
         super(null, null, null);
     }
+
+    @Shadow
+    public abstract PatternContainerGroup getTerminalGroup();
 
     @Inject(method = "getAvailablePatterns", at = @At("RETURN"), cancellable = true)
     private void addVirtualPatterns(CallbackInfoReturnable<List<IPatternDetails>> cir) {

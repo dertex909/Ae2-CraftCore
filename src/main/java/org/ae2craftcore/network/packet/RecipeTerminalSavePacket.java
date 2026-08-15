@@ -7,7 +7,7 @@
  * the Free Software Foundation; either version 3 of the License, or
  * (at your option) any later version.
  *
- * CraftCore is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU Lesser General Public License for more details.
@@ -24,6 +24,7 @@ import appeng.api.stacks.AEItemKey;
 import appeng.api.stacks.GenericStack;
 import appeng.blockentity.AEBaseBlockEntity;
 import appeng.parts.encoding.EncodingMode;
+import net.minecraft.ChatFormatting;
 import net.minecraft.core.NonNullList;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
@@ -55,21 +56,28 @@ import java.util.ArrayList;
 import static net.minecraft.core.component.DataComponents.CUSTOM_DATA;
 
 @NetworkPayload(direction = PayloadDirection.TO_SERVER)
-public record RecipeTerminalSavePacket(String groupName, String modeName, String stonecuttingRecipeId,
-                                       boolean substitutionsEnabled, boolean fluidSubstitutionsEnabled)
-        implements CustomPacketPayload {
+public record RecipeTerminalSavePacket(
+        String groupName,
+        String modeName,
+        String stonecuttingRecipeId,
+        boolean substitutionsEnabled,
+        boolean fluidSubstitutionsEnabled
+) implements CustomPacketPayload {
 
     public static final Type<RecipeTerminalSavePacket> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(Ae2craftcore.MODID, "recipe_terminal_save"));
     public static final String RECIPEMACHINEGROUP = "RecMacG";
 
-    @SuppressWarnings("unused")
-    public static final StreamCodec<FriendlyByteBuf, RecipeTerminalSavePacket> STREAM_CODEC = StreamCodec.of((buf, value) -> {
-        buf.writeUtf(value.groupName());
-        buf.writeUtf(value.modeName());
-        buf.writeUtf(value.stonecuttingRecipeId());
-        buf.writeBoolean(value.substitutionsEnabled());
-        buf.writeBoolean(value.fluidSubstitutionsEnabled());
-    }, buf -> new RecipeTerminalSavePacket(buf.readUtf(), buf.readUtf(), buf.readUtf(), buf.readBoolean(), buf.readBoolean()));
+    public static final StreamCodec<FriendlyByteBuf, RecipeTerminalSavePacket> STREAM_CODEC = StreamCodec.of(
+            (buf, value) -> {
+                buf.writeUtf(value.groupName());
+                buf.writeUtf(value.modeName());
+                buf.writeUtf(value.stonecuttingRecipeId());
+                buf.writeBoolean(value.substitutionsEnabled());
+                buf.writeBoolean(value.fluidSubstitutionsEnabled());
+            },
+            buf -> new RecipeTerminalSavePacket(buf.readUtf(), buf.readUtf(), buf.readUtf(), buf.readBoolean(), buf.readBoolean())
+    );
+    private static final Component NO_SPACE_MESSAGE = Component.literal("No active Recipe Storage Cells with available space found in the network!").withStyle(ChatFormatting.RED);
 
     public RecipeTerminalSavePacket(String groupName, EncodingMode mode, @Nullable ResourceLocation stonecuttingRecipeId, boolean substitutionsEnabled, boolean fluidSubstitutionsEnabled) {
         this(groupName, mode.name(), stonecuttingRecipeId != null ? stonecuttingRecipeId.toString() : "", substitutionsEnabled, fluidSubstitutionsEnabled);
@@ -79,7 +87,18 @@ public record RecipeTerminalSavePacket(String groupName, String modeName, String
     public static void handle(RecipeTerminalSavePacket packet, IPayloadContext context) {
         context.enqueueWork(() -> {
             var player = context.player();
-            if (player.containerMenu instanceof RecipeTerminalMenu menu) try {
+            if (!(player.containerMenu instanceof RecipeTerminalMenu menu)) return;
+
+            var part = menu.getPart();
+            if (part == null) return;
+
+            var node = part.getGridNode();
+            if (node == null) return;
+
+            var grid = node.getGrid();
+            if (grid == null) return;
+
+            try {
                 var encodedPattern = encodePattern(menu, player, parseMode(packet.modeName()), packet.stonecuttingRecipeId(), packet.substitutionsEnabled(), packet.fluidSubstitutionsEnabled());
                 if (encodedPattern == null || encodedPattern.isEmpty()) return;
 
@@ -88,33 +107,24 @@ public record RecipeTerminalSavePacket(String groupName, String modeName, String
                 tag.putString(RECIPEMACHINEGROUP, packet.groupName());
                 encodedPattern.set(CUSTOM_DATA, CustomData.of(tag));
 
-                var part = menu.getPart();
-                if (part == null) return;
-                var node = part.getGridNode();
-                if (node == null) return;
-                var grid = node.getGrid();
-                if (grid == null) return;
-
                 var cacheService = grid.getService(IRecipeCacheService.class);
                 if (cacheService != null) cacheService.invalidate();
 
                 boolean saved = false;
 
-                search:
+                saveSearch:
                 for (var drive : RecipeStorageCellItem.getDrives(grid)) {
                     for (int i = 0; i < drive.getCellCount(); i++) {
                         var recipeCell = RecipeStorageCellItem.getRecipeCell(drive, i);
                         if (recipeCell != null && recipeCell.addPattern(encodedPattern)) {
                             if (drive instanceof AEBaseBlockEntity be) be.markForUpdate();
                             saved = true;
-                            break search;
+                            break saveSearch;
                         }
                     }
                 }
 
-                if (!saved) {
-                    player.displayClientMessage(Component.literal("§cNo active Recipe Storage Cells with available space found in the network!"), true);
-                }
+                if (!saved) player.displayClientMessage(NO_SPACE_MESSAGE, true);
 
                 for (var machine : grid.getMachines(MeMachineInterfaceBlockEntity.class)) {
                     ICraftingProvider.requestUpdate(machine.getMainNode());
@@ -123,7 +133,7 @@ public record RecipeTerminalSavePacket(String groupName, String modeName, String
 
                 menu.syncRecipesToClient();
             } catch (Exception e) {
-                Ae2craftcore.LOGGER.error("Failed to encode and save virtual recipe: ", e);
+                Ae2craftcore.LOGGER.error("Failed to encode and save virtual recipe for player {}", player.getName().getString(), e);
             }
         });
     }
@@ -146,26 +156,28 @@ public record RecipeTerminalSavePacket(String groupName, String modeName, String
         };
     }
 
+    @Nullable
+    private static AEItemKey extractItemKey(@Nullable GenericStack stack) {
+        return (stack != null && stack.what() instanceof AEItemKey itemKey) ? itemKey : null;
+    }
+
     private static ItemStack getRealItemStack(@Nullable GenericStack stack) {
-        if (stack == null) return ItemStack.EMPTY;
-        if (stack.what() instanceof AEItemKey itemKey) return itemKey.toStack((int) stack.amount());
-        return ItemStack.EMPTY;
+        var itemKey = extractItemKey(stack);
+        return itemKey != null ? itemKey.toStack((int) stack.amount()) : ItemStack.EMPTY;
     }
 
     @Nullable
     private static ItemStack encodeCraftingPattern(RecipeTerminalMenu menu, Player player, boolean substitutionsEnabled, boolean fluidSubstitutionsEnabled) {
+        var part = menu.getPart();
+        if (part == null) return null;
+
         var ingredients = new ItemStack[9];
         var craftingGrid = NonNullList.withSize(9, ItemStack.EMPTY);
         var hasInput = false;
-        var inputInv = menu.getPart().getLogic().getEncodedInputInv();
+        var inputInv = part.getLogic().getEncodedInputInv();
 
         for (int i = 0; i < 9; i++) {
             var stack = inputInv.getStack(i);
-            if (stack == null) {
-                ingredients[i] = ItemStack.EMPTY;
-                continue;
-            }
-
             var realStack = getRealItemStack(stack);
             ingredients[i] = realStack;
             craftingGrid.set(i, realStack);
@@ -187,46 +199,40 @@ public record RecipeTerminalSavePacket(String groupName, String modeName, String
 
     @Nullable
     private static ItemStack encodeProcessingPattern(RecipeTerminalMenu menu) {
-        var logic = menu.getPart().getLogic();
+        var part = menu.getPart();
+        if (part == null) return null;
+
+        var logic = part.getLogic();
         var inputInv = logic.getEncodedInputInv();
         var outputInv = logic.getEncodedOutputInv();
 
         var inputs = new ArrayList<GenericStack>();
-        var hasInput = false;
         for (int i = 0; i < inputInv.size(); i++) {
             var stack = inputInv.getStack(i);
-            if (stack != null) {
-                inputs.add(stack);
-                hasInput = true;
-            }
+            if (stack != null) inputs.add(stack);
         }
-        if (!hasInput) return null;
+        if (inputs.isEmpty()) return null;
 
         var outputs = new ArrayList<GenericStack>();
-        var hasOutput = false;
         for (int i = 0; i < outputInv.size(); i++) {
             var stack = outputInv.getStack(i);
-            if (stack != null) {
-                outputs.add(stack);
-                hasOutput = true;
-            }
+            if (stack != null) outputs.add(stack);
         }
-        if (!hasOutput) return null;
+        if (outputs.isEmpty()) return null;
 
         return PatternDetailsHelper.encodeProcessingPattern(inputs, outputs);
     }
 
     @Nullable
     private static ItemStack encodeSmithingTablePattern(RecipeTerminalMenu menu, Player player, boolean substitutionsEnabled) {
-        var inputInv = menu.getPart().getLogic().getEncodedInputInv();
-        var templateStack = inputInv.getStack(0);
-        var baseStack = inputInv.getStack(1);
-        var additionStack = inputInv.getStack(2);
-        if (templateStack == null || baseStack == null || additionStack == null) return null;
+        var part = menu.getPart();
+        if (part == null) return null;
 
-        var templateKey = templateStack.what() instanceof AEItemKey k ? k : null;
-        var baseKey = baseStack.what() instanceof AEItemKey k ? k : null;
-        var additionKey = additionStack.what() instanceof AEItemKey k ? k : null;
+        var inputInv = part.getLogic().getEncodedInputInv();
+        var templateKey = extractItemKey(inputInv.getStack(0));
+        var baseKey = extractItemKey(inputInv.getStack(1));
+        var additionKey = extractItemKey(inputInv.getStack(2));
+
         if (templateKey == null || baseKey == null || additionKey == null) return null;
 
         var input = new SmithingRecipeInput(templateKey.toStack(), baseKey.toStack(), additionKey.toStack());
@@ -243,16 +249,17 @@ public record RecipeTerminalSavePacket(String groupName, String modeName, String
 
     @Nullable
     private static ItemStack encodeStonecuttingPattern(RecipeTerminalMenu menu, Player player, String stonecuttingRecipeId) {
-        var inputInv = menu.getPart().getLogic().getEncodedInputInv();
-        var inputStack = inputInv.getStack(0);
-        if (inputStack == null) return null;
+        var part = menu.getPart();
+        if (part == null) return null;
 
-        var inputKey = inputStack.what() instanceof AEItemKey k ? k : null;
+        var inputInv = part.getLogic().getEncodedInputInv();
+        var inputKey = extractItemKey(inputInv.getStack(0));
         if (inputKey == null) return null;
 
         var level = player.level();
         var recipeInput = new SingleRecipeInput(inputKey.toStack());
         var recipeId = stonecuttingRecipeId.isEmpty() ? null : ResourceLocation.tryParse(stonecuttingRecipeId);
+
         var recipe = recipeId != null
                 ? level.getRecipeManager().getRecipeFor(RecipeType.STONECUTTING, recipeInput, level, recipeId).orElse(null)
                 : level.getRecipeManager().getRecipesFor(RecipeType.STONECUTTING, recipeInput, level).stream().findFirst().orElse(null);

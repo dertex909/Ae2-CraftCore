@@ -38,11 +38,6 @@ public class ModMenuTypes {
 
     public static final DeferredRegister<MenuType<?>> MENU_TYPES = DeferredRegister.create(BuiltInRegistries.MENU, Ae2craftcore.MODID);
 
-    public static void register(IEventBus bus) {
-        MENU_TYPES.register(bus);
-        Ae2craftcore.LOGGER.info("Menu types registered");
-    }
-
     public static final DeferredHolder<MenuType<?>, MenuType<LogicAssemblerMenu>> LOGIC_ASSEMBLER = MENU_TYPES.register(
             "logic_assembler", () -> IMenuTypeExtension.create(LogicAssemblerMenu::new));
 
@@ -54,5 +49,8 @@ public class ModMenuTypes {
     public static final DeferredHolder<MenuType<?>, MenuType<RecipeTerminalMenu>> RECIPE_TERMINAL = MENU_TYPES.register(
             "recipe_terminal", () -> create(RecipeTerminalMenu::new, RecipeTerminalPart.class).buildUnregistered(fromNamespaceAndPath(Ae2craftcore.MODID, "recipe_terminal")));
 
-
+    public static void register(IEventBus bus) {
+        MENU_TYPES.register(bus);
+        Ae2craftcore.LOGGER.info("Menu types registered");
+    }
 }
