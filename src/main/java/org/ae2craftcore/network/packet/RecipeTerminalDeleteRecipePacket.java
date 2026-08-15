@@ -19,8 +19,7 @@
 package org.ae2craftcore.network.packet;
 
 import appeng.api.networking.crafting.ICraftingProvider;
-import appeng.blockentity.storage.DriveBlockEntity;
-import appeng.blockentity.storage.MEChestBlockEntity;
+import appeng.blockentity.AEBaseBlockEntity;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
@@ -38,10 +37,6 @@ import org.ae2craftcore.registry.annotations.PacketHandler;
 import org.ae2craftcore.registry.annotations.PayloadDirection;
 import org.ae2craftcore.services.IRecipeCacheService;
 import org.jetbrains.annotations.NotNull;
-
-import java.util.ArrayList;
-
-import static org.ae2craftcore.registry.AttachmentRegistry.STORED_PATTERNS;
 
 @NetworkPayload(direction = PayloadDirection.TO_SERVER)
 public record RecipeTerminalDeleteRecipePacket(ItemStack patternToDelete) implements CustomPacketPayload {
@@ -61,85 +56,38 @@ public record RecipeTerminalDeleteRecipePacket(ItemStack patternToDelete) implem
     public static void handle(RecipeTerminalDeleteRecipePacket packet, IPayloadContext context) {
         context.enqueueWork(() -> {
             var player = context.player();
-            if (player.containerMenu instanceof RecipeTerminalMenu menu) {
-                var part = menu.getPart();
-                if (part == null) return;
-                var node = part.getGridNode();
-                if (node == null) return;
-                var grid = node.getGrid();
-                if (grid == null) return;
 
-                var cacheService = grid.getService(IRecipeCacheService.class);
-                if (cacheService != null) cacheService.invalidate();
+            if (!(player.containerMenu instanceof RecipeTerminalMenu menu)) return;
 
-                boolean deleted = false;
+            var part = menu.getPart();
+            if (part == null) return;
 
-                for (var drive : grid.getMachines(DriveBlockEntity.class)) {
-                    var inv = drive.getInternalInventory();
-                    if (inv != null) for (int i = 0; i < inv.size(); i++) {
-                        var stack = inv.getStackInSlot(i);
-                        if (stack.getItem() instanceof RecipeStorageCellItem) {
-                            var storedList = stack.get(STORED_PATTERNS.get());
-                            if (storedList != null && !storedList.isEmpty()) {
-                                var patterns = new ArrayList<>(storedList);
-                                var toRemove = new ArrayList<ItemStack>();
-                                for (var p : patterns) {
-                                    if (ItemStack.isSameItemSameComponents(p, packet.patternToDelete())) {
-                                        toRemove.add(p);
-                                    }
-                                }
-                                if (!toRemove.isEmpty()) {
-                                    patterns.removeAll(toRemove);
+            var node = part.getGridNode();
+            if (node == null) return;
 
-                                    RecipeStorageCellItem.updateCellStats(stack, patterns);
-                                    inv.setItemDirect(i, stack);
-                                    drive.saveChanges();
-                                    deleted = true;
-                                    break;
-                                }
-                            }
-                        }
+            var grid = node.getGrid();
+            if (grid == null) return;
+
+            var cacheService = grid.getService(IRecipeCacheService.class);
+            if (cacheService != null) cacheService.invalidate();
+
+            deletePattern:
+            for (var drive : RecipeStorageCellItem.getDrives(grid)) {
+                for (int i = 0; i < drive.getCellCount(); i++) {
+                    var recipeCell = RecipeStorageCellItem.getRecipeCell(drive, i);
+                    if (recipeCell != null && recipeCell.deletePattern(packet.patternToDelete())) {
+                        if (drive instanceof AEBaseBlockEntity be) be.markForUpdate();
+                        break deletePattern;
                     }
-                    if (deleted) break;
                 }
-
-                if (!deleted) for (var chest : grid.getMachines(MEChestBlockEntity.class)) {
-                    var inv = chest.getInternalInventory();
-                    if (inv != null) for (int i = 0; i < inv.size(); i++) {
-                        var stack = inv.getStackInSlot(i);
-                        if (stack.getItem() instanceof RecipeStorageCellItem) {
-                            var storedList = stack.get(STORED_PATTERNS.get());
-                            if (storedList != null && !storedList.isEmpty()) {
-                                var patterns = new ArrayList<>(storedList);
-                                var toRemove = new ArrayList<ItemStack>();
-                                for (var p : patterns) {
-                                    if (ItemStack.isSameItemSameComponents(p, packet.patternToDelete())) {
-                                        toRemove.add(p);
-                                    }
-                                }
-                                if (!toRemove.isEmpty()) {
-                                    patterns.removeAll(toRemove);
-
-                                    RecipeStorageCellItem.updateCellStats(stack, patterns);
-                                    inv.setItemDirect(i, stack);
-                                    chest.saveChanges();
-
-                                    deleted = true;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    if (deleted) break;
-                }
-
-                for (var machine : grid.getMachines(MeMachineInterfaceBlockEntity.class)) {
-                    ICraftingProvider.requestUpdate(machine.getMainNode());
-                }
-                ExtendedAeCompat.requestUpdateForMatrixAssemblers(grid);
-
-                menu.syncRecipesToClient();
             }
+
+            for (var machine : grid.getMachines(MeMachineInterfaceBlockEntity.class)) {
+                ICraftingProvider.requestUpdate(machine.getMainNode());
+            }
+            ExtendedAeCompat.requestUpdateForMatrixAssemblers(grid);
+
+            menu.syncRecipesToClient();
         });
     }
 

@@ -25,7 +25,6 @@ import net.minecraft.client.resources.model.ModelResourceLocation;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.neoforge.client.event.ModelEvent;
 import net.neoforged.neoforge.client.event.RegisterColorHandlersEvent;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
@@ -47,23 +46,24 @@ import static org.ae2craftcore.registry.ModRecipeTypes.LOGIC_ASSEMBLING_TYPE;
 public class ClientSetup {
 
     @SubscribeEvent
-    public static void onClientSetup(FMLClientSetupEvent event) {
-        event.enqueueWork(() -> {
-            StorageCellModels.registerModel(RecipeStorageCellItem.RECIPE_STORAGE_CELL_1K.get(), ResourceLocation.fromNamespaceAndPath(MODID, "block/drive/cells/recipe_storage_cell_1k"));
-            StorageCellModels.registerModel(RecipeStorageCellItem.RECIPE_STORAGE_CELL_4K.get(), ResourceLocation.fromNamespaceAndPath(MODID, "block/drive/cells/recipe_storage_cell_4k"));
-            StorageCellModels.registerModel(RecipeStorageCellItem.RECIPE_STORAGE_CELL_16K.get(), ResourceLocation.fromNamespaceAndPath(MODID, "block/drive/cells/recipe_storage_cell_16k"));
-            StorageCellModels.registerModel(RecipeStorageCellItem.RECIPE_STORAGE_CELL_64K.get(), ResourceLocation.fromNamespaceAndPath(MODID, "block/drive/cells/recipe_storage_cell_64k"));
-            StorageCellModels.registerModel(RecipeStorageCellItem.RECIPE_STORAGE_CELL_256K.get(), ResourceLocation.fromNamespaceAndPath(MODID, "block/drive/cells/recipe_storage_cell_256k"));
-        });
-    }
-
-    @SubscribeEvent
     public static void registerAdditionalModels(ModelEvent.RegisterAdditional event) {
-        event.register(ModelResourceLocation.standalone(ResourceLocation.fromNamespaceAndPath(MODID, "block/drive/cells/recipe_storage_cell_1k")));
-        event.register(ModelResourceLocation.standalone(ResourceLocation.fromNamespaceAndPath(MODID, "block/drive/cells/recipe_storage_cell_4k")));
-        event.register(ModelResourceLocation.standalone(ResourceLocation.fromNamespaceAndPath(MODID, "block/drive/cells/recipe_storage_cell_16k")));
-        event.register(ModelResourceLocation.standalone(ResourceLocation.fromNamespaceAndPath(MODID, "block/drive/cells/recipe_storage_cell_64k")));
-        event.register(ModelResourceLocation.standalone(ResourceLocation.fromNamespaceAndPath(MODID, "block/drive/cells/recipe_storage_cell_256k")));
+        var cell1k = ResourceLocation.fromNamespaceAndPath(MODID, "block/drive/cells/recipe_storage_cell_1k");
+        var cell4k = ResourceLocation.fromNamespaceAndPath(MODID, "block/drive/cells/recipe_storage_cell_4k");
+        var cell16k = ResourceLocation.fromNamespaceAndPath(MODID, "block/drive/cells/recipe_storage_cell_16k");
+        var cell64k = ResourceLocation.fromNamespaceAndPath(MODID, "block/drive/cells/recipe_storage_cell_64k");
+        var cell256k = ResourceLocation.fromNamespaceAndPath(MODID, "block/drive/cells/recipe_storage_cell_256k");
+
+        StorageCellModels.registerModel(RecipeStorageCellItem.RECIPE_STORAGE_CELL_1K.get(), cell1k);
+        StorageCellModels.registerModel(RecipeStorageCellItem.RECIPE_STORAGE_CELL_4K.get(), cell4k);
+        StorageCellModels.registerModel(RecipeStorageCellItem.RECIPE_STORAGE_CELL_16K.get(), cell16k);
+        StorageCellModels.registerModel(RecipeStorageCellItem.RECIPE_STORAGE_CELL_64K.get(), cell64k);
+        StorageCellModels.registerModel(RecipeStorageCellItem.RECIPE_STORAGE_CELL_256K.get(), cell256k);
+
+        event.register(ModelResourceLocation.standalone(cell1k));
+        event.register(ModelResourceLocation.standalone(cell4k));
+        event.register(ModelResourceLocation.standalone(cell16k));
+        event.register(ModelResourceLocation.standalone(cell64k));
+        event.register(ModelResourceLocation.standalone(cell256k));
     }
 
     @SubscribeEvent

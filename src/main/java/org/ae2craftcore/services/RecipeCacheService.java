@@ -19,14 +19,12 @@
 package org.ae2craftcore.services;
 
 import appeng.api.crafting.IPatternDetails;
-import appeng.api.inventories.InternalInventory;
+import appeng.api.implementations.blockentities.IChestOrDrive;
 import appeng.api.networking.IGrid;
 import appeng.api.networking.IGridNode;
 import appeng.api.networking.IGridServiceProvider;
 import appeng.api.networking.crafting.ICraftingProvider;
 import appeng.api.stacks.AEItemKey;
-import appeng.blockentity.storage.DriveBlockEntity;
-import appeng.blockentity.storage.MEChestBlockEntity;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.Level;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -35,7 +33,6 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import org.ae2craftcore.blocks.blockentity.MeMachineInterfaceBlockEntity;
 import org.ae2craftcore.compat.extendedAE.ExtendedAeCompat;
 import org.ae2craftcore.items.RecipeStorageCellItem;
-import org.ae2craftcore.registry.AttachmentRegistry;
 
 import java.util.*;
 
@@ -84,33 +81,26 @@ public class RecipeCacheService implements IRecipeCacheService, IGridServiceProv
 
     public long calculateGridSignature() {
         long signature = 17;
-
-        for (var drive : grid.getMachines(DriveBlockEntity.class)) {
-            var inv = drive.getInternalInventory();
-            if (inv != null) signature = 31 * signature + scanInventorySignature(inv);
-        }
-
-        for (var chest : grid.getMachines(MEChestBlockEntity.class)) {
-            var inv = chest.getInternalInventory();
-            if (inv != null) signature = 31 * signature + scanInventorySignature(inv);
-        }
-
+        for (var drive : RecipeStorageCellItem.getDrives(grid)) signature = 31 * signature + scanDriveSignature(drive);
         return signature;
     }
 
-    private long scanInventorySignature(InternalInventory inv) {
-        long invSig = 0;
-        for (int i = 0; i < inv.size(); i++) {
-            var stack = inv.getStackInSlot(i);
-            if (!stack.isEmpty() && stack.getItem() instanceof RecipeStorageCellItem) {
-                int count = stack.getOrDefault(AttachmentRegistry.RECIPE_COUNT.get(), 0);
-                int machineCount = stack.getOrDefault(AttachmentRegistry.MACHINE_COUNT.get(), 0);
-                invSig = 31 * invSig + i + count * 1000L + machineCount * 100000L + System.identityHashCode(stack);
+    private long scanDriveSignature(IChestOrDrive drive) {
+        long driveSig = 0;
+        int cellCount = drive.getCellCount();
+
+        for (int i = 0; i < cellCount; i++) {
+            var recipeCell = RecipeStorageCellItem.getRecipeCell(drive, i);
+            if (recipeCell != null) {
+                int count = recipeCell.getRecipeCount();
+                int machineCount = recipeCell.getMachineCount();
+                driveSig = 31 * driveSig + i + count * 1000L + machineCount * 100000L + System.identityHashCode(recipeCell.getCellStack());
             } else {
-                invSig = 31 * invSig + i;
+                driveSig = 31 * driveSig + i;
             }
         }
-        return invSig;
+
+        return driveSig;
     }
 
     private List<IPatternDetails> rebuildCache(Level level) {

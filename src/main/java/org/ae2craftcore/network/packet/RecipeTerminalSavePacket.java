@@ -7,7 +7,7 @@
  * the Free Software Foundation; either version 3 of the License, or
  * (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,
+ * CraftCore is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU Lesser General Public License for more details.
@@ -22,8 +22,7 @@ import appeng.api.crafting.PatternDetailsHelper;
 import appeng.api.networking.crafting.ICraftingProvider;
 import appeng.api.stacks.AEItemKey;
 import appeng.api.stacks.GenericStack;
-import appeng.blockentity.storage.DriveBlockEntity;
-import appeng.blockentity.storage.MEChestBlockEntity;
+import appeng.blockentity.AEBaseBlockEntity;
 import appeng.parts.encoding.EncodingMode;
 import net.minecraft.core.NonNullList;
 import net.minecraft.network.FriendlyByteBuf;
@@ -54,7 +53,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 
 import static net.minecraft.core.component.DataComponents.CUSTOM_DATA;
-import static org.ae2craftcore.registry.AttachmentRegistry.STORED_PATTERNS;
 
 @NetworkPayload(direction = PayloadDirection.TO_SERVER)
 public record RecipeTerminalSavePacket(String groupName, String modeName, String stonecuttingRecipeId,
@@ -63,6 +61,7 @@ public record RecipeTerminalSavePacket(String groupName, String modeName, String
 
     public static final Type<RecipeTerminalSavePacket> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(Ae2craftcore.MODID, "recipe_terminal_save"));
     public static final String RECIPEMACHINEGROUP = "RecMacG";
+
     @SuppressWarnings("unused")
     public static final StreamCodec<FriendlyByteBuf, RecipeTerminalSavePacket> STREAM_CODEC = StreamCodec.of((buf, value) -> {
         buf.writeUtf(value.groupName());
@@ -101,51 +100,15 @@ public record RecipeTerminalSavePacket(String groupName, String modeName, String
 
                 boolean saved = false;
 
-                for (var drive : grid.getMachines(DriveBlockEntity.class)) {
-                    var inv = drive.getInternalInventory();
-                    if (inv != null) for (int i = 0; i < inv.size(); i++) {
-                        var stack = inv.getStackInSlot(i);
-                        if (stack.getItem() instanceof RecipeStorageCellItem) {
-                            if (RecipeStorageCellItem.canAddPattern(stack, encodedPattern)) {
-                                var storedList = stack.get(STORED_PATTERNS.get());
-                                var patterns = storedList != null ? new ArrayList<>(storedList) : new ArrayList<ItemStack>();
-                                patterns.add(encodedPattern.copyWithCount(1));
-
-                                RecipeStorageCellItem.updateCellStats(stack, patterns);
-
-                                inv.setItemDirect(i, stack);
-                                drive.saveChanges();
-
-                                saved = true;
-                                break;
-                            }
+                search:
+                for (var drive : RecipeStorageCellItem.getDrives(grid)) {
+                    for (int i = 0; i < drive.getCellCount(); i++) {
+                        var recipeCell = RecipeStorageCellItem.getRecipeCell(drive, i);
+                        if (recipeCell != null && recipeCell.addPattern(encodedPattern)) {
+                            if (drive instanceof AEBaseBlockEntity be) be.markForUpdate();
+                            saved = true;
+                            break search;
                         }
-                    }
-                    if (saved) break;
-                }
-
-                if (!saved) {
-                    for (var chest : grid.getMachines(MEChestBlockEntity.class)) {
-                        var inv = chest.getInternalInventory();
-                        if (inv != null) for (int i = 0; i < inv.size(); i++) {
-                            var stack = inv.getStackInSlot(i);
-                            if (stack.getItem() instanceof RecipeStorageCellItem) {
-                                if (RecipeStorageCellItem.canAddPattern(stack, encodedPattern)) {
-                                    var storedList = stack.get(STORED_PATTERNS.get());
-                                    var patterns = storedList != null ? new ArrayList<>(storedList) : new ArrayList<ItemStack>();
-                                    patterns.add(encodedPattern.copyWithCount(1));
-
-                                    RecipeStorageCellItem.updateCellStats(stack, patterns);
-
-                                    inv.setItemDirect(i, stack);
-                                    chest.saveChanges();
-
-                                    saved = true;
-                                    break;
-                                }
-                            }
-                        }
-                        if (saved) break;
                     }
                 }
 
