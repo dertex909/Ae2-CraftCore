@@ -19,8 +19,8 @@ combines pattern encoding capabilities and management of the network's entire au
 ### Crafting Recipe for the Terminal:
 
 This is the most expensive machine in the mod. To craft it, you need to combine
-an <ItemLink id="ae2:pattern_encoding_terminal" />, <ItemLink id="ae2:pattern_access_terminal" />, <ItemLink id="ae2:pattern_provider" />,
-and the rarest <ItemLink id="ae2craftcore:quantum_processor_5" /> (which has a base crafting chance of only 5%):
+an <ItemLink id="ae2:pattern_encoding_terminal" />, <ItemLink id="ae2:pattern_access_terminal" />, <ItemLink id="ae2craftcore:me_machine_interface" />,
+and the rarest <ItemLink id="ae2craftcore:quantum_processor_6" /> (which has a base crafting chance of only 5%):
 <RecipeFor id="ae2craftcore:recipe_terminal" />
 
 ---
