@@ -90,22 +90,22 @@ dependencies {
     compileOnly "org.appliedenergistics:guideme:26.1.12-beta"
     runtimeOnly "org.appliedenergistics:guideme:26.1.12-beta"
 
-    // ExtendedAE-26.1-1.0.2-neoforge
-    compileOnly "curse.maven:ex-pattern-provider-892005:8284338"
-    runtimeOnly "curse.maven:ex-pattern-provider-892005:8284338"
+    // ExtendedAE-26.1-1.1.0-neoforge
+    compileOnly "curse.maven:ex-pattern-provider-892005:9628450"
+    runtimeOnly "curse.maven:ex-pattern-provider-892005:9628450"
 
     // Glodium-26.1-1.2-neoforge
     compileOnly "curse.maven:glodium-957920:8196173"
     runtimeOnly "curse.maven:glodium-957920:8196173"
 
     // JEI
-    compileOnly "mezz.jei:jei-${minecraft_version}-neoforge:29.22.0.73"
+    compileOnly "mezz.jei:jei-${minecraft_version}-neoforge:29.47.0.111"
     // EMI
     // compileOnly "dev.emi:emi-neoforge:1.1.22+${minecraft_version}"
     // REI
     compileOnly "me.shedaniel:RoughlyEnoughItems-neoforge:26.1.819"
 
-    runtimeOnly "mezz.jei:jei-${minecraft_version}-neoforge:29.22.0.73"
+    runtimeOnly "mezz.jei:jei-${minecraft_version}-neoforge:29.47.0.111"
 
 //    runtimeOnly "me.shedaniel:RoughlyEnoughItems-neoforge:16.0.729"
 //    runtimeOnly "dev.architectury:architectury-neoforge:13.0.6"
