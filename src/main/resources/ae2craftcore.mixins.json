@@ -1,9 +1,4 @@
 {
-  "required": true,
-  "minVersion": "0.8",
-  "package": "org.ae2craftcore.mixin",
-  "compatibilityLevel": "JAVA_25",
-  "plugin": "org.ae2craftcore.mixin.Ae2CraftCoreMixinPlugin",
   "mixins": [
     "SlotAccessor",
     "compat.MixinJeiTransfer",
@@ -12,6 +7,14 @@
   "client": [
     "AbstractContainerScreenAccessor"
   ],
+  "server" : [],
+  "compatibilityLevel": "JAVA_25",
+  "minVersion" : "0.8.7",
+  "package": "org.ae2craftcore.mixin",
+  "refmap" : "ae2_craftcore.refmap.json",
+  "required": true,
+  "setSourceFile" : true,
+  "plugin": "org.ae2craftcore.mixin.Ae2CraftCoreMixinPlugin",
   "injectors": {
     "defaultRequire": 1
   },
