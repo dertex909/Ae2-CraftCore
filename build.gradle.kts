@@ -45,11 +45,11 @@ val neoVersion = prop("neo_version")
 val minecraftVersion = prop("minecraft_version")
 val loaderVersionRange = prop("loader_version_range")
 val ae2Version = prop("ae2_version")
-val projectSlug = "ae2-craftcore"
+val sprojectSlug = "ae2-craftcore"
 
 version = modVersion
 group = modGroupId
-base.archivesName.set(projectSlug)
+base.archivesName.set(sprojectSlug)
 java.toolchain.languageVersion.set(JavaLanguageVersion.of(21))
 java.withSourcesJar()
 idea.module.isDownloadJavadoc = true
@@ -159,7 +159,7 @@ publishMods {
     curseforge {
         accessToken = providers.environmentVariable("CURSEFORGE_TOKEN")
         projectId = "1606104"
-        projectSlug = projectSlug
+        projectSlug = sprojectSlug
         minecraftVersions.add(minecraftVersion)
         server = true
         client = true
