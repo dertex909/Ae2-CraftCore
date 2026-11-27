@@ -27,6 +27,8 @@ val neoVersion = prop("neo_version")
 val minecraftVersion = prop("minecraft_version")
 val loaderVersionRange = prop("loader_version_range")
 val ae2Version = prop("ae2_version")
+val jeiVersion = prop("jei_version")
+val reiVersion = prop("rei_version")
 val sprojectSlug = "ae2-craftcore"
 
 version = modVersion
@@ -77,9 +79,9 @@ val guideme = "org.appliedenergistics:guideme:21.1.22"
 val extendedAe = "maven.modrinth:JiOqfoFM:bC302UUP"
 val glodium = "maven.modrinth:UhW5uCKw:pfbmdJ3b"
 val extendedAePlus = "maven.modrinth:xr109llC:Bm8LwH2q"
-val jei = "mezz.jei:jei-$minecraftVersion-neoforge:19.76.1.482"
+val jei = "mezz.jei:jei-$minecraftVersion-neoforge:$jeiVersion"
 val emi = "dev.emi:emi-neoforge:1.1.22+$minecraftVersion"
-val rei = "me.shedaniel:RoughlyEnoughItems-neoforge:16.0.799"
+val rei = "me.shedaniel:RoughlyEnoughItems-neoforge:$reiVersion"
 
 dependencies {
     compileOnly(ae2)
@@ -97,9 +99,9 @@ dependencies {
     runtimeOnly(extendedAe)
     runtimeOnly(extendedAePlus)
 
-    //runtimeOnly(jei)
+    runtimeOnly(jei)
     //runtimeOnly(emi)
-    runtimeOnly(rei)
+    //runtimeOnly(rei)
 }
 
 tasks.processResources {
@@ -117,7 +119,9 @@ tasks.processResources {
         "mod_version" to modVersion,
         "mod_authors" to modAuthors,
         "mod_description" to modDescription,
-        "ae2_version" to ae2Version
+        "ae2_version" to ae2Version,
+        "jei_version" to jeiVersion,
+        "rei_version" to reiVersion
     )
     inputs.properties(replaceProperties)
 
@@ -139,6 +143,7 @@ publishMods {
         projectId = "koO20Z1s"
         minecraftVersions.add(minecraftVersion)
         changelog = fullChangelog
+        requires("ae2")
     }
 
     curseforge {
@@ -149,6 +154,7 @@ publishMods {
         server = true
         client = true
         changelog = fullChangelog
+        requires("applied-energistics-2")
     }
 }
 
