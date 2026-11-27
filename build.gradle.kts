@@ -28,6 +28,8 @@ val neoVersion = prop("neo_version")
 val minecraftVersion = prop("minecraft_version")
 val loaderVersionRange = prop("loader_version_range")
 val ae2Version = prop("ae2_version")
+val jeiVersion = prop("jei_version")
+val reiVersion = prop("rei_version")
 val sprojectSlug = "ae2-craftcore"
 
 version = modVersion
@@ -74,41 +76,28 @@ neoForge {
 }
 
 val ae2 = "org.appliedenergistics:appliedenergistics2:$ae2Version"
-val guideme = "org.appliedenergistics:guideme:26.1.12-beta"
-val extendedAe = "curse.maven:ex-pattern-provider-892005:9628450"
+val guideme = "org.appliedenergistics:guideme:26.1.17-beta"
+val extendedAe = "curse.maven:ex-pattern-provider-892005:9746796"
 val glodium = "curse.maven:glodium-957920:8196173"
-val jei = "mezz.jei:jei-$minecraftVersion-neoforge:29.47.0.111"
-val rei = "me.shedaniel:RoughlyEnoughItems-neoforge:26.1.819"
+val jei = "mezz.jei:jei-$minecraftVersion-neoforge:$jeiVersion"
+val rei = "me.shedaniel:RoughlyEnoughItems-neoforge:$reiVersion"
 // val emi = "dev.emi:emi-neoforge:1.1.22+$minecraftVersion"
 
 dependencies {
-    // AE2
     compileOnly(ae2)
-    runtimeOnly(ae2)
-
-    // guideme
     compileOnly(guideme)
-    runtimeOnly(guideme)
-
-    // ExtendedAE-26.1-1.1.0-neoforge
+    compileOnly(glodium)
     compileOnly(extendedAe)
+    compileOnly(jei)
+    compileOnly(rei)
+
+    runtimeOnly(ae2)
+    runtimeOnly(guideme)
+    runtimeOnly(glodium)
     runtimeOnly(extendedAe)
 
-    // Glodium-26.1-1.2-neoforge
-    compileOnly(glodium)
-    runtimeOnly(glodium)
-
-    // JEI
-    compileOnly(jei)
     runtimeOnly(jei)
-
-    // EMI
-    // compileOnly(emi)
-
-    // REI
-    compileOnly(rei)
-    // runtimeOnly("me.shedaniel:RoughlyEnoughItems-neoforge:16.0.729")
-    // runtimeOnly("dev.architectury:architectury-neoforge:13.0.6")
+    //runtimeOnly(rei)
 }
 
 tasks.processResources {
@@ -126,7 +115,9 @@ tasks.processResources {
         "mod_version" to modVersion,
         "mod_authors" to modAuthors,
         "mod_description" to modDescription,
-        "ae2_version" to ae2Version
+        "ae2_version" to ae2Version,
+        "jei_version" to jeiVersion,
+        "rei_version" to reiVersion
     )
     inputs.properties(replaceProperties)
 
@@ -148,6 +139,7 @@ publishMods {
         projectId = "koO20Z1s"
         minecraftVersions.add(minecraftVersion)
         changelog = fullChangelog
+        requires("ae2")
     }
 
     curseforge {
@@ -158,16 +150,8 @@ publishMods {
         server = true
         client = true
         changelog = fullChangelog
+        requires("applied-energistics-2")
     }
-
-    //discord {
-    //    webhookUrl = providers.environmentVariable("DISCORD_WEBHOOK")
-    //    username = modName
-    //    content = "🚀 **$modName v$modVersion** is out!\n"
-    //    style {
-    //        link = LinkType.INLINE.name
-    //    }
-    //}
 }
 
 fun prop(name: String): String = providers.gradleProperty(name).get()

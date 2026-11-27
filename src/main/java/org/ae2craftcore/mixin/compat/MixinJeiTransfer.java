@@ -25,7 +25,7 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 
 @Mixin(targets = "mezz.jei.library.recipes.RecipeTransferManager", remap = false)
 public class MixinJeiTransfer {
-    @Redirect(method = "getRecipeTransferHandler", at = @At(value = "INVOKE", target = "Ljava/lang/Object;getClass()Ljava/lang/Class;"))
+    @Redirect(method = "getHandler", at = @At(value = "INVOKE", target = "Ljava/lang/Object;getClass()Ljava/lang/Class;"))
     private Class<?> redirectGetClass(Object container) {
         if (container instanceof PatternEncodingTermMenu menu && PatternEncodingTermMenu.TYPE.equals(menu.getType())) {
             return PatternEncodingTermMenu.class;

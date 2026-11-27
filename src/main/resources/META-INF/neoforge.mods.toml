@@ -25,3 +25,13 @@ versionRange = "${minecraft_version_range}"
 [[dependencies."${mod_id}"]]
 modId = "ae2"
 versionRange = "[${ae2_version},)"
+
+[[dependencies."${mod_id}"]]
+modId = "jei"
+type = "optional"
+versionRange = "[${jei_version},)"
+
+[[dependencies."${mod_id}"]]
+modId = "rei"
+type = "optional"
+versionRange = "[${rei_version},)"
