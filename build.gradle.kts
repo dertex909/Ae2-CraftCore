@@ -1,21 +1,3 @@
-/*
- * Ae2 CraftCore
- * Copyright (C) 2026 dertex909
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation; either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with this program. If not, see <https://www.gnu.org/licenses/>.
- */
-
 import org.gradle.jvm.tasks.Jar
 
 plugins {
@@ -91,19 +73,19 @@ neoForge {
 }
 
 val ae2 = "org.appliedenergistics:appliedenergistics2:$ae2Version"
-val guideme = "org.appliedenergistics:guideme:21.1.17"
-val extendedAe = "maven.modrinth:JiOqfoFM:4BXqcY77"
+val guideme = "org.appliedenergistics:guideme:21.1.22"
+val extendedAe = "maven.modrinth:JiOqfoFM:bC302UUP"
 val glodium = "maven.modrinth:UhW5uCKw:pfbmdJ3b"
-val extendedAePlus = "maven.modrinth:xr109llC:BdDOfMzg"
-val jei = "mezz.jei:jei-$minecraftVersion-neoforge:19.25.0.325"
+val extendedAePlus = "maven.modrinth:xr109llC:Bm8LwH2q"
+val jei = "mezz.jei:jei-$minecraftVersion-neoforge:19.76.1.482"
 val emi = "dev.emi:emi-neoforge:1.1.22+$minecraftVersion"
-val rei = "me.shedaniel:RoughlyEnoughItems-neoforge:16.0.729"
+val rei = "me.shedaniel:RoughlyEnoughItems-neoforge:16.0.799"
 
 dependencies {
     compileOnly(ae2)
-    compileOnly(extendedAe)
     compileOnly(guideme)
     compileOnly(glodium)
+    compileOnly(extendedAe)
     compileOnly(extendedAePlus)
     compileOnly(jei)
     compileOnly(emi)
@@ -111,10 +93,13 @@ dependencies {
 
     runtimeOnly(ae2)
     runtimeOnly(guideme)
-    runtimeOnly(extendedAe)
     runtimeOnly(glodium)
-    runtimeOnly(jei)
-    //  runtimeOnly(emi)
+    runtimeOnly(extendedAe)
+    runtimeOnly(extendedAePlus)
+
+    //runtimeOnly(jei)
+    //runtimeOnly(emi)
+    runtimeOnly(rei)
 }
 
 tasks.processResources {
