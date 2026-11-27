@@ -32,6 +32,6 @@ type = "optional"
 versionRange = "[${jei_version},)"
 
 [[dependencies."${mod_id}"]]
-modId = "rei"
+modId = "roughlyenoughitems"
 type = "optional"
 versionRange = "[${rei_version},)"
